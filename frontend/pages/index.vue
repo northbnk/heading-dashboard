@@ -167,8 +167,8 @@
         <v-card class="menu-card px-4 py-4" elevation="4">
           <div class="text-h6 font-weight-bold text-white d-flex align-center mb-3">
             <v-icon color="secondary" icon="mdi-calendar-week" class="mr-2"></v-icon>
-            今週の練習メニュー (6/29〜7/5)
-            <span class="text-caption text-grey ml-2 font-weight-regular d-none d-sm-inline">(Weekly Training Plan)</span>
+            今後一週間の練習プラン (7/4〜7/10)
+            <span class="text-caption text-grey ml-2 font-weight-regular d-none d-sm-inline">(7-Day Training Schedule)</span>
           </div>
 
           <v-divider class="mb-4" style="opacity: 0.1"></v-divider>
@@ -448,83 +448,85 @@ export default {
         return `${m}:${String(s).padStart(2, '0')}/km`
       }
 
-      let menus = []
-
-      if (!upcomingRace.value || (diag && diag.mode === 'VOLUME_ADJUSTMENT')) {
-        const gap = Math.max(0, G - D)
-        const weeklyTarget = gap > 0 ? gap : G / 4
-        
-        const longJogDist = Math.round(weeklyTarget * 0.45)
-        const weekdayJogDist = Math.round(((weeklyTarget - longJogDist) / 2) * 10) / 10
-        
-        menus = [
-          { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
-          { day: '火', menuText: `ジョグ ${weekdayJogDist}km`, targetDistance: weekdayJogDist, isQuality: false },
-          { day: '水', menuText: '休み', targetDistance: 0, isQuality: false },
-          { day: '木', menuText: `ジョグ ${weekdayJogDist}km`, targetDistance: weekdayJogDist, isQuality: false },
-          { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
-          { day: '土', menuText: `ロングジョグ ${longJogDist}km`, targetDistance: longJogDist, isQuality: false },
-          { day: '日', menuText: '休み', targetDistance: 0, isQuality: false }
-        ]
-      } else {
-        const weeks = diag.weeksRemaining
-        
-        if (weeks >= 9) {
-          menus = [
-            { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '火', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
-            { day: '水', menuText: `閾値走 8km (${formatPaceMinSec(thresholdPaceSec)})`, targetDistance: 8, isQuality: true, targetPace: thresholdPaceSec },
-            { day: '木', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
-            { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '土', menuText: 'ロングジョグ 20km', targetDistance: 20, isQuality: false },
-            { day: '日', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false }
-          ]
-        } else if (weeks >= 5) {
-          const longRunPace = mPaceSec + 20
-          menus = [
-            { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '火', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
-            { day: '水', menuText: `Mペース走 5km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 5, isQuality: true, targetPace: mPaceSec },
-            { day: '木', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
-            { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '土', menuText: `30kmロングラン (${formatPaceMinSec(longRunPace)})`, targetDistance: 30, isQuality: true, targetPace: longRunPace },
-            { day: '日', menuText: '疲労抜きジョグ 5km', targetDistance: 5, isQuality: false }
-          ]
-        } else if (weeks >= 2) {
-          menus = [
-            { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '火', menuText: 'ジョグ 5km', targetDistance: 5, isQuality: false },
-            { day: '水', menuText: `Mペース走 3km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 3, isQuality: true, targetPace: mPaceSec },
-            { day: '木', menuText: 'ジョグ 5km', targetDistance: 5, isQuality: false },
-            { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '土', menuText: `レースペース走 20km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 20, isQuality: true, targetPace: mPaceSec },
-            { day: '日', menuText: '休み', targetDistance: 0, isQuality: false }
-          ]
+      const getMenuForDay = (dayName) => {
+        if (!upcomingRace.value || (diag && diag.mode === 'VOLUME_ADJUSTMENT')) {
+          const gap = Math.max(0, G - D)
+          const weeklyTarget = gap > 0 ? gap : G / 4
+          const longJogDist = Math.round(weeklyTarget * 0.45)
+          const weekdayJogDist = Math.round(((weeklyTarget - longJogDist) / 2) * 10) / 10
+          
+          switch (dayName) {
+            case '月': return { menuText: '休み', targetDistance: 0, isQuality: false }
+            case '火': return { menuText: `ジョグ ${weekdayJogDist}km`, targetDistance: weekdayJogDist, isQuality: false }
+            case '水': return { menuText: '休み', targetDistance: 0, isQuality: false }
+            case '木': return { menuText: `ジョグ ${weekdayJogDist}km`, targetDistance: weekdayJogDist, isQuality: false }
+            case '金': return { menuText: '休み', targetDistance: 0, isQuality: false }
+            case '土': return { menuText: `ロングジョグ ${longJogDist}km`, targetDistance: longJogDist, isQuality: false }
+            case '日': return { menuText: '休み', targetDistance: 0, isQuality: false }
+          }
         } else {
-          menus = [
-            { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '火', menuText: '軽いジョグ 2km', targetDistance: 2, isQuality: false },
-            { day: '水', menuText: `3km刺激入れ (${formatPaceMinSec(mPaceSec)})`, targetDistance: 3, isQuality: true, targetPace: mPaceSec },
-            { day: '木', menuText: '軽いジョグ 2km', targetDistance: 2, isQuality: false },
-            { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '土', menuText: '休み', targetDistance: 0, isQuality: false },
-            { day: '日', menuText: '休み', targetDistance: 0, isQuality: false }
-          ]
+          const weeks = diag.weeksRemaining
+          if (weeks >= 9) {
+            switch (dayName) {
+              case '月': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '火': return { menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false }
+              case '水': return { menuText: `閾値走 8km (${formatPaceMinSec(thresholdPaceSec)})`, targetDistance: 8, isQuality: true, targetPace: thresholdPaceSec }
+              case '木': return { menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false }
+              case '金': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '土': return { menuText: 'ロングジョグ 20km', targetDistance: 20, isQuality: false }
+              case '日': return { menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false }
+            }
+          } else if (weeks >= 5) {
+            const longRunPace = mPaceSec + 20
+            switch (dayName) {
+              case '月': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '火': return { menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false }
+              case '水': return { menuText: `Mペース走 5km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 5, isQuality: true, targetPace: mPaceSec }
+              case '木': return { menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false }
+              case '金': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '土': return { menuText: `30kmロングラン (${formatPaceMinSec(longRunPace)})`, targetDistance: 30, isQuality: true, targetPace: longRunPace }
+              case '日': return { menuText: '疲労抜きジョグ 5km', targetDistance: 5, isQuality: false }
+            }
+          } else if (weeks >= 2) {
+            switch (dayName) {
+              case '月': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '火': return { menuText: 'ジョグ 5km', targetDistance: 5, isQuality: false }
+              case '水': return { menuText: `Mペース走 3km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 3, isQuality: true, targetPace: mPaceSec }
+              case '木': return { menuText: 'ジョグ 5km', targetDistance: 5, isQuality: false }
+              case '金': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '土': return { menuText: `レースペース走 20km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 20, isQuality: true, targetPace: mPaceSec }
+              case '日': return { menuText: '休み', targetDistance: 0, isQuality: false }
+            }
+          } else {
+            switch (dayName) {
+              case '月': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '火': return { menuText: '軽いジョグ 2km', targetDistance: 2, isQuality: false }
+              case '水': return { menuText: `3km刺激入れ (${formatPaceMinSec(mPaceSec)})`, targetDistance: 3, isQuality: true, targetPace: mPaceSec }
+              case '木': return { menuText: '軽いジョグ 2km', targetDistance: 2, isQuality: false }
+              case '金': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '土': return { menuText: '休み', targetDistance: 0, isQuality: false }
+              case '日': return { menuText: '休み', targetDistance: 0, isQuality: false }
+            }
+          }
         }
       }
 
-      const weekDates = [
-        '2026-06-29',
-        '2026-06-30',
-        '2026-07-01',
-        '2026-07-02',
-        '2026-07-03',
-        '2026-07-04',
-        '2026-07-05'
-      ]
+      // 今日(2026-07-04)から7日分の予定を生成
+      const weekDates = []
+      const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土']
+      for (let i = 0; i < 7; i++) {
+        const d = new Date('2026-07-04')
+        d.setDate(d.getDate() + i)
+        const yyyy = d.getFullYear()
+        const mm = String(d.getMonth() + 1).padStart(2, '0')
+        const dd = String(d.getDate()).padStart(2, '0')
+        const dateStr = `${yyyy}-${mm}-${dd}`
+        const dayName = daysOfWeek[d.getDay()]
+        weekDates.push({ dateStr, dayName })
+      }
 
-      return menus.map((menu, index) => {
-        const dateStr = weekDates[index]
+      return weekDates.map(({ dateStr, dayName }) => {
+        const menu = getMenuForDay(dayName)
         const dailyWorkouts = workouts.value.filter(w => w.workoutDate && w.workoutDate.startsWith(dateStr))
         
         let actualDistance = 0
@@ -562,6 +564,7 @@ export default {
 
         return {
           ...menu,
+          day: dayName,
           dateStr,
           hasRun,
           actualDistance,
