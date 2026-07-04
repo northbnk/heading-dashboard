@@ -1,0 +1,54 @@
+{
+  "namespacesRequired": [
+    "views"
+  ],
+  "_sentryTraceData": "f8627ceb376649fcb20ef259dbc8e9d6-aad6994e59607e51-0",
+  "_sentryBaggage": "sentry-environment=prod,sentry-release=e61352ecc32842b58212bcd4a08256ae48d85edb,sentry-public_key=c74bbf12f2e640dca036849472068573,sentry-trace_id=f8627ceb376649fcb20ef259dbc8e9d6,sentry-sample_rate=0.005,sentry-transaction=%2Factivities%2F%5Bid%5D,sentry-sampled=false",
+  "url": "/activities/18645728050",
+  "host": "www.strava.com",
+  "protocol": "https",
+  "userAgent": "curl/8.7.1",
+  "isLoggedIn": false,
+  "currentAthlete": null,
+  "sessionData": [],
+  "flash": {},
+  "authenticationData": {
+    "signUp": {
+      "authUrls": {
+        "google": "https://accounts.google.com/o/oauth2/auth?access_type=offline&client_id=541588808765.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fwww.strava.com%2Fo_auth%2Fgoogle&response_type=code&scope=email+profile&state=%7B%22context%22%3A%22google_web_signup_flow_v1%22%2C%22state%22%3A%22eyJhbGciOiJIUzI1NiJ9.eyJzdGF0ZV9wYXJhbSI6IjhmbW9saG10ZjlsYjQyc3Vtc2h1YWxtOTI0NGdpNWhmIn0.iQY6igjk8CxS6EJQ7r8lL-PyLzw4orzUHj59BqlOFSQ%22%7D",
+        "apple": "{\"context\":\"apple_web_signup\",\"state\":\"eyJhbGciOiJIUzI1NiJ9.eyJzdGF0ZV9wYXJhbSI6IjhmbW9saG10ZjlsYjQyc3Vtc2h1YWxtOTI0NGdpNWhmIn0.iQY6igjk8CxS6EJQ7r8lL-PyLzw4orzUHj59BqlOFSQ\"}"
+      },
+      "honeyPotKey": "country"
+    },
+    "signIn": {
+      "authUrls": {
+        "google": "https://accounts.google.com/o/oauth2/auth?access_type=offline&client_id=541588808765.apps.googleusercontent.com&redirect_uri=https%3A%2F%2Fwww.strava.com%2Fo_auth%2Fgoogle&response_type=code&scope=email+profile&state=%7B%22context%22%3A%22google_web_signin%22%2C%22state%22%3A%22eyJhbGciOiJIUzI1NiJ9.eyJzdGF0ZV9wYXJhbSI6IjhmbW9saG10ZjlsYjQyc3Vtc2h1YWxtOTI0NGdpNWhmIn0.iQY6igjk8CxS6EJQ7r8lL-PyLzw4orzUHj59BqlOFSQ%22%7D",
+        "apple": "{\"context\":\"apple_web_signin\",\"state\":\"eyJhbGciOiJIUzI1NiJ9.eyJzdGF0ZV9wYXJhbSI6IjhmbW9saG10ZjlsYjQyc3Vtc2h1YWxtOTI0NGdpNWhmIn0.iQY6igjk8CxS6EJQ7r8lL-PyLzw4orzUHj59BqlOFSQ\"}"
+      },
+      "honeyPotKey": "country"
+    }
+  },
+  "fullUrl": "https://www.strava.com/activities/18645728050",
+  "activity": {
+    "id": "18645728050",
+    "name": "夕方のランニング",
+    "visibility": "Everyone",
+    "startLocal": "2026-05-25T18:54:57",
+    "activityKind": {
+      "sportType": "Run"
+    },
+    "mapImages": [
+      {
+        "url": "https://d3o5xota0a1fcr.cloudfront.net/v6/maps/H5ADMKKXF2R6IRNDCCZPZ57PY2XFHUYP3HAOLKZXTJHIYA4M47M4JWOWJG5X5WYL6J62DAOXT3GMUOSIR4NDBUOX",
+        "width": 1200,
+        "height": 630
+      }
+    ],
+    "athlete": {
+      "firstName": "Fujino",
+      "lastName": "Takahiro",
+      "profileVisibilitySetting": "Everyone"
+    },
+    "media": []
+  }
+}
