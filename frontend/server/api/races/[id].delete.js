@@ -2,6 +2,9 @@ import fs from 'fs'
 import path from 'path'
 
 export default defineEventHandler(async (event) => {
+  // Verify administrator session
+  checkAdmin(event)
+
   const dataFilePath = path.join(process.cwd(), 'data/races.json')
   const idStr = event.context.params.id
   const id = parseInt(idStr, 10)

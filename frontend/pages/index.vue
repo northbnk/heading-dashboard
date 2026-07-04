@@ -15,7 +15,7 @@
           </div>
         </div>
 
-        <!-- 目標設定切り替えトグル -->
+        <!-- 目標設定切り替えトグル & 管理者ログイン -->
         <div class="d-flex align-center mt-2 mt-sm-0">
           <v-btn-toggle
             v-model="targetGoal"
@@ -23,7 +23,7 @@
             density="compact"
             mandatory
             rounded="lg"
-            class="text-white bg-surface"
+            class="text-white bg-surface mr-3"
           >
             <v-btn value="sub4" size="small" class="px-3 font-weight-bold">
               サブ4
@@ -35,6 +35,42 @@
               サブ3
             </v-btn>
           </v-btn-toggle>
+
+          <v-chip
+            v-if="isAdmin"
+            color="success"
+            variant="flat"
+            size="small"
+            class="mr-2 font-weight-bold text-white"
+            prepend-icon="mdi-shield-check"
+          >
+            管理者
+          </v-chip>
+
+          <v-btn
+            v-if="!isAdmin"
+            color="grey-darken-3"
+            size="small"
+            variant="flat"
+            rounded="lg"
+            class="font-weight-bold text-white"
+            prepend-icon="mdi-lock"
+            @click="loginDialogActive = true"
+          >
+            管理者ログイン
+          </v-btn>
+          <v-btn
+            v-else
+            color="error"
+            size="small"
+            variant="outlined"
+            rounded="lg"
+            class="font-weight-bold"
+            prepend-icon="mdi-logout"
+            @click="handleLogout"
+          >
+            ログアウト
+          </v-btn>
         </div>
       </v-col>
     </v-row>
@@ -50,6 +86,7 @@
               大会予定
             </div>
             <v-btn
+              v-if="isAdmin"
               color="secondary"
               prepend-icon="mdi-plus"
               density="compact"
@@ -103,16 +140,28 @@
                 </div>
                 <div class="d-flex align-center flex-shrink-0 ml-2">
                   <span class="text-caption text-grey mr-1" style="font-size: 0.7rem">{{ calculateDaysUntil(race.date) }}日後</span>
-                  <v-btn
-                    icon="mdi-delete"
-                    variant="text"
-                    color="error"
-                    density="compact"
-                    size="small"
-                    class="pa-0"
-                    style="width: 18px; height: 18px; min-width: 18px"
-                    @click="handleDeleteRace(race.id)"
-                  ></v-btn>
+                  <template v-if="isAdmin">
+                    <v-btn
+                      icon="mdi-pencil"
+                      variant="text"
+                      color="secondary"
+                      density="compact"
+                      size="small"
+                      class="pa-0 mr-0.5"
+                      style="width: 18px; height: 18px; min-width: 18px"
+                      @click="openEditRaceForm(race)"
+                    ></v-btn>
+                    <v-btn
+                      icon="mdi-delete"
+                      variant="text"
+                      color="error"
+                      density="compact"
+                      size="small"
+                      class="pa-0"
+                      style="width: 18px; height: 18px; min-width: 18px"
+                      @click="handleDeleteRace(race.id)"
+                    ></v-btn>
+                  </template>
                 </div>
               </div>
             </div>
@@ -150,13 +199,28 @@
                   <span class="day-name-compact font-weight-black text-caption" style="font-size: 0.75rem">{{ day.day }}</span>
                   <span class="day-date-compact d-block text-grey" style="font-size: 0.65rem">{{ day.dateStr.substring(5).replace('-', '/') }}</span>
                 </div>
-                <v-icon
-                  v-if="day.isCleared"
-                  color="success"
-                  icon="mdi-check-circle"
-                  size="12"
-                  class="mt-0.5"
-                ></v-icon>
+                <div class="d-flex align-center">
+                  <v-btn
+                    v-if="isAdmin"
+                    icon="mdi-pencil"
+                    variant="text"
+                    color="secondary"
+                    density="compact"
+                    size="small"
+                    class="pa-0 mr-1"
+                    style="width: 14px; height: 14px; min-width: 14px"
+                    @click="openPlanForm(day)"
+                  >
+                    <v-icon size="10"></v-icon>
+                  </v-btn>
+                  <v-icon
+                    v-if="day.isCleared"
+                    color="success"
+                    icon="mdi-check-circle"
+                    size="12"
+                    class="mt-0.5"
+                  ></v-icon>
+                </div>
               </div>
 
               <!-- 予定メニュー -->
@@ -223,12 +287,33 @@
       @save="handleSaveWorkout"
     ></workout-form>
 
-    <!-- 大会登録ダイアログ -->
+    <!-- 大会登録・編集ダイアログ -->
     <race-form
       :active="raceFormActive"
+      :race-data="selectedRace"
       @close="closeRaceForm"
       @save="handleSaveRace"
     ></race-form>
+
+    <!-- 練習メニュー編集ダイアログ -->
+    <plan-form
+      v-if="planFormDate"
+      :active="planFormActive"
+      :date-str="planFormDate"
+      :day-name="planFormDayName"
+      :plan-data="selectedPlanData"
+      :has-override="hasCustomOverride(planFormDate)"
+      @close="closePlanForm"
+      @save="handleSavePlan"
+      @revert="handleRevertPlan"
+    ></plan-form>
+
+    <!-- 管理者ログインダイアログ -->
+    <login-dialog
+      :active="loginDialogActive"
+      @close="loginDialogActive = false"
+      @success="handleLoginSuccess"
+    ></login-dialog>
 
     <!-- スナックバーによる通知フィードバック -->
     <v-snackbar
@@ -271,6 +356,41 @@ export default {
       icon: 'mdi-check-circle'
     })
 
+    // 管理者関連状態
+    const loginDialogActive = ref(false)
+    const isAdmin = ref(false)
+    const selectedRace = ref(null)
+
+    // 練習プラン編集用状態
+    const planFormActive = ref(false)
+    const planFormDate = ref('')
+    const planFormDayName = ref('')
+    const selectedPlanData = ref(null)
+    const customPlans = ref({})
+
+    const checkIsAdmin = () => {
+      if (import.meta.client) {
+        const match = document.cookie.match(/(^|;)\s*admin_session\s*=\s*([^;]+)/)
+        isAdmin.value = !!(match && match[2] === 'authenticated')
+      }
+    }
+
+    const handleLoginSuccess = () => {
+      isAdmin.value = true
+      loginDialogActive.value = false
+      showNotification('管理者としてログインしました')
+    }
+
+    const handleLogout = async () => {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' })
+        isAdmin.value = false
+        showNotification('ログアウトしました')
+      } catch (err) {
+        console.error('Logout error:', err)
+      }
+    }
+
     // 全ワークアウトの読み込み
     const loadWorkouts = async () => {
       loading.value = true
@@ -290,6 +410,18 @@ export default {
         races.value = await raceApi.getRaces()
       } catch (err) {
         console.error('大会情報の取得に失敗しました', err)
+      }
+    }
+
+    // カスタム上書き練習メニューの読み込み
+    const loadCustomPlans = async () => {
+      try {
+        const res = await fetch('/api/plans')
+        if (res.ok) {
+          customPlans.value = await res.json()
+        }
+      } catch (err) {
+        console.error('Failed to load custom plans', err)
       }
     }
 
@@ -411,7 +543,19 @@ export default {
         return `${m}:${String(s).padStart(2, '0')}/km`
       }
 
-      const getMenuForDay = (dayName) => {
+      const getMenuForDay = (dayName, dateStr) => {
+        // Check custom overrides first
+        if (customPlans.value && customPlans.value[dateStr]) {
+          const override = customPlans.value[dateStr]
+          return {
+            menuText: override.menuText,
+            targetDistance: override.targetDistance,
+            isQuality: override.isQuality,
+            targetPace: override.targetPace
+          }
+        }
+
+        // Default dynamic menu logic
         if (!upcomingRace.value || (diag && diag.mode === 'VOLUME_ADJUSTMENT')) {
           const gap = Math.max(0, G - D)
           const weeklyTarget = gap > 0 ? gap : G / 4
@@ -489,7 +633,7 @@ export default {
       }
 
       return weekDates.map(({ dateStr, dayName }) => {
-        const menu = getMenuForDay(dayName)
+        const menu = getMenuForDay(dayName, dateStr)
         const dailyWorkouts = workouts.value.filter(w => w.workoutDate && w.workoutDate.startsWith(dateStr))
         
         let actualDistance = 0
@@ -511,8 +655,8 @@ export default {
           if (!menu.isQuality) {
             isCleared = actualDistance >= menu.targetDistance * 0.90
           } else {
-            const minPace = menu.targetPace - 10
-            const maxPace = menu.targetPace + 20
+            const minPace = menu.targetPace ? menu.targetPace - 10 : 0
+            const maxPace = menu.targetPace ? menu.targetPace + 20 : 9999
             const paceOk = actualPace && actualPace >= minPace && actualPace <= maxPace
             isCleared = actualDistance >= menu.targetDistance && paceOk
           }
@@ -550,16 +694,22 @@ export default {
 
     // 大会登録ダイアログ制御
     const openRaceForm = () => {
+      selectedRace.value = null
+      raceFormActive.value = true
+    }
+    const openEditRaceForm = (race) => {
+      selectedRace.value = { ...race }
       raceFormActive.value = true
     }
     const closeRaceForm = () => {
       raceFormActive.value = false
+      selectedRace.value = null
     }
 
     const handleSaveRace = async (raceData) => {
       try {
         await raceApi.createRace(raceData)
-        showNotification('大会情報を登録しました')
+        showNotification(selectedRace.value ? '大会情報を更新しました' : '大会情報を登録しました')
         await loadRaces()
         closeRaceForm()
       } catch (err) {
@@ -580,6 +730,78 @@ export default {
           showNotification('大会の削除に失敗しました', 'error', 'mdi-alert-circle')
         }
       }
+    }
+
+    // 練習プラン用ハンドラー
+    const openPlanForm = (day) => {
+      planFormDate.value = day.dateStr
+      planFormDayName.value = day.day
+      
+      selectedPlanData.value = {
+        menuText: day.menuText,
+        targetDistance: day.targetDistance,
+        isQuality: !!day.isQuality,
+        targetPace: day.targetPace || null
+      }
+      
+      planFormActive.value = true
+    }
+
+    const closePlanForm = () => {
+      planFormActive.value = false
+      planFormDate.value = ''
+      planFormDayName.value = ''
+      selectedPlanData.value = null
+    }
+
+    const handleSavePlan = async (dateStr, planData) => {
+      try {
+        const res = await fetch('/api/plans', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ dateStr, plan: planData })
+        })
+        
+        if (res.ok) {
+          showNotification('練習プランを更新しました')
+          await loadCustomPlans()
+          closePlanForm()
+        } else {
+          showNotification('プランの保存に失敗しました', 'error', 'mdi-alert-circle')
+        }
+      } catch (err) {
+        console.error('Failed to save plan', err)
+        showNotification('プランの保存に失敗しました', 'error', 'mdi-alert-circle')
+      }
+    }
+
+    const handleRevertPlan = async (dateStr) => {
+      try {
+        const res = await fetch('/api/plans', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ dateStr, plan: null })
+        })
+        
+        if (res.ok) {
+          showNotification('自動生成メニューに戻しました')
+          await loadCustomPlans()
+          closePlanForm()
+        } else {
+          showNotification('メニューの初期化に失敗しました', 'error', 'mdi-alert-circle')
+        }
+      } catch (err) {
+        console.error('Failed to revert plan', err)
+        showNotification('メニューの初期化に失敗しました', 'error', 'mdi-alert-circle')
+      }
+    }
+
+    const hasCustomOverride = (dateStr) => {
+      return !!(customPlans.value && customPlans.value[dateStr])
     }
 
     // 新規登録フォームを開く (バックアップ用)
@@ -652,6 +874,8 @@ export default {
     onMounted(() => {
       loadWorkouts()
       loadRaces()
+      loadCustomPlans()
+      checkIsAdmin()
       autoSyncInterval = setInterval(async () => {
         try {
           await workoutApi.syncWorkouts()
@@ -684,6 +908,21 @@ export default {
       snackbar,
       syncing,
       targetGoal,
+      isAdmin,
+      loginDialogActive,
+      selectedRace,
+      planFormActive,
+      planFormDate,
+      planFormDayName,
+      selectedPlanData,
+      handleLoginSuccess,
+      handleLogout,
+      openEditRaceForm,
+      openPlanForm,
+      closePlanForm,
+      handleSavePlan,
+      handleRevertPlan,
+      hasCustomOverride,
       openNewWorkoutForm,
       openEditWorkoutForm,
       closeWorkoutForm,

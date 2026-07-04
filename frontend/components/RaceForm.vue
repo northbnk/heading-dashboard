@@ -3,7 +3,7 @@
     <v-card class="race-dialog-card px-4 py-3" elevation="12">
       <v-card-title class="text-h6 font-weight-bold text-white d-flex align-center pb-2">
         <v-icon color="primary" icon="mdi-trophy-outline" class="mr-2"></v-icon>
-        大会エントリーの登録
+        {{ raceData ? '大会エントリーの編集' : '大会エントリーの登録' }}
       </v-card-title>
       <v-divider class="mb-4" style="opacity: 0.1"></v-divider>
 
@@ -81,7 +81,7 @@
           :loading="submitting"
           :disabled="!isFormValid || submitting"
         >
-          登録する
+          {{ raceData ? '更新する' : '登録する' }}
         </v-btn>
       </v-card-actions>
     </v-card>
@@ -95,6 +95,10 @@ const props = defineProps({
   active: {
     type: Boolean,
     default: false
+  },
+  raceData: {
+    type: Object,
+    default: null
   }
 })
 
@@ -116,7 +120,7 @@ const targetTimes = ['サブ3', 'サブ3.5', 'サブ4', 'その他']
 
 const race = ref({
   name: '',
-  date: '2026-10-04', // デフォルトは3ヶ月先付近
+  date: '2026-10-04',
   category: 'フルマラソン',
   targetTime: 'サブ3.5'
 })
@@ -124,11 +128,15 @@ const race = ref({
 // ダイアログが開いたときに初期化
 watch(() => props.active, (newVal) => {
   if (newVal) {
-    race.value = {
-      name: '',
-      date: '2026-10-04',
-      category: 'フルマラソン',
-      targetTime: 'サブ3.5'
+    if (props.raceData) {
+      race.value = { ...props.raceData }
+    } else {
+      race.value = {
+        name: '',
+        date: '2026-10-04',
+        category: 'フルマラソン',
+        targetTime: 'サブ3.5'
+      }
     }
     if (form.value) {
       form.value.resetValidation()
