@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="dashboard-container px-3 px-sm-6 pt-3 pb-6 min-h-screen compact-grid">
     <!-- ヘッダーセクション -->
-    <v-row class="mb-3 align-center">
+    <v-row class="mb-1 align-center">
       <v-col cols="12" class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between py-1">
         <div class="d-flex align-center">
           <v-avatar color="primary" class="mr-3" size="32" elevation="2">
@@ -40,7 +40,7 @@
     </v-row>
 
     <!-- 大会予定 ＆ 今後一週間の練習プラン -->
-    <v-row class="mb-4">
+    <v-row class="mb-2">
       <!-- 左側：大会スケジュール (cols="12" md="4") -->
       <v-col cols="12" md="4" class="d-flex">
         <v-card class="schedule-card px-3 py-3 w-100 d-flex flex-column justify-space-between" elevation="3">
@@ -195,7 +195,7 @@
     </div>
 
     <!-- ユーザー指定のレイアウト構成 -->
-    <v-row v-else class="mt-2">
+    <v-row v-else class="mt-0">
       <!-- 左側カラム (スタッツ4項目 ＆ トレーニング診断) -->
       <v-col cols="12" lg="6">
         <!-- 距離、VDOT、目標ペース距離、心肺効率 (2x2で配置) -->
@@ -716,12 +716,16 @@ export default {
   padding: 8px !important;
 }
 
-/* 各種カードのパディングと余白 (Vuetifyの標準に近い心地よさに) */
+/* 各種カードの基本デザイン・パディングと余白 */
 .schedule-card, .menu-card,
 .compact-grid :deep(.stat-card),
 .compact-grid :deep(.diagnosis-card),
 .compact-grid :deep(.chart-card),
 .compact-grid :deep(.table-card) {
+  background: rgba(25, 28, 41, 0.65) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.25) !important;
   padding: 14px 16px !important;
   border-radius: 16px !important;
   margin-bottom: 0px !important;
