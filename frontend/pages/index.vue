@@ -722,13 +722,21 @@ export default {
 .compact-grid :deep(.diagnosis-card),
 .compact-grid :deep(.chart-card),
 .compact-grid :deep(.table-card) {
-  background: rgba(25, 28, 41, 0.65) !important;
+  background: rgba(18, 20, 32, 0.8) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   box-shadow: 0 8px 24px 0 rgba(0, 0, 0, 0.25) !important;
   padding: 14px 16px !important;
   border-radius: 16px !important;
   margin-bottom: 0px !important;
+  position: relative !important;
+}
+
+/* Vuetifyのデフォルトオーバーレイ(グレー色)を完全に除去 */
+.compact-grid :deep(.v-card__overlay) {
+  opacity: 0 !important;
+  background-color: transparent !important;
+  display: none !important;
 }
 
 /* グラフ・テーブル内のヘッダーサイズとマージン */
