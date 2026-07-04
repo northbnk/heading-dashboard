@@ -15,27 +15,55 @@
           </div>
         </div>
 
-        <!-- 目標設定切り替えトグル -->
-        <v-btn-toggle
-          v-model="targetGoal"
-          color="primary"
-          density="compact"
-          mandatory
-          rounded="lg"
-          class="ml-sm-6 text-white bg-surface"
-        >
-          <v-btn value="sub4" size="small" class="px-4 font-weight-bold">
-            サブ4
+        <!-- 目標設定切り替えトグル & 大会登録ボタン -->
+        <div class="d-flex align-center flex-wrap gap-3 ml-sm-auto">
+          <v-btn-toggle
+            v-model="targetGoal"
+            color="primary"
+            density="compact"
+            mandatory
+            rounded="lg"
+            class="text-white bg-surface"
+          >
+            <v-btn value="sub4" size="small" class="px-4 font-weight-bold">
+              サブ4
+            </v-btn>
+            <v-btn value="sub3.5" size="small" class="px-4 font-weight-bold">
+              サブ3.5
+            </v-btn>
+            <v-btn value="sub3" size="small" class="px-4 font-weight-bold">
+              サブ3
+            </v-btn>
+          </v-btn-toggle>
+
+          <!-- 大会登録ボタン -->
+          <v-btn
+            color="secondary"
+            prepend-icon="mdi-trophy"
+            density="comfortable"
+            rounded="lg"
+            class="font-weight-bold text-white ml-sm-2"
+            @click="openRaceForm"
+          >
+            大会登録
           </v-btn>
-          <v-btn value="sub3.5" size="small" class="px-4 font-weight-bold">
-            サブ3.5
-          </v-btn>
-          <v-btn value="sub3" size="small" class="px-4 font-weight-bold">
-            サブ3
-          </v-btn>
-        </v-btn-toggle>
+        </div>
       </v-col>
     </v-row>
+
+    <!-- 大会カウントダウン＆ピリオダイゼーションハイライト (パターンC該当時のみ表示) -->
+    <v-alert
+      v-if="raceDiagnosis && raceDiagnosis.mode === 'PERIODIZATION'"
+      type="info"
+      color="primary"
+      variant="tonal"
+      border="start"
+      class="mb-4 text-white font-weight-bold mt-2"
+      elevation="2"
+      icon="mdi-trophy"
+    >
+      {{ raceDiagnosis.heading }}
+    </v-alert>
 
     <!-- ローディング状態 -->
     <div v-if="loading" class="d-flex flex-column align-center justify-center py-16">
@@ -48,10 +76,10 @@
       <!-- 左側カラム (スタッツ4項目 ＆ トレーニング診断) -->
       <v-col cols="12" lg="6">
         <!-- 距離、VDOT、目標ペース距離、心肺効率 (2x2で配置) -->
-        <workout-stats :workouts="workouts" :target-goal="targetGoal" display-mode="stats-only" class="mb-6"></workout-stats>
+        <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="stats-only" class="mb-6"></workout-stats>
         
         <!-- トレーニング診断 (全幅) -->
-        <workout-stats :workouts="workouts" :target-goal="targetGoal" display-mode="diagnosis-only" class="mb-6"></workout-stats>
+        <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="diagnosis-only" class="mb-6"></workout-stats>
       </v-col>
 
       <!-- 右側カラム (トレーニング統合分析グラフ ＆ アクティビティ履歴) -->
@@ -72,6 +100,13 @@
       @save="handleSaveWorkout"
     ></workout-form>
 
+    <!-- 大会登録ダイアログ -->
+    <race-form
+      :active="raceFormActive"
+      @close="closeRaceForm"
+      @save="handleSaveRace"
+    ></race-form>
+
     <!-- スナックバーによる通知フィードバック -->
     <v-snackbar
       v-model="snackbar.show"
@@ -90,13 +125,16 @@
 
 <script>
 import workoutApi from '~/utils/workout'
+import raceApi from '~/utils/race'
 
 export default {
   name: 'DashboardView',
   setup() {
     const workouts = ref([])
+    const races = ref([])
     const loading = ref(true)
     const formActive = ref(false)
+    const raceFormActive = ref(false)
     const selectedWorkout = ref(null)
     const syncing = ref(false)
     const targetGoal = ref('sub3.5') // デフォルトはサブ3.5
@@ -123,6 +161,68 @@ export default {
       }
     }
 
+    // 大会データの読み込み
+    const loadRaces = async () => {
+      try {
+        races.value = await raceApi.getRaces()
+      } catch (err) {
+        console.error('大会情報の取得に失敗しました', err)
+      }
+    }
+
+    // 直近の大会（2026年7月4日以降で最も近いもの）
+    const upcomingRace = computed(() => {
+      if (races.value.length === 0) return null
+      const baseTime = new Date('2026-07-04').getTime()
+      
+      const upcoming = races.value.filter(race => {
+        const raceTime = new Date(race.date).getTime()
+        return raceTime >= baseTime
+      })
+      
+      if (upcoming.length === 0) return null
+      
+      upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      return upcoming[0]
+    })
+
+    // 大会診断ステータス（ヘッダーバナー用）
+    const raceDiagnosis = computed(() => {
+      const race = upcomingRace.value
+      const BASE_DATE = new Date('2026-07-04')
+      if (!race) return null
+      
+      const raceTime = new Date(race.date).getTime()
+      const diffTime = raceTime - BASE_DATE.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays >= 91) {
+        return {
+          mode: 'VOLUME_ADJUSTMENT',
+          heading: 'ベースアップ期間（走行ボリューム意識）'
+        }
+      } else {
+        const weeksRemaining = Math.max(0, Math.ceil(diffDays / 7))
+        let phaseName = ''
+        if (weeksRemaining >= 9) {
+          phaseName = '鍛錬期（脚作り）'
+        } else if (weeksRemaining >= 5) {
+          phaseName = '実戦強化期'
+        } else if (weeksRemaining >= 2) {
+          phaseName = '調整期（テーパリング）'
+        } else {
+          phaseName = '直前期'
+        }
+        
+        return {
+          mode: 'PERIODIZATION',
+          heading: `🏆 ${race.name} まで あと ${weeksRemaining}週 ｜ ${phaseName}`,
+          phaseName,
+          weeksRemaining
+        }
+      }
+    })
+
     // スナックバー通知の表示ユーティリティ
     const showNotification = (text, color = 'success', icon = 'mdi-check-circle') => {
       snackbar.value = {
@@ -130,6 +230,26 @@ export default {
         text,
         color,
         icon
+      }
+    }
+
+    // 大会登録ダイアログ制御
+    const openRaceForm = () => {
+      raceFormActive.value = true
+    }
+    const closeRaceForm = () => {
+      raceFormActive.value = false
+    }
+
+    const handleSaveRace = async (raceData) => {
+      try {
+        await raceApi.createRace(raceData)
+        showNotification('大会情報を登録しました')
+        await loadRaces()
+        closeRaceForm()
+      } catch (err) {
+        console.error('大会登録に失敗しました', err)
+        showNotification('大会の保存に失敗しました', 'error', 'mdi-alert-circle')
       }
     }
 
@@ -150,7 +270,7 @@ export default {
       selectedWorkout.value = null
     }
 
-    // ワークアウトデータの追加または更新 (リードオンリー構成のため基本的には不活性)
+    // ワークアウトデータの追加または更新
     const handleSaveWorkout = async (workoutData) => {
       try {
         if (selectedWorkout.value) {
@@ -202,7 +322,8 @@ export default {
 
     onMounted(() => {
       loadWorkouts()
-      // 15分ごとに自動でスプレッドシートからフェッチしてデータを更新 (15分 = 900000ms)
+      loadRaces()
+      // 15分ごとに自動でスプレッドシートからフェッチしてデータを更新
       autoSyncInterval = setInterval(async () => {
         console.log('Auto-syncing workouts from Google Sheets...')
         try {
@@ -222,8 +343,12 @@ export default {
 
     return {
       workouts,
+      races,
+      upcomingRace,
+      raceDiagnosis,
       loading,
       formActive,
+      raceFormActive,
       selectedWorkout,
       snackbar,
       syncing,
@@ -233,7 +358,10 @@ export default {
       closeWorkoutForm,
       handleSaveWorkout,
       handleDeleteWorkout,
-      handleSyncWorkouts
+      handleSyncWorkouts,
+      openRaceForm,
+      closeRaceForm,
+      handleSaveRace
     }
   }
 }

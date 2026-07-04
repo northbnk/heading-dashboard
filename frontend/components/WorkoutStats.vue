@@ -287,6 +287,10 @@ export default {
     displayMode: {
       type: String,
       default: 'all' // 'all', 'stats-only', 'diagnosis-only'
+    },
+    upcomingRace: {
+      type: Object,
+      default: null
     }
   },
   setup(props) {
@@ -577,6 +581,80 @@ export default {
       return { avgHeartrate, maxDist, count: mPaceRuns.length }
     })
 
+    // 大会登録状況に基づいた動的診断アドバイス
+    const raceDiagnosis = computed(() => {
+      const race = props.upcomingRace
+      const BASE_DATE = new Date('2026-07-04')
+      
+      if (!race) {
+        const G = monthlyGoalDistance.value
+        const D = last30DaysDistance.value
+        const gap = Math.max(0, G - D)
+        const weeklyPart = (gap / 4).toFixed(1)
+        
+        let advice = ''
+        if (gap > 0) {
+          advice = `直近30日の走行距離（${D.toFixed(1)}km）と目標（${G}km）のギャップ（残り${gap.toFixed(1)}km）を埋めるため、今週はあと${weeklyPart}kmを目標に走りましょう。`
+        } else {
+          advice = `直近30日の走行距離（${D.toFixed(1)}km）が目標の月間走行距離（${G}km）を達成しています！この調子で走行ボリュームを維持し、脚作りを進めましょう。今週は週平均の目標である${(G / 4).toFixed(1)}kmを目安に調整ジョグを行ってください。`
+        }
+        
+        return {
+          mode: 'VOLUME_ADJUSTMENT',
+          heading: 'ベースアップ期間（走行ボリューム意識）',
+          advice
+        }
+      }
+      
+      const raceTime = new Date(race.date).getTime()
+      const diffTime = raceTime - BASE_DATE.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays >= 91) {
+        const G = monthlyGoalDistance.value
+        const D = last30DaysDistance.value
+        const gap = Math.max(0, G - D)
+        const weeklyPart = (gap / 4).toFixed(1)
+        
+        let advice = ''
+        if (gap > 0) {
+          advice = `直近30日の走行距離（${D.toFixed(1)}km）と目標（${G}km）のギャップ（残り${gap.toFixed(1)}km）を埋めるため、今週はあと${weeklyPart}kmを目標に走りましょう。`
+        } else {
+          advice = `直近30日の走行距離（${D.toFixed(1)}km）が目標の月間走行距離（${G}km）を達成しています！この調子で走行ボリュームを維持し、脚作りを進めましょう。今週は週平均の目標である${(G / 4).toFixed(1)}kmを目安に調整ジョグを行ってください。`
+        }
+        
+        return {
+          mode: 'VOLUME_ADJUSTMENT',
+          heading: 'ベースアップ期間（走行ボリューム意識）',
+          advice
+        }
+      } else {
+        const weeksRemaining = Math.max(0, Math.ceil(diffDays / 7))
+        let phaseName = ''
+        let advice = ''
+        
+        if (weeksRemaining >= 9) {
+          phaseName = '鍛錬期（脚作り）'
+          advice = '基礎スタミナの構築期間です。週末に20〜25kmのロングジョグを入れましょう。'
+        } else if (weeksRemaining >= 5) {
+          phaseName = '実戦強化期'
+          advice = '一番重要な時期です！今週末に30kmロングラン（設定 4:30〜4:40/km）を計画し、平日は目標ペースでの5km走を入れてください。'
+        } else if (weeksRemaining >= 2) {
+          phaseName = '調整期（テーパリング）'
+          advice = '走行ボリュームを落とし、疲労を抜く時期です。週末は20kmをレースペースで走りましょう。'
+        } else {
+          phaseName = '直前期'
+          advice = '完全な疲労回復に努めましょう。レース3日前に3kmの刺激入れを行うだけで十分です。'
+        }
+        
+        return {
+          mode: 'PERIODIZATION',
+          heading: `🏆 ${race.name} まで あと ${weeksRemaining}週 ｜ ${phaseName}`,
+          advice
+        }
+      }
+    })
+
     // マラソン特化トレーニング診断（目標設定に連動）
     const marathonDiagnosis = computed(() => {
       const strengths = []
@@ -667,6 +745,11 @@ export default {
       } else if (strengthPoints >= 1 && issuePoints <= 2) {
         rating = `${label} 挑戦可能 (B)`
         color = 'warning'
+      }
+      
+      // 大会アドバイスを課題（指示）の先頭に差し込み
+      if (raceDiagnosis.value && raceDiagnosis.value.advice) {
+        issues.unshift(raceDiagnosis.value.advice)
       }
       
       return { strengths, issues, rating, color }
