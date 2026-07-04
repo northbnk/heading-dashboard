@@ -590,13 +590,13 @@ export default {
         const G = monthlyGoalDistance.value
         const D = last30DaysDistance.value
         const gap = Math.max(0, G - D)
-        const weeklyPart = (gap / 4).toFixed(1)
+        const weeklyTarget = gap > 0 ? gap : G / 4
         
         let advice = ''
         if (gap > 0) {
-          advice = `直近30日の走行距離（${D.toFixed(1)}km）と目標（${G}km）のギャップ（残り${gap.toFixed(1)}km）を埋めるため、今週はあと${weeklyPart}kmを目標に走りましょう。`
+          advice = `今週はあと${weeklyTarget.toFixed(1)}kmを目標に走りましょう。`
         } else {
-          advice = `直近30日の走行距離（${D.toFixed(1)}km）が目標の月間走行距離（${G}km）を達成しています！この調子で走行ボリュームを維持し、脚作りを進めましょう。今週は週平均の目標である${(G / 4).toFixed(1)}kmを目安に調整ジョグを行ってください。`
+          advice = `月間目標である${G}kmをクリアしています！今週は調整（週平均の目標${weeklyTarget.toFixed(1)}km）を目安に走りましょう。`
         }
         
         return {
@@ -614,13 +614,13 @@ export default {
         const G = monthlyGoalDistance.value
         const D = last30DaysDistance.value
         const gap = Math.max(0, G - D)
-        const weeklyPart = (gap / 4).toFixed(1)
+        const weeklyTarget = gap > 0 ? gap : G / 4
         
         let advice = ''
         if (gap > 0) {
-          advice = `直近30日の走行距離（${D.toFixed(1)}km）と目標（${G}km）のギャップ（残り${gap.toFixed(1)}km）を埋めるため、今週はあと${weeklyPart}kmを目標に走りましょう。`
+          advice = `今週はあと${weeklyTarget.toFixed(1)}kmを目標に走りましょう。`
         } else {
-          advice = `直近30日の走行距離（${D.toFixed(1)}km）が目標の月間走行距離（${G}km）を達成しています！この調子で走行ボリュームを維持し、脚作りを進めましょう。今週は週平均の目標である${(G / 4).toFixed(1)}kmを目安に調整ジョグを行ってください。`
+          advice = `月間目標である${G}kmをクリアしています！今週は調整（週平均の目標${weeklyTarget.toFixed(1)}km）を目安に走りましょう。`
         }
         
         return {
@@ -649,7 +649,7 @@ export default {
         
         return {
           mode: 'PERIODIZATION',
-          heading: `🏆 ${race.name} まで あと ${weeksRemaining}週 ｜ ${phaseName}`,
+          heading: `${race.name} まで あと ${weeksRemaining}週 ｜ ${phaseName}`,
           advice
         }
       }

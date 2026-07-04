@@ -51,7 +51,7 @@
       </v-col>
     </v-row>
 
-    <!-- 大会カウントダウン＆ピリオダイゼーションハイライト (パターンC該当時のみ表示) -->
+    <!-- 大会カウントダウン＆ピリオダイゼーションハイライト (パターンC該当時のみ表示、絵文字は非表示にしてMDI) -->
     <v-alert
       v-if="raceDiagnosis && raceDiagnosis.mode === 'PERIODIZATION'"
       type="info"
@@ -64,6 +64,70 @@
     >
       {{ raceDiagnosis.heading }}
     </v-alert>
+
+    <!-- 今週の練習メニュー表示エリア (月曜〜日曜) -->
+    <v-row class="mb-4">
+      <v-col cols="12">
+        <v-card class="menu-card px-4 py-4" elevation="4">
+          <div class="text-h6 font-weight-bold text-white d-flex align-center mb-3">
+            <v-icon color="secondary" icon="mdi-calendar-week" class="mr-2"></v-icon>
+            今週の練習メニュー (6/29〜7/5)
+            <span class="text-caption text-grey ml-2 font-weight-regular d-none d-sm-inline">(Weekly Training Plan)</span>
+          </div>
+
+          <v-divider class="mb-4" style="opacity: 0.1"></v-divider>
+
+          <!-- 7つの曜日のスロット -->
+          <div class="weekly-grid">
+            <div
+              v-for="day in weeklySchedule"
+              :key="day.dateStr"
+              class="day-slot-card d-flex flex-column justify-space-between"
+              :class="{ 'cleared-slot': day.isCleared, 'rest-slot': day.targetDistance === 0 }"
+            >
+              <!-- 曜日・日付 -->
+              <div class="d-flex justify-space-between align-center">
+                <div>
+                  <span class="day-name font-weight-black text-body-2">{{ day.day }}曜日</span>
+                  <span class="day-date d-block text-caption text-grey">{{ day.dateStr.substring(5).replace('-', '/') }}</span>
+                </div>
+                <!-- クリアアイコン (達成時のみ表示) -->
+                <v-icon
+                  v-if="day.isCleared"
+                  color="success"
+                  icon="mdi-check-circle"
+                  size="20"
+                ></v-icon>
+              </div>
+
+              <!-- 予定メニュー -->
+              <div class="menu-content my-3">
+                <div class="text-body-2 font-weight-bold text-white">
+                  {{ day.menuText }}
+                </div>
+              </div>
+
+              <!-- 実績値 -->
+              <div class="actual-content">
+                <div v-if="!day.isCleared && day.hasRun" class="text-caption text-grey">
+                  実績: {{ day.actualDistance.toFixed(2) }}km / {{ day.actualPaceStr }}
+                </div>
+                <div v-else-if="day.targetDistance > 0 && !day.hasRun" class="text-caption text-grey-darken-1 italic">
+                  未出走
+                </div>
+                <div v-else-if="day.targetDistance === 0" class="text-caption text-grey-darken-1">
+                  リカバリー
+                </div>
+                <div v-else class="text-caption text-success font-weight-bold d-flex align-center">
+                  <v-icon icon="mdi-checkbox-marked-circle-outline" size="14" class="mr-1"></v-icon>
+                  クリア
+                </div>
+              </div>
+            </div>
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- ローディング状態 -->
     <div v-if="loading" class="d-flex flex-column align-center justify-center py-16">
@@ -216,11 +280,200 @@ export default {
         
         return {
           mode: 'PERIODIZATION',
-          heading: `🏆 ${race.name} まで あと ${weeksRemaining}週 ｜ ${phaseName}`,
+          heading: `${race.name} まで あと ${weeksRemaining}週 ｜ ${phaseName}`,
           phaseName,
           weeksRemaining
         }
       }
+    })
+
+    // 目標に応じた月間走行距離のノルマ
+    const monthlyGoalDistance = computed(() => {
+      if (targetGoal.value === 'sub4') return 150
+      if (targetGoal.value === 'sub3.5') return 200
+      return 300
+    })
+
+    // 直近30日間の走行距離
+    const last30DaysDistance = computed(() => {
+      if (workouts.value.length === 0) return 0
+      const thirtyDaysAgo = new Date('2026-07-04')
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      
+      return workouts.value
+        .filter(w => {
+          if (!w.workoutDate) return false
+          const parts = w.workoutDate.split(/[\s\-:]/)
+          const year = parseInt(parts[0], 10)
+          const month = parseInt(parts[1], 10) - 1
+          const day = parseInt(parts[2], 10)
+          const d = new Date(year, month, day)
+          return d >= thirtyDaysAgo
+        })
+        .reduce((sum, w) => sum + Number(w.distance || 0), 0)
+    })
+
+    // 今後一週間の練習メニューデータ生成
+    const weeklySchedule = computed(() => {
+      const diag = raceDiagnosis.value
+      const G = monthlyGoalDistance.value
+      const D = last30DaysDistance.value
+      
+      // 設定ペースの定義
+      let mPaceSec = 295 // Sub 3.5 = 4:55
+      let thresholdPaceSec = 275 // Sub 3.5 = 4:35
+      if (targetGoal.value === 'sub3') {
+        mPaceSec = 255 // 4:15
+        thresholdPaceSec = 240 // 4:00
+      } else if (targetGoal.value === 'sub4') {
+        mPaceSec = 340 // 5:40
+        thresholdPaceSec = 320 // 5:20
+      }
+      
+      const formatPaceMinSec = (sec) => {
+        const m = Math.floor(sec / 60)
+        const s = sec % 60
+        return `${m}:${String(s).padStart(2, '0')}/km`
+      }
+
+      let menus = []
+
+      // 予定メニューの作成
+      if (!upcomingRace.value || (diag && diag.mode === 'VOLUME_ADJUSTMENT')) {
+        // パターンB: ボリューム調整モード
+        const gap = Math.max(0, G - D)
+        const weeklyTarget = gap > 0 ? gap : G / 4
+        
+        const longJogDist = Math.round(weeklyTarget * 0.45)
+        const weekdayJogDist = Math.round(((weeklyTarget - longJogDist) / 2) * 10) / 10
+        
+        menus = [
+          { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
+          { day: '火', menuText: `ジョグ ${weekdayJogDist}km`, targetDistance: weekdayJogDist, isQuality: false },
+          { day: '水', menuText: '休み', targetDistance: 0, isQuality: false },
+          { day: '木', menuText: `ジョグ ${weekdayJogDist}km`, targetDistance: weekdayJogDist, isQuality: false },
+          { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
+          { day: '土', menuText: `ロングジョグ ${longJogDist}km`, targetDistance: longJogDist, isQuality: false },
+          { day: '日', menuText: '休み', targetDistance: 0, isQuality: false }
+        ]
+      } else {
+        // パターンC: 期分け期 (90日以内)
+        const weeks = diag.weeksRemaining
+        
+        if (weeks >= 9) {
+          // 鍛錬期（脚作り）
+          menus = [
+            { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '火', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
+            { day: '水', menuText: `閾値走 8km (${formatPaceMinSec(thresholdPaceSec)})`, targetDistance: 8, isQuality: true, targetPace: thresholdPaceSec },
+            { day: '木', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
+            { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '土', menuText: 'ロングジョグ 20km', targetDistance: 20, isQuality: false },
+            { day: '日', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false }
+          ]
+        } else if (weeks >= 5) {
+          // 実戦強化期
+          const longRunPace = mPaceSec + 20
+          menus = [
+            { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '火', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
+            { day: '水', menuText: `Mペース走 5km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 5, isQuality: true, targetPace: mPaceSec },
+            { day: '木', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
+            { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '土', menuText: `30kmロングラン (${formatPaceMinSec(longRunPace)})`, targetDistance: 30, isQuality: true, targetPace: longRunPace },
+            { day: '日', menuText: '疲労抜きジョグ 5km', targetDistance: 5, isQuality: false }
+          ]
+        } else if (weeks >= 2) {
+          // 調整期（テーパリング）
+          menus = [
+            { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '火', menuText: 'ジョグ 5km', targetDistance: 5, isQuality: false },
+            { day: '水', menuText: `Mペース走 3km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 3, isQuality: true, targetPace: mPaceSec },
+            { day: '木', menuText: 'ジョグ 5km', targetDistance: 5, isQuality: false },
+            { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '土', menuText: `レースペース走 20km (${formatPaceMinSec(mPaceSec)})`, targetDistance: 20, isQuality: true, targetPace: mPaceSec },
+            { day: '日', menuText: '休み', targetDistance: 0, isQuality: false }
+          ]
+        } else {
+          // 直前期
+          menus = [
+            { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '火', menuText: '軽いジョグ 2km', targetDistance: 2, isQuality: false },
+            { day: '水', menuText: `3km刺激入れ (${formatPaceMinSec(mPaceSec)})`, targetDistance: 3, isQuality: true, targetPace: mPaceSec },
+            { day: '木', menuText: '軽いジョグ 2km', targetDistance: 2, isQuality: false },
+            { day: '金', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '土', menuText: '休み', targetDistance: 0, isQuality: false },
+            { day: '日', menuText: '休み', targetDistance: 0, isQuality: false }
+          ]
+        }
+      }
+
+      // 日付の固定（月曜 6/29 〜 日曜 7/5）
+      const weekDates = [
+        '2026-06-29',
+        '2026-06-30',
+        '2026-07-01',
+        '2026-07-02',
+        '2026-07-03',
+        '2026-07-04',
+        '2026-07-05'
+      ]
+
+      return menus.map((menu, index) => {
+        const dateStr = weekDates[index]
+        
+        // 当日のワークアウトをすべて抽出
+        const dailyWorkouts = workouts.value.filter(w => w.workoutDate && w.workoutDate.startsWith(dateStr))
+        
+        let actualDistance = 0
+        let actualPace = null
+        let hasRun = false
+        
+        if (dailyWorkouts.length > 0) {
+          hasRun = true
+          actualDistance = dailyWorkouts.reduce((sum, w) => sum + Number(w.distance || 0), 0)
+          const totalMovingTime = dailyWorkouts.reduce((sum, w) => {
+            const time = w.movingTimeSeconds || w.durationSeconds || 0
+            return sum + time
+          }, 0)
+          
+          if (actualDistance > 0 && totalMovingTime > 0) {
+            actualPace = Math.round(totalMovingTime / actualDistance)
+          }
+        }
+
+        // クリア判定
+        let isCleared = false
+        if (menu.targetDistance > 0 && hasRun) {
+          if (!menu.isQuality) {
+            // 量重視（ジョグ・ロングジョグ）: 実際距離 >= 予定距離 * 0.90
+            isCleared = actualDistance >= menu.targetDistance * 0.90
+          } else {
+            // 質重視（ポイント練習）: 実際距離 >= 予定距離 * 1.00 且つ 平均ペースが設定ペースの -10秒〜+20秒 以内
+            const minPace = menu.targetPace - 10
+            const maxPace = menu.targetPace + 20
+            const paceOk = actualPace && actualPace >= minPace && actualPace <= maxPace
+            isCleared = actualDistance >= menu.targetDistance && paceOk
+          }
+        }
+
+        const formatPaceText = (sec) => {
+          if (!sec) return ''
+          const m = Math.floor(sec / 60)
+          const s = sec % 60
+          return `${m}:${String(s).padStart(2, '0')}/km`
+        }
+
+        return {
+          ...menu,
+          dateStr,
+          hasRun,
+          actualDistance,
+          actualPace,
+          actualPaceStr: actualPace ? formatPaceText(actualPace) : '',
+          isCleared
+        }
+      })
     })
 
     // スナックバー通知の表示ユーティリティ
@@ -346,6 +599,7 @@ export default {
       races,
       upcomingRace,
       raceDiagnosis,
+      weeklySchedule,
       loading,
       formActive,
       raceFormActive,
@@ -373,5 +627,65 @@ export default {
 }
 .letter-spacing-1 {
   letter-spacing: 2px;
+}
+
+/* 今週の練習メニューカードスタイル */
+.menu-card {
+  background: rgba(25, 28, 41, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px !important;
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 7つの曜日配置用グリッド・レイアウト (デスクトップ時は横並び、モバイル時は横スクロール) */
+.weekly-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+
+.day-slot-card {
+  background: rgba(15, 17, 26, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 12px;
+  min-height: 140px;
+  transition: all 0.3s ease;
+}
+
+.day-slot-card:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+}
+
+.cleared-slot {
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.rest-slot {
+  opacity: 0.7;
+}
+
+.day-name {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.italic {
+  font-style: italic;
+}
+
+@media (max-width: 960px) {
+  .weekly-grid {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding-bottom: 8px;
+  }
+  .day-slot-card {
+    min-width: 150px;
+    flex-shrink: 0;
+  }
 }
 </style>
