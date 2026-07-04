@@ -1,6 +1,6 @@
 <template>
   <v-container fluid class="dashboard-container px-3 px-sm-6 pt-3 pb-6 min-h-screen">
-    <!-- ヘッダーセクション (スッキリとコンパクト化) -->
+    <!-- ヘッダーセクション -->
     <v-row class="mb-2 align-center">
       <v-col cols="12" class="d-flex flex-column flex-sm-row align-start align-sm-center flex-wrap gap-y-3">
         <div class="d-flex align-center">
@@ -15,7 +15,7 @@
           </div>
         </div>
 
-        <!-- 目標設定切り替えトグル & 大会登録ボタン -->
+        <!-- 目標設定切り替えトグル -->
         <div class="d-flex align-center flex-wrap gap-3 ml-sm-auto">
           <v-btn-toggle
             v-model="targetGoal"
@@ -35,35 +35,131 @@
               サブ3
             </v-btn>
           </v-btn-toggle>
-
-          <!-- 大会登録ボタン -->
-          <v-btn
-            color="secondary"
-            prepend-icon="mdi-trophy"
-            density="comfortable"
-            rounded="lg"
-            class="font-weight-bold text-white ml-sm-2"
-            @click="openRaceForm"
-          >
-            大会登録
-          </v-btn>
         </div>
       </v-col>
     </v-row>
 
-    <!-- 大会カウントダウン＆ピリオダイゼーションハイライト (パターンC該当時のみ表示、絵文字は非表示にしてMDI) -->
-    <v-alert
-      v-if="raceDiagnosis && raceDiagnosis.mode === 'PERIODIZATION'"
-      type="info"
-      color="primary"
-      variant="tonal"
-      border="start"
-      class="mb-4 text-white font-weight-bold mt-2"
-      elevation="2"
-      icon="mdi-trophy"
-    >
-      {{ raceDiagnosis.heading }}
-    </v-alert>
+    <!-- メイン：今後の大会予定 ＆ カウントダウンカード -->
+    <v-row class="mb-4">
+      <v-col cols="12">
+        <v-card class="schedule-card px-4 py-4" elevation="4">
+          <div class="d-flex flex-column flex-sm-row justify-space-between align-start align-sm-center mb-3">
+            <div class="text-h6 font-weight-bold text-white d-flex align-center">
+              <v-icon color="secondary" icon="mdi-calendar-star" class="mr-2"></v-icon>
+              エントリー済みの大会予定・今後の予定
+              <span class="text-caption text-grey ml-2 font-weight-regular d-none d-sm-inline">(Upcoming Race Schedule)</span>
+            </div>
+            <!-- 大会登録ボタン -->
+            <v-btn
+              color="secondary"
+              prepend-icon="mdi-plus"
+              density="comfortable"
+              rounded="lg"
+              class="font-weight-bold text-white mt-2 mt-sm-0"
+              @click="openRaceForm"
+            >
+              新しい大会を登録
+            </v-btn>
+          </div>
+
+          <v-divider class="mb-4" style="opacity: 0.1"></v-divider>
+
+          <v-row v-if="upcomingRacesList.length > 0">
+            <!-- 直近メインレースのカウントダウン (大きく表示) -->
+            <v-col cols="12" md="5" class="d-flex">
+              <v-card class="main-countdown-card pa-4 w-100 d-flex flex-column justify-space-between" variant="flat">
+                <div>
+                  <div class="text-caption text-primary font-weight-bold uppercase mb-1 d-flex align-center">
+                    <v-icon icon="mdi-trophy" size="14" class="mr-1"></v-icon>
+                    NEXT TARGET RACE
+                  </div>
+                  <div class="text-h5 font-weight-black text-white mb-2">
+                    {{ upcomingRace.name }}
+                  </div>
+                  <div class="text-body-2 text-grey-lighten-1 mb-1">
+                    <v-icon icon="mdi-run" size="14" class="mr-1" color="grey-darken-1"></v-icon>
+                    種目: {{ upcomingRace.category }}
+                  </div>
+                  <div class="text-body-2 text-grey-lighten-1 mb-1">
+                    <v-icon icon="mdi-bullseye-arrow" size="14" class="mr-1" color="grey-darken-1"></v-icon>
+                    目標: {{ upcomingRace.targetTime }}
+                  </div>
+                  <div class="text-body-2 text-grey-lighten-1">
+                    <v-icon icon="mdi-calendar-clock" size="14" class="mr-1" color="grey-darken-1"></v-icon>
+                    開催日: {{ upcomingRace.date.replace(/-/g, '/') }}
+                  </div>
+                </div>
+
+                <!-- カウントダウン数値 -->
+                <div class="mt-4 pt-2 d-flex align-baseline">
+                  <span class="text-caption text-grey mr-2">開催まであと</span>
+                  <span class="text-h3 font-weight-black text-secondary mr-1">{{ upcomingRaceDays }}</span>
+                  <span class="text-h6 font-weight-bold text-grey">日</span>
+                </div>
+              </v-card>
+            </v-col>
+
+            <!-- すべての大会予定リスト -->
+            <v-col cols="12" md="7">
+              <v-card class="bg-transparent" variant="flat">
+                <div class="text-subtitle-2 font-weight-bold text-grey mb-3">
+                  すべての予定大会リスト
+                </div>
+                <div class="race-list-wrapper">
+                  <div
+                    v-for="race in upcomingRacesList"
+                    :key="race.id"
+                    class="race-item-row d-flex align-center justify-space-between py-2 px-3 mb-2"
+                    :class="{ 'main-race-row': race.id === upcomingRace.id }"
+                  >
+                    <div class="d-flex align-center overflow-hidden">
+                      <v-icon
+                        :color="race.id === upcomingRace.id ? 'secondary' : 'grey-darken-1'"
+                        :icon="race.id === upcomingRace.id ? 'mdi-star' : 'mdi-star-outline'"
+                        class="mr-2 flex-shrink-0"
+                      ></v-icon>
+                      <div class="text-truncate">
+                        <span class="font-weight-bold text-white d-block text-truncate">{{ race.name }}</span>
+                        <span class="text-caption text-grey">
+                          {{ race.date.replace(/-/g, '/') }} ｜ {{ race.category }} ｜ {{ race.targetTime }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="d-flex align-center flex-shrink-0 ml-3">
+                      <!-- カウントダウンバッジ -->
+                      <v-chip
+                        :color="race.id === upcomingRace.id ? 'secondary' : 'grey-darken-2'"
+                        size="small"
+                        class="font-weight-bold text-black mr-2"
+                        variant="flat"
+                      >
+                        あと {{ calculateDaysUntil(race.date) }}日
+                      </v-chip>
+                      <!-- 削除ボタン -->
+                      <v-btn
+                        icon="mdi-delete"
+                        variant="text"
+                        color="error"
+                        density="compact"
+                        @click="handleDeleteRace(race.id)"
+                      ></v-btn>
+                    </div>
+                  </div>
+                </div>
+              </v-card>
+            </v-col>
+          </v-row>
+
+          <!-- 登録がない場合 -->
+          <div v-else class="d-flex flex-column align-center justify-center py-10 text-grey">
+            <v-icon icon="mdi-calendar-remove" size="48" class="mb-2 text-grey-darken-2"></v-icon>
+            <div>登録された今後の大会予定はありません。</div>
+            <div class="text-caption text-grey-darken-1 mt-1">「新しい大会を登録」ボタンからエントリー情報を入力してください。</div>
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- 今週の練習メニュー表示エリア (月曜〜日曜) -->
     <v-row class="mb-4">
@@ -91,7 +187,7 @@
                   <span class="day-name font-weight-black text-body-2">{{ day.day }}曜日</span>
                   <span class="day-date d-block text-caption text-grey">{{ day.dateStr.substring(5).replace('-', '/') }}</span>
                 </div>
-                <!-- クリアアイコン (達成時のみ表示) -->
+                <!-- クリアアイコン -->
                 <v-icon
                   v-if="day.isCleared"
                   color="success"
@@ -148,15 +244,15 @@
 
       <!-- 右側カラム (トレーニング統合分析グラフ ＆ アクティビティ履歴) -->
       <v-col cols="12" lg="6">
-        <!-- グラフ (高さを300pxにスリム化してスマートに表示) -->
+        <!-- グラフ -->
         <workout-chart :workouts="workouts" :target-goal="targetGoal" :height="300" class="mb-6"></workout-chart>
         
-        <!-- アクティビティ履歴 (グラフの下に配置) -->
+        <!-- アクティビティ履歴 -->
         <workout-table :workouts="workouts"></workout-table>
       </v-col>
     </v-row>
 
-    <!-- ワークアウト登録・編集ダイアログフォーム (バックアップ用、非表示) -->
+    <!-- ワークアウト登録・編集ダイアログフォーム -->
     <workout-form
       :active="formActive"
       :workout="selectedWorkout"
@@ -201,7 +297,7 @@ export default {
     const raceFormActive = ref(false)
     const selectedWorkout = ref(null)
     const syncing = ref(false)
-    const targetGoal = ref('sub3.5') // デフォルトはサブ3.5
+    const targetGoal = ref('sub3.5')
     let autoSyncInterval = null
 
     // 通知スナックバー設定
@@ -234,23 +330,40 @@ export default {
       }
     }
 
-    // 直近の大会（2026年7月4日以降で最も近いもの）
-    const upcomingRace = computed(() => {
-      if (races.value.length === 0) return null
+    // エントリー済みのすべての今後の大会（今日 2026-07-04 以降）
+    const upcomingRacesList = computed(() => {
+      if (races.value.length === 0) return []
       const baseTime = new Date('2026-07-04').getTime()
       
-      const upcoming = races.value.filter(race => {
-        const raceTime = new Date(race.date).getTime()
-        return raceTime >= baseTime
-      })
-      
-      if (upcoming.length === 0) return null
-      
-      upcoming.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      return upcoming[0]
+      return races.value
+        .filter(race => {
+          const raceTime = new Date(race.date).getTime()
+          return raceTime >= baseTime
+        })
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     })
 
-    // 大会診断ステータス（ヘッダーバナー用）
+    // 直近の大会（今日以降で最も近いもの）
+    const upcomingRace = computed(() => {
+      if (upcomingRacesList.value.length === 0) return null
+      return upcomingRacesList.value[0]
+    })
+
+    // 直近レースまでのカウントダウン日数
+    const upcomingRaceDays = computed(() => {
+      if (!upcomingRace.value) return 0
+      return calculateDaysUntil(upcomingRace.value.date)
+    })
+
+    // 日付差分の計算ユーティリティ
+    const calculateDaysUntil = (dateStr) => {
+      const BASE_DATE = new Date('2026-07-04')
+      const raceTime = new Date(dateStr).getTime()
+      const diffTime = raceTime - BASE_DATE.getTime()
+      return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
+    }
+
+    // 大会診断ステータス（アドバイス連動用）
     const raceDiagnosis = computed(() => {
       const race = upcomingRace.value
       const BASE_DATE = new Date('2026-07-04')
@@ -319,15 +432,14 @@ export default {
       const G = monthlyGoalDistance.value
       const D = last30DaysDistance.value
       
-      // 設定ペースの定義
-      let mPaceSec = 295 // Sub 3.5 = 4:55
-      let thresholdPaceSec = 275 // Sub 3.5 = 4:35
+      let mPaceSec = 295
+      let thresholdPaceSec = 275
       if (targetGoal.value === 'sub3') {
-        mPaceSec = 255 // 4:15
-        thresholdPaceSec = 240 // 4:00
+        mPaceSec = 255
+        thresholdPaceSec = 240
       } else if (targetGoal.value === 'sub4') {
-        mPaceSec = 340 // 5:40
-        thresholdPaceSec = 320 // 5:20
+        mPaceSec = 340
+        thresholdPaceSec = 320
       }
       
       const formatPaceMinSec = (sec) => {
@@ -338,9 +450,7 @@ export default {
 
       let menus = []
 
-      // 予定メニューの作成
       if (!upcomingRace.value || (diag && diag.mode === 'VOLUME_ADJUSTMENT')) {
-        // パターンB: ボリューム調整モード
         const gap = Math.max(0, G - D)
         const weeklyTarget = gap > 0 ? gap : G / 4
         
@@ -357,11 +467,9 @@ export default {
           { day: '日', menuText: '休み', targetDistance: 0, isQuality: false }
         ]
       } else {
-        // パターンC: 期分け期 (90日以内)
         const weeks = diag.weeksRemaining
         
         if (weeks >= 9) {
-          // 鍛錬期（脚作り）
           menus = [
             { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
             { day: '火', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false },
@@ -372,7 +480,6 @@ export default {
             { day: '日', menuText: 'ジョグ 10km', targetDistance: 10, isQuality: false }
           ]
         } else if (weeks >= 5) {
-          // 実戦強化期
           const longRunPace = mPaceSec + 20
           menus = [
             { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
@@ -384,7 +491,6 @@ export default {
             { day: '日', menuText: '疲労抜きジョグ 5km', targetDistance: 5, isQuality: false }
           ]
         } else if (weeks >= 2) {
-          // 調整期（テーパリング）
           menus = [
             { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
             { day: '火', menuText: 'ジョグ 5km', targetDistance: 5, isQuality: false },
@@ -395,7 +501,6 @@ export default {
             { day: '日', menuText: '休み', targetDistance: 0, isQuality: false }
           ]
         } else {
-          // 直前期
           menus = [
             { day: '月', menuText: '休み', targetDistance: 0, isQuality: false },
             { day: '火', menuText: '軽いジョグ 2km', targetDistance: 2, isQuality: false },
@@ -408,7 +513,6 @@ export default {
         }
       }
 
-      // 日付の固定（月曜 6/29 〜 日曜 7/5）
       const weekDates = [
         '2026-06-29',
         '2026-06-30',
@@ -421,8 +525,6 @@ export default {
 
       return menus.map((menu, index) => {
         const dateStr = weekDates[index]
-        
-        // 当日のワークアウトをすべて抽出
         const dailyWorkouts = workouts.value.filter(w => w.workoutDate && w.workoutDate.startsWith(dateStr))
         
         let actualDistance = 0
@@ -432,24 +534,18 @@ export default {
         if (dailyWorkouts.length > 0) {
           hasRun = true
           actualDistance = dailyWorkouts.reduce((sum, w) => sum + Number(w.distance || 0), 0)
-          const totalMovingTime = dailyWorkouts.reduce((sum, w) => {
-            const time = w.movingTimeSeconds || w.durationSeconds || 0
-            return sum + time
-          }, 0)
+          const totalMovingTime = dailyWorkouts.reduce((sum, w) => w.movingTimeSeconds || w.durationSeconds || 0, 0)
           
           if (actualDistance > 0 && totalMovingTime > 0) {
             actualPace = Math.round(totalMovingTime / actualDistance)
           }
         }
 
-        // クリア判定
         let isCleared = false
         if (menu.targetDistance > 0 && hasRun) {
           if (!menu.isQuality) {
-            // 量重視（ジョグ・ロングジョグ）: 実際距離 >= 予定距離 * 0.90
             isCleared = actualDistance >= menu.targetDistance * 0.90
           } else {
-            // 質重視（ポイント練習）: 実際距離 >= 予定距離 * 1.00 且つ 平均ペースが設定ペースの -10秒〜+20秒 以内
             const minPace = menu.targetPace - 10
             const maxPace = menu.targetPace + 20
             const paceOk = actualPace && actualPace >= minPace && actualPace <= maxPace
@@ -503,6 +599,20 @@ export default {
       } catch (err) {
         console.error('大会登録に失敗しました', err)
         showNotification('大会の保存に失敗しました', 'error', 'mdi-alert-circle')
+      }
+    }
+
+    // 大会削除
+    const handleDeleteRace = async (id) => {
+      if (confirm('この大会エントリー予定を削除しますか？')) {
+        try {
+          await raceApi.deleteRace(id)
+          showNotification('大会情報を削除しました')
+          await loadRaces()
+        } catch (err) {
+          console.error('大会の削除に失敗しました', err)
+          showNotification('大会の削除に失敗しました', 'error', 'mdi-alert-circle')
+        }
       }
     }
 
@@ -576,9 +686,7 @@ export default {
     onMounted(() => {
       loadWorkouts()
       loadRaces()
-      // 15分ごとに自動でスプレッドシートからフェッチしてデータを更新
       autoSyncInterval = setInterval(async () => {
-        console.log('Auto-syncing workouts from Google Sheets...')
         try {
           await workoutApi.syncWorkouts()
           workouts.value = await workoutApi.getAllWorkouts()
@@ -597,7 +705,10 @@ export default {
     return {
       workouts,
       races,
+      upcomingRacesList,
       upcomingRace,
+      upcomingRaceDays,
+      calculateDaysUntil,
       raceDiagnosis,
       weeklySchedule,
       loading,
@@ -615,7 +726,8 @@ export default {
       handleSyncWorkouts,
       openRaceForm,
       closeRaceForm,
-      handleSaveRace
+      handleSaveRace,
+      handleDeleteRace
     }
   }
 }
@@ -629,6 +741,44 @@ export default {
   letter-spacing: 2px;
 }
 
+/* 今後の大会予定・スケジュールカード */
+.schedule-card {
+  background: rgba(25, 28, 41, 0.65);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px !important;
+  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.main-countdown-card {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 16px !important;
+}
+
+.race-list-wrapper {
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.race-item-row {
+  background: rgba(15, 17, 26, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.race-item-row:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(15, 17, 26, 0.6);
+}
+
+.main-race-row {
+  border-color: rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.05);
+}
+
 /* 今週の練習メニューカードスタイル */
 .menu-card {
   background: rgba(25, 28, 41, 0.65);
@@ -638,7 +788,7 @@ export default {
   box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3) !important;
 }
 
-/* 7つの曜日配置用グリッド・レイアウト (デスクトップ時は横並び、モバイル時は横スクロール) */
+/* 7つの曜日配置用グリッド・レイアウト */
 .weekly-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

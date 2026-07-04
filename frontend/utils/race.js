@@ -24,5 +24,16 @@ export default {
       throw new Error(error.statusMessage || 'Failed to save race')
     }
     return await res.json()
+  },
+
+  async deleteRace(id) {
+    const res = await fetch(`/api/races/${id}`, {
+      method: 'DELETE'
+    })
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.statusMessage || 'Failed to delete race')
+    }
+    return await res.json()
   }
 }
