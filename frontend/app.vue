@@ -1,18 +1,14 @@
 <template>
   <v-app>
     <v-main>
-      <dashboard-view />
+      <NuxtPage />
     </v-main>
   </v-app>
 </template>
 
-<script setup>
-import DashboardView from './views/DashboardView.vue'
-</script>
-
 <style>
 /* グローバルフォントの適用 */
-html, body, #app, .v-application {
+html, body, #__nuxt, .v-application {
   font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
   background-color: #0F111A !important;
 }

@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Nuxt 3 directories
+.nuxt
+.output
+

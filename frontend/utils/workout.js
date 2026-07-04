@@ -142,6 +142,10 @@ export default {
           if (detail) {
             w.mapUrl = detail.mapUrl || null
             w.media = detail.media || []
+            w.splits = detail.splits || []
+            w.gearName = detail.gearName || null
+            w.deviceName = detail.deviceName || null
+            w.description = detail.description || null
           }
         })
       }
@@ -172,7 +176,8 @@ export default {
       const csvText = await response.text()
       cachedWorkouts = parseCSV(csvText)
       return {
-        syncedCount: cachedWorkouts.length,
+        success: true,
+        count: cachedWorkouts.length,
         data: cachedWorkouts
       }
     } catch (err) {

@@ -32,14 +32,22 @@
 
     <!-- 統合グラフ表示領域 -->
     <div class="chart-container">
-      <apexchart
-        v-if="workouts.length > 0 && chartOptions && series"
-        :key="chartKey"
-        :height="height"
-        :options="chartOptions"
-        :series="series"
-      ></apexchart>
-      <div v-else class="d-flex flex-column align-center justify-center py-12 text-grey">
+      <ClientOnly>
+        <apexchart
+          v-if="workouts.length > 0 && chartOptions && series"
+          :key="chartKey"
+          :height="height"
+          :options="chartOptions"
+          :series="series"
+        ></apexchart>
+        <template #fallback>
+          <div class="d-flex flex-column align-center justify-center py-12 text-grey">
+            <v-progress-circular indeterminate color="secondary" class="mb-2"></v-progress-circular>
+            <div>グラフを初期化中...</div>
+          </div>
+        </template>
+      </ClientOnly>
+      <div v-if="workouts.length === 0" class="d-flex flex-column align-center justify-center py-12 text-grey">
         <v-icon icon="mdi-chart-bell-curve-cumulative" size="64" class="mb-2 text-grey-darken-2"></v-icon>
         <div>データがありません。スプレッドシートと同期してください。</div>
       </div>
@@ -48,8 +56,6 @@
 </template>
 
 <script>
-import { ref, computed, watch } from 'vue'
-import VueApexCharts from 'vue3-apexcharts'
 import { useDisplay } from 'vuetify'
 
 // すべてのブラウザで一桁時間(例: "9:54:57")を含む日付を安全にパースするためのヘルパー
@@ -83,9 +89,6 @@ const calculateWorkoutVDOT = (distanceKm, durationSeconds) => {
 
 export default {
   name: 'WorkoutChart',
-  components: {
-    apexchart: VueApexCharts
-  },
   props: {
     workouts: {
       type: Array,
@@ -234,12 +237,11 @@ export default {
       })
     })
 
-    // X軸ラベル (ApexChartsの自動日付パースを防ぐため、最初からフォーマット済みのプレーンテキスト配列にして渡す)
-    // 0埋めを解除して「M/d」フォーマットにする (例: "6/28")
+    // X軸ラベル
     const categories = computed(() => {
       return calendarIntervals.value.map(interval => {
         if (selectedPeriod.value === 'year') {
-          return interval // "YYYY-MM"
+          return interval
         }
         const parts = interval.split('-')
         if (parts.length >= 3) {
@@ -298,40 +300,35 @@ export default {
     })
 
     // 休養日 (走行距離が0の日) を特定し、X軸アノテーションを生成
-    // カテゴリ軸での描画バグを確実に防ぎつつ、休養日スロットが綺麗にハイライトされるよう、
-    // 正確に一致する表示日付(formattedLabel)の位置に、スロット幅の太さ(7days:42px, month:10px)の縦帯を表示する
     const restDaysAnnotations = computed(() => {
       const dailyData = mappedIntervalWorkouts.value
       if (selectedPeriod.value === 'year') return []
 
-      // スマホ(xs)の場合はグラフ幅が狭いため、縦帯アノテーションの幅を細くして隣のカラムとの重なりを防ぐ
       const bandWidth = xs.value
         ? (selectedPeriod.value === 'month' ? 6 : 24)
         : (selectedPeriod.value === 'month' ? 10 : 42)
-      const todayStr = formatDateString(new Date()) // 本日の日付 (例: "2026-07-04")
+      const todayStr = formatDateString(new Date())
 
       return dailyData
-        // 本日はまだこれから走る可能性があるため、未確定の休養日(本日)はハイライトから除外する
         .filter(w => Number(w.distance || 0) === 0 && w.label !== todayStr)
         .map(w => {
-          // categories配列のプレーンテキストと同じ形式にする ("M/d")
           const parts = w.label.split('-')
           const formattedLabel = parts.length >= 3 ? `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}` : w.label
 
           return {
-            x: formattedLabel, // categoriesの要素名と100%一致させてズレバグを解消
-            borderColor: 'rgba(255, 255, 255, 0.04)', // ごく薄い白の半透明縦帯 (点線ではなく面として表示)
-            borderWidth: bandWidth, // 縦帯の幅をスロット幅に合わせる
+            x: formattedLabel,
+            borderColor: 'rgba(255, 255, 255, 0.04)',
+            borderWidth: bandWidth,
             label: {
               borderColor: 'transparent',
-              orientation: 'horizontal', // 横書きを明示的に指定
+              orientation: 'horizontal',
               style: {
-                color: '#9CA3AF', // 明るいグレーで視認しやすく
+                color: '#9CA3AF',
                 background: 'transparent',
                 fontSize: '10px',
                 fontWeight: 700
               },
-              text: '休息日', // OFFから「休息日」に変更
+              text: '休息日',
               offsetY: 10
             }
           }
@@ -342,26 +339,25 @@ export default {
     const targetPaceAnnotation = computed(() => {
       if (props.targetGoal === 'sub4') {
         return {
-          y: 5.67, // 5:40/km
+          y: 5.67,
           label: 'サブ4目標 (5:40/km)'
         }
       } else if (props.targetGoal === 'sub3.5') {
         return {
-          y: 4.92, // 4:55/km
+          y: 4.92,
           label: 'サブ3.5目標 (4:55/km)'
         }
       }
       return {
-        y: 4.25, // 4:15/km
+        y: 4.25,
         label: 'サブ3目標 (4:15/km)'
       }
     })
 
-    // 統合グラフオプション (スマホ対応・簡易表示切り替え対応)
+    // 統合グラフオプション
     const chartOptions = computed(() => {
       const paceAnnot = targetPaceAnnotation.value
       
-      // スマホ時とPC時でのY軸定義切り替え
       const yaxisConfig = xs.value
         ? [
             {
@@ -421,11 +417,10 @@ export default {
             }
           ]
 
-      // スマホ時とPC時でのツールチップフォーマッター切り替え
       const tooltipFormatter = (value, { seriesIndex }) => {
         if (xs.value) {
           if (seriesIndex === 0) return `${value.toFixed(2)} km`
-          return value > 0 ? `${value.toFixed(1)}` : '--' // VDOT
+          return value > 0 ? `${value.toFixed(1)}` : '--'
         } else {
           if (seriesIndex === 0) return `${value.toFixed(2)} km`
           if (seriesIndex === 1) {
@@ -436,7 +431,7 @@ export default {
           }
           if (seriesIndex === 2) return value > 0 ? `${value.toFixed(2)} m` : '--'
           if (seriesIndex === 3) return value > 0 ? `${Math.round(value)} spm` : '--'
-          return value > 0 ? `${value.toFixed(1)}` : '--' // VDOT
+          return value > 0 ? `${value.toFixed(1)}` : '--'
         }
       }
 
@@ -477,7 +472,7 @@ export default {
         annotations: {
           xaxis: restDaysAnnotations.value,
           yaxis: xs.value
-            ? [] // スマホ時はペース線がないため目標ラインを非表示にしてスッキリさせる
+            ? []
             : [
                 {
                   y: paceAnnot.y,

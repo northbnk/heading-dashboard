@@ -9,13 +9,13 @@
           </v-avatar>
           <div>
             <h1 class="text-h5 font-weight-black text-white letter-spacing-1 d-flex align-center flex-wrap">
-              F.T's SUB 3.5 COMPASS
+              Heading 330 | Training Hub
               <span class="text-caption text-grey ml-sm-2 d-block d-sm-inline font-weight-regular">(サブ3.5への道しるべ)</span>
             </h1>
           </div>
         </div>
 
-        <!-- 目標設定切り替えトグル [NEW] -->
+        <!-- 目標設定切り替えトグル -->
         <v-btn-toggle
           v-model="targetGoal"
           color="primary"
@@ -89,28 +89,17 @@
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
-import WorkoutStats from '../components/WorkoutStats.vue'
-import WorkoutChart from '../components/WorkoutChart.vue'
-import WorkoutTable from '../components/WorkoutTable.vue'
-import WorkoutForm from '../components/WorkoutForm.vue'
-import workoutApi from '../api/workout'
+import workoutApi from '~/utils/workout'
 
 export default {
   name: 'DashboardView',
-  components: {
-    WorkoutStats,
-    WorkoutChart,
-    WorkoutTable,
-    WorkoutForm
-  },
   setup() {
     const workouts = ref([])
     const loading = ref(true)
     const formActive = ref(false)
     const selectedWorkout = ref(null)
     const syncing = ref(false)
-    const targetGoal = ref('sub3') // 'sub4', 'sub3.5', 'sub3'
+    const targetGoal = ref('sub3.5') // デフォルトはサブ3.5
     let autoSyncInterval = null
 
     // 通知スナックバー設定

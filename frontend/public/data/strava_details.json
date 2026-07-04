@@ -278,5 +278,17 @@
     "deviceName": null,
     "description": null,
     "updatedAt": "2026-07-03T11:36:14.643Z"
+  },
+  "19171526995": {
+    "id": "19171526995",
+    "name": "Afternoon Run",
+    "startLocal": "2026-07-04T13:59:30",
+    "mapUrl": "https://d3o5xota0a1fcr.cloudfront.net/v6/maps/3JKBXWWFW64SAI5LP43MD5ZHTH4O2CL6SLZASNH6XXBPPMOYVEZRB2N5FFKLPJTURUE4R4262SGPHH6VVBVZBTZ7",
+    "media": [],
+    "splits": [],
+    "gearName": null,
+    "deviceName": null,
+    "description": null,
+    "updatedAt": "2026-07-04T06:51:00.063Z"
   }
 }
