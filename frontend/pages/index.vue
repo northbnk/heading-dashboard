@@ -717,11 +717,7 @@ export default {
 }
 
 /* 各種カードの基本デザイン・パディングと余白 */
-.schedule-card, .menu-card,
-.compact-grid :deep(.stat-card),
-.compact-grid :deep(.diagnosis-card),
-.compact-grid :deep(.chart-card),
-.compact-grid :deep(.table-card) {
+.compact-grid :deep(.v-card) {
   background: rgba(18, 20, 32, 0.8) !important;
   backdrop-filter: blur(20px) saturate(180%) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -762,7 +758,7 @@ export default {
   margin: 4px 0 !important;
 }
 
-.compact-grid :deep(.v-progress-linear) {
+.compact-grid :deep(.stat-card .v-progress-linear) {
   margin-top: 10px !important;
   height: 16px !important;
 }
