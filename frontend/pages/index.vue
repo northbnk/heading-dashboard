@@ -1,37 +1,38 @@
 <template>
-  <v-container fluid class="dashboard-container px-3 px-sm-6 pt-3 pb-6 min-h-screen">
+  <v-container fluid class="dashboard-container px-3 px-sm-6 pt-1 pb-4 min-h-screen compact-grid">
     <!-- ヘッダーセクション -->
-    <v-row class="mb-2 align-center">
-      <v-col cols="12" class="d-flex flex-column flex-sm-row align-start align-sm-center flex-wrap gap-y-3">
+    <v-row class="align-center mb-1">
+      <v-col cols="12" class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between py-1">
         <div class="d-flex align-center">
-          <v-avatar color="primary" class="mr-3" size="36" elevation="2">
-            <v-icon color="white" icon="mdi-run-fast" size="20"></v-icon>
+          <v-avatar color="primary" class="mr-2" size="28" elevation="2">
+            <v-icon color="white" icon="mdi-run-fast" size="16"></v-icon>
           </v-avatar>
           <div>
-            <h1 class="text-h5 font-weight-black text-white letter-spacing-1 d-flex align-center flex-wrap">
+            <h1 class="text-subtitle-1 font-weight-black text-white letter-spacing-1 d-flex align-center flex-wrap" style="line-height: 1.2">
               Heading 330 | Training Hub
-              <span class="text-caption text-grey ml-sm-2 d-block d-sm-inline font-weight-regular">(サブ3.5への道しるべ)</span>
+              <span class="text-caption text-grey ml-sm-2 font-weight-regular">(サブ3.5への道しるべ)</span>
             </h1>
           </div>
         </div>
 
         <!-- 目標設定切り替えトグル -->
-        <div class="d-flex align-center flex-wrap gap-3 ml-sm-auto">
+        <div class="d-flex align-center mt-2 mt-sm-0">
           <v-btn-toggle
             v-model="targetGoal"
             color="primary"
             density="compact"
             mandatory
-            rounded="lg"
+            rounded="md"
             class="text-white bg-surface"
+            style="height: 28px;"
           >
-            <v-btn value="sub4" size="small" class="px-4 font-weight-bold">
+            <v-btn value="sub4" size="x-small" class="px-2 font-weight-bold" style="height: 28px;">
               サブ4
             </v-btn>
-            <v-btn value="sub3.5" size="small" class="px-4 font-weight-bold">
+            <v-btn value="sub3.5" size="x-small" class="px-2 font-weight-bold" style="height: 28px;">
               サブ3.5
             </v-btn>
-            <v-btn value="sub3" size="small" class="px-4 font-weight-bold">
+            <v-btn value="sub3" size="x-small" class="px-2 font-weight-bold" style="height: 28px;">
               サブ3
             </v-btn>
           </v-btn-toggle>
@@ -39,183 +40,146 @@
       </v-col>
     </v-row>
 
-    <!-- メイン：今後の大会予定 ＆ カウントダウンカード -->
+    <!-- 大会予定 ＆ 今後一週間の練習プラン -->
     <v-row class="mb-4">
-      <v-col cols="12">
-        <v-card class="schedule-card px-4 py-4" elevation="4">
-          <div class="d-flex flex-column flex-sm-row justify-space-between align-start align-sm-center mb-3">
-            <div class="text-h6 font-weight-bold text-white d-flex align-center">
-              <v-icon color="secondary" icon="mdi-calendar-star" class="mr-2"></v-icon>
-              エントリー済みの大会予定・今後の予定
-              <span class="text-caption text-grey ml-2 font-weight-regular d-none d-sm-inline">(Upcoming Race Schedule)</span>
+      <!-- 左側：大会スケジュール (cols="12" md="4") -->
+      <v-col cols="12" md="4" class="d-flex">
+        <v-card class="schedule-card px-3 py-3 w-100 d-flex flex-column justify-space-between" elevation="3">
+          <div class="d-flex justify-space-between align-center mb-1">
+            <div class="text-subtitle-2 font-weight-bold text-white d-flex align-center">
+              <v-icon color="secondary" icon="mdi-calendar-star" class="mr-1" size="18"></v-icon>
+              大会予定
             </div>
-            <!-- 大会登録ボタン -->
             <v-btn
               color="secondary"
               prepend-icon="mdi-plus"
-              density="comfortable"
-              rounded="lg"
-              class="font-weight-bold text-white mt-2 mt-sm-0"
+              density="compact"
+              variant="text"
+              class="font-weight-bold text-caption text-secondary"
               @click="openRaceForm"
             >
-              新しい大会を登録
+              登録
             </v-btn>
           </div>
 
-          <v-divider class="mb-4" style="opacity: 0.1"></v-divider>
+          <v-divider class="mb-2" style="opacity: 0.08"></v-divider>
 
-          <v-row v-if="upcomingRacesList.length > 0">
-            <!-- 直近メインレースのカウントダウン (大きく表示) -->
-            <v-col cols="12" md="5" class="d-flex">
-              <v-card class="main-countdown-card pa-4 w-100 d-flex flex-column justify-space-between" variant="flat">
-                <div>
-                  <div class="text-caption text-primary font-weight-bold uppercase mb-1 d-flex align-center">
-                    <v-icon icon="mdi-trophy" size="14" class="mr-1"></v-icon>
-                    NEXT TARGET RACE
-                  </div>
-                  <div class="text-h5 font-weight-black text-white mb-2">
-                    {{ upcomingRace.name }}
-                  </div>
-                  <div class="text-body-2 text-grey-lighten-1 mb-1">
-                    <v-icon icon="mdi-run" size="14" class="mr-1" color="grey-darken-1"></v-icon>
-                    種目: {{ upcomingRace.category }}
-                  </div>
-                  <div class="text-body-2 text-grey-lighten-1 mb-1">
-                    <v-icon icon="mdi-bullseye-arrow" size="14" class="mr-1" color="grey-darken-1"></v-icon>
-                    目標: {{ upcomingRace.targetTime }}
-                  </div>
-                  <div class="text-body-2 text-grey-lighten-1">
-                    <v-icon icon="mdi-calendar-clock" size="14" class="mr-1" color="grey-darken-1"></v-icon>
-                    開催日: {{ upcomingRace.date.replace(/-/g, '/') }}
-                  </div>
+          <div v-if="upcomingRacesList.length > 0" class="d-flex flex-column justify-space-between flex-grow-1">
+            <!-- Sleek Countdown Display -->
+            <div class="main-countdown-compact pa-2 mb-2 d-flex align-center justify-space-between">
+              <div class="overflow-hidden">
+                <div class="text-caption text-primary font-weight-bold mb-0.5" style="font-size: 0.7rem">
+                  <v-icon icon="mdi-trophy" size="11" class="mr-0.5"></v-icon>
+                  NEXT TARGET
                 </div>
-
-                <!-- カウントダウン数値 -->
-                <div class="mt-4 pt-2 d-flex align-baseline">
-                  <span class="text-caption text-grey mr-2">開催まであと</span>
-                  <span class="text-h3 font-weight-black text-secondary mr-1">{{ upcomingRaceDays }}</span>
-                  <span class="text-h6 font-weight-bold text-grey">日</span>
+                <div class="text-subtitle-2 font-weight-bold text-white text-truncate">
+                  {{ upcomingRace.name }}
                 </div>
-              </v-card>
-            </v-col>
-
-            <!-- すべての大会予定リスト -->
-            <v-col cols="12" md="7">
-              <v-card class="bg-transparent" variant="flat">
-                <div class="text-subtitle-2 font-weight-bold text-grey mb-3">
-                  すべての予定大会リスト
+                <div class="text-caption text-grey-lighten-1" style="font-size: 0.75rem">
+                  {{ upcomingRace.date.replace(/-/g, '/') }} ｜ {{ upcomingRace.targetTime }}
                 </div>
-                <div class="race-list-wrapper">
-                  <div
-                    v-for="race in upcomingRacesList"
-                    :key="race.id"
-                    class="race-item-row d-flex align-center justify-space-between py-2 px-3 mb-2"
-                    :class="{ 'main-race-row': race.id === upcomingRace.id }"
-                  >
-                    <div class="d-flex align-center overflow-hidden">
-                      <v-icon
-                        :color="race.id === upcomingRace.id ? 'secondary' : 'grey-darken-1'"
-                        :icon="race.id === upcomingRace.id ? 'mdi-star' : 'mdi-star-outline'"
-                        class="mr-2 flex-shrink-0"
-                      ></v-icon>
-                      <div class="text-truncate">
-                        <span class="font-weight-bold text-white d-block text-truncate">{{ race.name }}</span>
-                        <span class="text-caption text-grey">
-                          {{ race.date.replace(/-/g, '/') }} ｜ {{ race.category }} ｜ {{ race.targetTime }}
-                        </span>
-                      </div>
-                    </div>
+              </div>
+              <div class="d-flex align-baseline ml-2">
+                <span class="text-h4 font-weight-black text-secondary">{{ upcomingRaceDays }}</span>
+                <span class="text-caption text-grey ml-0.5">日</span>
+              </div>
+            </div>
 
-                    <div class="d-flex align-center flex-shrink-0 ml-3">
-                      <!-- カウントダウンバッジ -->
-                      <v-chip
-                        :color="race.id === upcomingRace.id ? 'secondary' : 'grey-darken-2'"
-                        size="small"
-                        class="font-weight-bold text-black mr-2"
-                        variant="flat"
-                      >
-                        あと {{ calculateDaysUntil(race.date) }}日
-                      </v-chip>
-                      <!-- 削除ボタン -->
-                      <v-btn
-                        icon="mdi-delete"
-                        variant="text"
-                        color="error"
-                        density="compact"
-                        @click="handleDeleteRace(race.id)"
-                      ></v-btn>
-                    </div>
-                  </div>
+            <!-- Scrollable list of other races -->
+            <div class="race-list-wrapper-compact">
+              <div
+                v-for="race in upcomingRacesList"
+                :key="race.id"
+                class="race-item-row-compact d-flex align-center justify-space-between py-1 px-2 mb-1"
+                :class="{ 'main-race-row-compact': race.id === upcomingRace.id }"
+              >
+                <div class="d-flex align-center overflow-hidden">
+                  <v-icon
+                    :color="race.id === upcomingRace.id ? 'secondary' : 'grey-darken-2'"
+                    :icon="race.id === upcomingRace.id ? 'mdi-star' : 'mdi-star-outline'"
+                    class="mr-1 flex-shrink-0"
+                    size="13"
+                  ></v-icon>
+                  <span class="text-caption text-white text-truncate font-weight-bold" style="font-size: 0.75rem">{{ race.name }}</span>
                 </div>
-              </v-card>
-            </v-col>
-          </v-row>
+                <div class="d-flex align-center flex-shrink-0 ml-2">
+                  <span class="text-caption text-grey mr-1" style="font-size: 0.7rem">{{ calculateDaysUntil(race.date) }}日後</span>
+                  <v-btn
+                    icon="mdi-delete"
+                    variant="text"
+                    color="error"
+                    density="compact"
+                    size="small"
+                    class="pa-0"
+                    style="width: 18px; height: 18px; min-width: 18px"
+                    @click="handleDeleteRace(race.id)"
+                  ></v-btn>
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <!-- 登録がない場合 -->
-          <div v-else class="d-flex flex-column align-center justify-center py-10 text-grey">
-            <v-icon icon="mdi-calendar-remove" size="48" class="mb-2 text-grey-darken-2"></v-icon>
-            <div>登録された今後の大会予定はありません。</div>
-            <div class="text-caption text-grey-darken-1 mt-1">「新しい大会を登録」ボタンからエントリー情報を入力してください。</div>
+          <!-- Empty state -->
+          <div v-else class="d-flex flex-column align-center justify-center py-6 text-grey text-caption flex-grow-1">
+            <v-icon icon="mdi-calendar-remove" size="24" class="mb-1 text-grey-darken-2"></v-icon>
+            <div>予定された大会はありません。</div>
           </div>
         </v-card>
       </v-col>
-    </v-row>
 
-    <!-- 今週の練習メニュー表示エリア (月曜〜日曜) -->
-    <v-row class="mb-4">
-      <v-col cols="12">
-        <v-card class="menu-card px-4 py-4" elevation="4">
-          <div class="text-h6 font-weight-bold text-white d-flex align-center mb-3">
-            <v-icon color="secondary" icon="mdi-calendar-week" class="mr-2"></v-icon>
+      <!-- 右側：今後一週間の練習プラン (cols="12" md="8") -->
+      <v-col cols="12" md="8" class="d-flex">
+        <v-card class="menu-card px-3 py-3 w-100 d-flex flex-column justify-space-between" elevation="3">
+          <div class="text-subtitle-2 font-weight-bold text-white d-flex align-center mb-2">
+            <v-icon color="secondary" icon="mdi-calendar-week" class="mr-1" size="18"></v-icon>
             今後一週間の練習プラン (7/4〜7/10)
-            <span class="text-caption text-grey ml-2 font-weight-regular d-none d-sm-inline">(7-Day Training Schedule)</span>
           </div>
 
-          <v-divider class="mb-4" style="opacity: 0.1"></v-divider>
+          <v-divider class="mb-2" style="opacity: 0.08"></v-divider>
 
           <!-- 7つの曜日のスロット -->
-          <div class="weekly-grid">
+          <div class="weekly-grid-compact flex-grow-1">
             <div
               v-for="day in weeklySchedule"
               :key="day.dateStr"
-              class="day-slot-card d-flex flex-column justify-space-between"
-              :class="{ 'cleared-slot': day.isCleared, 'rest-slot': day.targetDistance === 0 }"
+              class="day-slot-card-compact d-flex flex-column justify-space-between"
+              :class="{ 'cleared-slot-compact': day.isCleared, 'rest-slot-compact': day.targetDistance === 0 }"
             >
               <!-- 曜日・日付 -->
-              <div class="d-flex justify-space-between align-center">
-                <div>
-                  <span class="day-name font-weight-black text-body-2">{{ day.day }}曜日</span>
-                  <span class="day-date d-block text-caption text-grey">{{ day.dateStr.substring(5).replace('-', '/') }}</span>
+              <div class="d-flex justify-space-between align-start">
+                <div class="overflow-hidden">
+                  <span class="day-name-compact font-weight-black text-caption" style="font-size: 0.75rem">{{ day.day }}</span>
+                  <span class="day-date-compact d-block text-grey" style="font-size: 0.65rem">{{ day.dateStr.substring(5).replace('-', '/') }}</span>
                 </div>
-                <!-- クリアアイコン -->
                 <v-icon
                   v-if="day.isCleared"
                   color="success"
                   icon="mdi-check-circle"
-                  size="20"
+                  size="12"
+                  class="mt-0.5"
                 ></v-icon>
               </div>
 
               <!-- 予定メニュー -->
-              <div class="menu-content my-3">
-                <div class="text-body-2 font-weight-bold text-white">
+              <div class="menu-content-compact my-1">
+                <div class="text-caption font-weight-bold text-white line-clamp-2" style="font-size: 0.75rem; line-height: 1.2">
                   {{ day.menuText }}
                 </div>
               </div>
 
               <!-- 実績値 -->
-              <div class="actual-content">
-                <div v-if="!day.isCleared && day.hasRun" class="text-caption text-grey">
-                  実績: {{ day.actualDistance.toFixed(2) }}km / {{ day.actualPaceStr }}
+              <div class="actual-content-compact" style="font-size: 0.65rem">
+                <div v-if="!day.isCleared && day.hasRun" class="text-grey text-truncate">
+                  {{ day.actualDistance.toFixed(1) }}k / {{ day.actualPaceStr }}
                 </div>
-                <div v-else-if="day.targetDistance > 0 && !day.hasRun" class="text-caption text-grey-darken-1 italic">
+                <div v-else-if="day.targetDistance > 0 && !day.hasRun" class="text-grey-darken-1 italic">
                   未出走
                 </div>
-                <div v-else-if="day.targetDistance === 0" class="text-caption text-grey-darken-1">
+                <div v-else-if="day.targetDistance === 0" class="text-grey-darken-1">
                   リカバリー
                 </div>
-                <div v-else class="text-caption text-success font-weight-bold d-flex align-center">
-                  <v-icon icon="mdi-checkbox-marked-circle-outline" size="14" class="mr-1"></v-icon>
+                <div v-else class="text-success font-weight-bold d-flex align-center">
+                  <v-icon icon="mdi-checkbox-marked-circle-outline" size="10" class="mr-0.5"></v-icon>
                   クリア
                 </div>
               </div>
@@ -236,16 +200,16 @@
       <!-- 左側カラム (スタッツ4項目 ＆ トレーニング診断) -->
       <v-col cols="12" lg="6">
         <!-- 距離、VDOT、目標ペース距離、心肺効率 (2x2で配置) -->
-        <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="stats-only" class="mb-6"></workout-stats>
+        <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="stats-only" class="mb-4"></workout-stats>
         
         <!-- トレーニング診断 (全幅) -->
-        <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="diagnosis-only" class="mb-6"></workout-stats>
+        <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="diagnosis-only" class="mb-4"></workout-stats>
       </v-col>
 
       <!-- 右側カラム (トレーニング統合分析グラフ ＆ アクティビティ履歴) -->
       <v-col cols="12" lg="6">
         <!-- グラフ -->
-        <workout-chart :workouts="workouts" :target-goal="targetGoal" :height="300" class="mb-6"></workout-chart>
+        <workout-chart :workouts="workouts" :target-goal="targetGoal" :height="220" class="mb-4"></workout-chart>
         
         <!-- アクティビティ履歴 -->
         <workout-table :workouts="workouts"></workout-table>
@@ -744,84 +708,163 @@ export default {
   letter-spacing: 2px;
 }
 
-/* 今後の大会予定・スケジュールカード */
-.schedule-card {
-  background: rgba(25, 28, 41, 0.65);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px !important;
-  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3) !important;
+/* グリッドおよび余白のコンパクト化 */
+.compact-grid :deep(.v-row) {
+  margin: -4px !important;
 }
 
-.main-countdown-card {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.25);
-  border-radius: 16px !important;
+.compact-grid :deep(.v-col) {
+  padding: 4px !important;
 }
 
-.race-list-wrapper {
-  max-height: 180px;
+/* 各種カードのパディングと余白を詰める */
+.schedule-card, .menu-card,
+.compact-grid :deep(.stat-card),
+.compact-grid :deep(.diagnosis-card),
+.compact-grid :deep(.chart-card),
+.compact-grid :deep(.table-card) {
+  padding: 8px 12px !important;
+  border-radius: 12px !important;
+  margin-bottom: 0px !important;
+}
+
+/* グラフ・テーブル内のヘッダーサイズとマージンをコンパクトに */
+.compact-grid :deep(.text-h6) {
+  font-size: 0.85rem !important;
+  line-height: 1.2 !important;
+}
+
+.compact-grid :deep(.v-icon) {
+  font-size: 1.05rem !important;
+}
+
+.compact-grid :deep(.mb-4),
+.compact-grid :deep(.mb-3),
+.compact-grid :deep(.my-3) {
+  margin-bottom: 4px !important;
+  margin-top: 0px !important;
+}
+
+/* スタッツカードの数値とレイアウトの縮小 */
+.compact-grid :deep(.text-h4) {
+  font-size: 1.4rem !important;
+  margin: 1px 0 !important;
+}
+
+.compact-grid :deep(.v-progress-linear) {
+  margin-top: 6px !important;
+  height: 14px !important;
+}
+
+.compact-grid :deep(.v-avatar) {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.compact-grid :deep(.v-avatar .v-icon) {
+  font-size: 1.1rem !important;
+}
+
+/* チップのサイズ調整 */
+.compact-grid :deep(.v-chip) {
+  height: 22px !important;
+  font-size: 0.72rem !important;
+}
+
+.compact-grid :deep(.v-chip--size-large) {
+  height: 26px !important;
+  font-size: 0.78rem !important;
+}
+
+/* テーブルセルのコンパクト化 */
+.compact-grid :deep(.v-table td) {
+  height: 28px !important;
+  padding: 2px 4px !important;
+  font-size: 0.72rem !important;
+}
+
+.compact-grid :deep(.v-table th) {
+  height: 24px !important;
+  padding: 2px 4px !important;
+  font-size: 0.72rem !important;
+}
+
+.compact-grid :deep(.v-table .v-btn) {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+/* リストアイテムのコンパクト化 */
+.compact-grid :deep(.diagnosis-list li) {
+  margin-bottom: 3px !important;
+  font-size: 0.72rem !important;
+}
+
+.compact-grid :deep(.diagnosis-list li .v-icon) {
+  font-size: 0.85rem !important;
+  margin-top: 2px !important;
+}
+
+/* 今後の予定・練習メニューコンパクト化 */
+.main-countdown-compact {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(16, 185, 129, 0.04) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+}
+
+.race-list-wrapper-compact {
+  max-height: 80px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.race-item-row {
-  background: rgba(15, 17, 26, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  transition: all 0.3s ease;
+.race-item-row-compact {
+  background: rgba(15, 17, 26, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
-.race-item-row:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(15, 17, 26, 0.6);
+.race-item-row-compact:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(15, 17, 26, 0.5);
 }
 
-.main-race-row {
-  border-color: rgba(99, 102, 241, 0.35);
-  background: rgba(99, 102, 241, 0.05);
+.main-race-row-compact {
+  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(99, 102, 241, 0.04);
 }
 
-/* 今週の練習メニューカードスタイル */
-.menu-card {
-  background: rgba(25, 28, 41, 0.65);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 20px !important;
-  box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3) !important;
-}
-
-/* 7つの曜日配置用グリッド・レイアウト */
-.weekly-grid {
+.weekly-grid-compact {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 12px;
+  gap: 6px;
 }
 
-.day-slot-card {
-  background: rgba(15, 17, 26, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 12px;
-  min-height: 140px;
-  transition: all 0.3s ease;
+.day-slot-card-compact {
+  background: rgba(15, 17, 26, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  padding: 6px 8px;
+  min-height: 100px;
+  transition: all 0.2s ease;
 }
 
-.day-slot-card:hover {
-  border-color: rgba(99, 102, 241, 0.3);
-  transform: translateY(-2px);
+.day-slot-card-compact:hover {
+  border-color: rgba(99, 102, 241, 0.25);
+  transform: translateY(-1px);
 }
 
-.cleared-slot {
-  background: rgba(16, 185, 129, 0.05);
-  border-color: rgba(16, 185, 129, 0.2);
+.cleared-slot-compact {
+  background: rgba(16, 185, 129, 0.04);
+  border-color: rgba(16, 185, 129, 0.15);
 }
 
-.rest-slot {
-  opacity: 0.7;
+.rest-slot-compact {
+  opacity: 0.65;
 }
 
-.day-name {
+.day-name-compact {
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -829,15 +872,23 @@ export default {
   font-style: italic;
 }
 
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 @media (max-width: 960px) {
-  .weekly-grid {
+  .weekly-grid-compact {
     display: flex;
     overflow-x: auto;
-    gap: 12px;
-    padding-bottom: 8px;
+    gap: 8px;
+    padding-bottom: 4px;
   }
-  .day-slot-card {
-    min-width: 150px;
+  .day-slot-card-compact {
+    min-width: 110px;
     flex-shrink: 0;
   }
 }
