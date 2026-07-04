@@ -53,7 +53,7 @@
       <v-card class="stat-card px-3 px-sm-4 py-3" elevation="4">
         <div class="d-flex justify-space-between align-center">
           <div>
-            <div class="text-caption text-grey">推定最高VDOT (走力指標)</div>
+            <div class="text-caption text-grey">推定最高VDOT</div>
             <div class="d-flex flex-column flex-sm-row align-baseline">
               <div class="text-h4 font-weight-bold text-success my-1">
                 {{ estimatedVDOT > 0 ? estimatedVDOT.toFixed(1) : '--' }}

@@ -32,7 +32,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { hid: 'description', name: 'description', content: 'Heading 330 | Training Hub (サブ3.5への道しるべ) - ランニングパフォーマンスの管理・分析ダッシュボード' }
+        { hid: 'description', name: 'description', content: 'Heading 330 | Training Hub - ランニングパフォーマンスの管理・分析ダッシュボード' }
       ],
       link: [
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },

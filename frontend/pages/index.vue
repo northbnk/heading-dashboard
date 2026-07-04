@@ -10,7 +10,6 @@
           <div>
             <h1 class="text-h5 font-weight-black text-white letter-spacing-1 d-flex align-center flex-wrap" style="line-height: 1.2">
               Heading 330 | Training Hub
-              <span class="text-caption text-grey ml-sm-2 font-weight-regular">(サブ3.5への道しるべ)</span>
             </h1>
           </div>
         </div>

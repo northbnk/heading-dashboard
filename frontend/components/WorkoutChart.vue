@@ -6,7 +6,6 @@
         <div class="text-h6 font-weight-bold text-white d-flex align-center">
           <v-icon color="secondary" icon="mdi-chart-timeline-variant" class="mr-2"></v-icon>
           統合パフォーマンス分析
-          <span class="text-caption text-grey ml-2 font-weight-regular d-none d-sm-inline">(Training Performance Analytics)</span>
         </div>
       </div>
       <!-- 期間選択トグル -->
