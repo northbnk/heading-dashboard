@@ -1,14 +1,14 @@
 <template>
-  <v-container fluid class="dashboard-container px-3 px-sm-6 pt-1 pb-4 min-h-screen compact-grid">
+  <v-container fluid class="dashboard-container px-3 px-sm-6 pt-3 pb-6 min-h-screen compact-grid">
     <!-- ヘッダーセクション -->
-    <v-row class="align-center mb-1">
+    <v-row class="mb-3 align-center">
       <v-col cols="12" class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between py-1">
         <div class="d-flex align-center">
-          <v-avatar color="primary" class="mr-2" size="28" elevation="2">
-            <v-icon color="white" icon="mdi-run-fast" size="16"></v-icon>
+          <v-avatar color="primary" class="mr-3" size="32" elevation="2">
+            <v-icon color="white" icon="mdi-run-fast" size="18"></v-icon>
           </v-avatar>
           <div>
-            <h1 class="text-subtitle-1 font-weight-black text-white letter-spacing-1 d-flex align-center flex-wrap" style="line-height: 1.2">
+            <h1 class="text-h5 font-weight-black text-white letter-spacing-1 d-flex align-center flex-wrap" style="line-height: 1.2">
               Heading 330 | Training Hub
               <span class="text-caption text-grey ml-sm-2 font-weight-regular">(サブ3.5への道しるべ)</span>
             </h1>
@@ -22,17 +22,16 @@
             color="primary"
             density="compact"
             mandatory
-            rounded="md"
+            rounded="lg"
             class="text-white bg-surface"
-            style="height: 28px;"
           >
-            <v-btn value="sub4" size="x-small" class="px-2 font-weight-bold" style="height: 28px;">
+            <v-btn value="sub4" size="small" class="px-3 font-weight-bold">
               サブ4
             </v-btn>
-            <v-btn value="sub3.5" size="x-small" class="px-2 font-weight-bold" style="height: 28px;">
+            <v-btn value="sub3.5" size="small" class="px-3 font-weight-bold">
               サブ3.5
             </v-btn>
-            <v-btn value="sub3" size="x-small" class="px-2 font-weight-bold" style="height: 28px;">
+            <v-btn value="sub3" size="small" class="px-3 font-weight-bold">
               サブ3
             </v-btn>
           </v-btn-toggle>
@@ -209,7 +208,7 @@
       <!-- 右側カラム (トレーニング統合分析グラフ ＆ アクティビティ履歴) -->
       <v-col cols="12" lg="6">
         <!-- グラフ -->
-        <workout-chart :workouts="workouts" :target-goal="targetGoal" :height="220" class="mb-4"></workout-chart>
+        <workout-chart :workouts="workouts" :target-goal="targetGoal" :height="270" class="mb-4"></workout-chart>
         
         <!-- アクティビティ履歴 -->
         <workout-table :workouts="workouts"></workout-table>
@@ -708,100 +707,100 @@ export default {
   letter-spacing: 2px;
 }
 
-/* グリッドおよび余白のコンパクト化 */
+/* グリッドおよび余白のコンパクト化 (やや余裕を持たせる) */
 .compact-grid :deep(.v-row) {
-  margin: -4px !important;
+  margin: -8px !important;
 }
 
 .compact-grid :deep(.v-col) {
-  padding: 4px !important;
+  padding: 8px !important;
 }
 
-/* 各種カードのパディングと余白を詰める */
+/* 各種カードのパディングと余白 (Vuetifyの標準に近い心地よさに) */
 .schedule-card, .menu-card,
 .compact-grid :deep(.stat-card),
 .compact-grid :deep(.diagnosis-card),
 .compact-grid :deep(.chart-card),
 .compact-grid :deep(.table-card) {
-  padding: 8px 12px !important;
-  border-radius: 12px !important;
+  padding: 14px 16px !important;
+  border-radius: 16px !important;
   margin-bottom: 0px !important;
 }
 
-/* グラフ・テーブル内のヘッダーサイズとマージンをコンパクトに */
+/* グラフ・テーブル内のヘッダーサイズとマージン */
 .compact-grid :deep(.text-h6) {
-  font-size: 0.85rem !important;
-  line-height: 1.2 !important;
+  font-size: 1.1rem !important;
+  line-height: 1.3 !important;
 }
 
 .compact-grid :deep(.v-icon) {
-  font-size: 1.05rem !important;
+  font-size: 1.25rem !important;
 }
 
 .compact-grid :deep(.mb-4),
 .compact-grid :deep(.mb-3),
 .compact-grid :deep(.my-3) {
-  margin-bottom: 4px !important;
-  margin-top: 0px !important;
+  margin-bottom: 10px !important;
+  margin-top: 4px !important;
 }
 
-/* スタッツカードの数値とレイアウトの縮小 */
+/* スタッツカードの数値とレイアウト */
 .compact-grid :deep(.text-h4) {
-  font-size: 1.4rem !important;
-  margin: 1px 0 !important;
+  font-size: 1.85rem !important;
+  margin: 4px 0 !important;
 }
 
 .compact-grid :deep(.v-progress-linear) {
-  margin-top: 6px !important;
-  height: 14px !important;
+  margin-top: 10px !important;
+  height: 16px !important;
 }
 
 .compact-grid :deep(.v-avatar) {
-  width: 32px !important;
-  height: 32px !important;
+  width: 44px !important;
+  height: 44px !important;
 }
 
 .compact-grid :deep(.v-avatar .v-icon) {
-  font-size: 1.1rem !important;
+  font-size: 1.4rem !important;
 }
 
 /* チップのサイズ調整 */
 .compact-grid :deep(.v-chip) {
-  height: 22px !important;
-  font-size: 0.72rem !important;
-}
-
-.compact-grid :deep(.v-chip--size-large) {
   height: 26px !important;
   font-size: 0.78rem !important;
 }
 
+.compact-grid :deep(.v-chip--size-large) {
+  height: 30px !important;
+  font-size: 0.82rem !important;
+}
+
 /* テーブルセルのコンパクト化 */
 .compact-grid :deep(.v-table td) {
-  height: 28px !important;
-  padding: 2px 4px !important;
-  font-size: 0.72rem !important;
+  height: 38px !important;
+  padding: 4px 8px !important;
+  font-size: 0.78rem !important;
 }
 
 .compact-grid :deep(.v-table th) {
-  height: 24px !important;
-  padding: 2px 4px !important;
-  font-size: 0.72rem !important;
+  height: 32px !important;
+  padding: 4px 8px !important;
+  font-size: 0.78rem !important;
 }
 
 .compact-grid :deep(.v-table .v-btn) {
-  width: 20px !important;
-  height: 20px !important;
+  width: 24px !important;
+  height: 24px !important;
 }
 
-/* リストアイテムのコンパクト化 */
+/* リストアイテム */
 .compact-grid :deep(.diagnosis-list li) {
-  margin-bottom: 3px !important;
-  font-size: 0.72rem !important;
+  margin-bottom: 6px !important;
+  font-size: 0.8rem !important;
 }
 
 .compact-grid :deep(.diagnosis-list li .v-icon) {
-  font-size: 0.85rem !important;
+  font-size: 1.0rem !important;
   margin-top: 2px !important;
 }
 
@@ -813,7 +812,7 @@ export default {
 }
 
 .race-list-wrapper-compact {
-  max-height: 80px;
+  max-height: 85px;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -838,21 +837,21 @@ export default {
 .weekly-grid-compact {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
+  gap: 10px;
 }
 
 .day-slot-card-compact {
   background: rgba(15, 17, 26, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  padding: 6px 8px;
-  min-height: 100px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  min-height: 125px;
   transition: all 0.2s ease;
 }
 
 .day-slot-card-compact:hover {
   border-color: rgba(99, 102, 241, 0.25);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 .cleared-slot-compact {
@@ -884,11 +883,11 @@ export default {
   .weekly-grid-compact {
     display: flex;
     overflow-x: auto;
-    gap: 8px;
+    gap: 10px;
     padding-bottom: 4px;
   }
   .day-slot-card-compact {
-    min-width: 110px;
+    min-width: 130px;
     flex-shrink: 0;
   }
 }
