@@ -708,13 +708,6 @@ export default {
 }
 
 /* グリッドおよび余白のコンパクト化 (やや余裕を持たせる) */
-.compact-grid :deep(.v-row) {
-  margin: -8px !important;
-}
-
-.compact-grid :deep(.v-col) {
-  padding: 8px !important;
-}
 
 /* 各種カードの基本デザイン・パディングと余白 */
 .compact-grid :deep(.v-card) {
@@ -758,7 +751,7 @@ export default {
   margin: 4px 0 !important;
 }
 
-.compact-grid :deep(.stat-card .v-progress-linear) {
+.compact-grid :deep(.stat-card > .v-progress-linear) {
   margin-top: 10px !important;
   height: 16px !important;
 }
@@ -898,5 +891,15 @@ export default {
     min-width: 130px;
     flex-shrink: 0;
   }
+}
+</style>
+
+<style>
+/* ダッシュボード全体のグリッドレイアウト調整 (スコープ外で確実に適用) */
+.compact-grid .v-row {
+  margin: -8px !important;
+}
+.compact-grid .v-col {
+  padding: 8px !important;
 }
 </style>
