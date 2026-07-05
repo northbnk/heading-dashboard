@@ -2,8 +2,8 @@
   <!-- 統計スタッツカード ( displayMode が all または stats-only の時に表示 ) -->
   <v-row v-if="displayMode === 'all' || displayMode === 'stats-only'">
     <!-- 直近30日間の走行距離 (進捗バー付き) -->
-    <v-col cols="12" sm="6" lg="6">
-      <v-card class="stat-card px-3 px-sm-4 py-3" elevation="4">
+    <v-col cols="12" sm="6" md="4" lg="4" class="d-flex">
+      <v-card class="stat-card px-3 px-sm-4 py-3 w-100" elevation="4">
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">直近30日の走行ボリューム</div>
@@ -49,8 +49,8 @@
     </v-col>
 
     <!-- 推定VDOT & 予測タイム (進捗バー付き) -->
-    <v-col cols="12" sm="6" lg="6">
-      <v-card class="stat-card px-3 px-sm-4 py-3" elevation="4">
+    <v-col cols="12" sm="6" md="4" lg="4" class="d-flex">
+      <v-card class="stat-card px-3 px-sm-4 py-3 w-100" elevation="4">
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">推定最高VDOT</div>
@@ -101,8 +101,8 @@
     </v-col>
 
     <!-- 目標ペース最長距離 (進捗バー付き) -->
-    <v-col cols="12" sm="6" lg="6">
-      <v-card class="stat-card px-3 px-sm-4 py-3" elevation="4">
+    <v-col cols="12" sm="6" md="4" lg="4" class="d-flex">
+      <v-card class="stat-card px-3 px-sm-4 py-3 w-100" elevation="4">
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">{{ goalLabel }}ペース最長距離 {{ goalPaceLimitLabel }}</div>
@@ -153,8 +153,8 @@
     </v-col>
 
     <!-- 心拍効率 & 平均心拍数 (進捗バー付き) -->
-    <v-col cols="12" sm="6" lg="6">
-      <v-card class="stat-card px-3 px-sm-4 py-3" elevation="4">
+    <v-col cols="12" sm="6" md="4" lg="4" class="d-flex">
+      <v-card class="stat-card px-3 px-sm-4 py-3 w-100" elevation="4">
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">ランニング心拍効率</div>
@@ -198,6 +198,110 @@
               class="text-caption font-weight-bold"
             >
               {{ heartEfficiency > 0 ? Math.round(value) : 0 }}%
+            </div>
+          </template>
+        </v-progress-linear>
+      </v-card>
+    </v-col>
+
+    <!-- 心肺スタミナ・デカップリング値 (進捗バー付き) -->
+    <v-col cols="12" sm="6" md="4" lg="4" class="d-flex">
+      <v-card class="stat-card px-3 px-sm-4 py-3 w-100" elevation="4">
+        <div class="d-flex justify-space-between align-center">
+          <div>
+            <div class="text-caption text-grey">心肺デカップリング値</div>
+            <div class="d-flex flex-column flex-sm-row align-baseline">
+              <div class="text-h4 font-weight-bold text-deep-purple-accent-3 my-1">
+                {{ staminaDecouplingAnalysis.available ? staminaDecouplingAnalysis.decoupling.toFixed(1) : '--' }} <span class="text-caption text-grey-darken-1">%</span>
+              </div>
+              <div class="text-caption text-grey-lighten-1 ml-sm-2" v-if="staminaDecouplingAnalysis.available">
+                (判定: <span class="text-white font-weight-bold">{{ staminaDecouplingAnalysis.rating.split(' ')[0] }}</span>)
+              </div>
+            </div>
+          </div>
+          <v-avatar color="rgba(139, 92, 246, 0.1)" rounded size="48">
+            <v-icon color="deep-purple-accent-3" icon="mdi-heart-pulse" size="28"></v-icon>
+          </v-avatar>
+        </div>
+        <!-- プログレスバー（目標デカップリング連動 - 100%からデカップリング値を引いてスタミナ強度を表す） -->
+        <v-progress-linear
+          :model-value="staminaDecouplingAnalysis.available ? Math.max(0, 100 - (staminaDecouplingAnalysis.decoupling * 8)) : 0"
+          color="deep-purple-accent-3"
+          height="18"
+          rounded
+          class="mt-3"
+        >
+          <template v-slot:default="{ value }">
+            <!-- 目標値 (右寄せ) -->
+            <span class="text-caption font-weight-bold position-absolute" style="right: 8px; z-index: 2; color: rgba(255, 255, 255, 0.85);">
+              目標: 5%未満
+            </span>
+            <!-- 充足度パーセンテージ -->
+            <div
+              :style="{
+                position: 'absolute',
+                left: 0,
+                width: value < 15 ? 'auto' : value + '%',
+                paddingLeft: value < 15 ? '8px' : '0',
+                textAlign: value < 15 ? 'left' : 'center',
+                zIndex: 2,
+                color: 'white'
+              }"
+              class="text-caption font-weight-bold"
+            >
+              {{ staminaDecouplingAnalysis.available ? Math.round(value) : 0 }}%
+            </div>
+          </template>
+        </v-progress-linear>
+      </v-card>
+    </v-col>
+
+    <!-- メインシューズ走行寿命 (進捗バー付き) -->
+    <v-col cols="12" sm="6" md="4" lg="4" class="d-flex">
+      <v-card class="stat-card px-3 px-sm-4 py-3 w-100" elevation="4">
+        <div class="d-flex justify-space-between align-center">
+          <div>
+            <div class="text-caption text-grey">メインシューズ走行距離</div>
+            <div class="d-flex flex-column flex-sm-row align-baseline">
+              <div class="text-h4 font-weight-bold text-orange-darken-3 my-1">
+                {{ mainShoe.distance > 0 ? mainShoe.distance.toFixed(1) : '--' }} <span class="text-caption text-grey-darken-1">km</span>
+              </div>
+              <div class="text-caption text-grey-lighten-1 ml-sm-2" v-if="mainShoe.name">
+                ({{ mainShoe.name.substring(0, 10) }}{{ mainShoe.name.length > 10 ? '...' : '' }})
+              </div>
+            </div>
+          </div>
+          <v-avatar color="rgba(245, 158, 11, 0.1)" rounded size="48">
+            <v-icon color="orange-darken-3" icon="mdi-shoe-run" size="28"></v-icon>
+          </v-avatar>
+        </div>
+        <!-- プログレスバー（シューズ寿命600kmに対する割合） -->
+        <v-progress-linear
+          :model-value="mainShoe.lifePercent"
+          :color="mainShoe.color"
+          height="18"
+          rounded
+          class="mt-3"
+        >
+          <template v-slot:default="{ value }">
+            <!-- 目標値 (右寄せ) -->
+            <span class="text-caption font-weight-bold position-absolute" style="right: 8px; z-index: 2; color: rgba(255, 255, 255, 0.85);">
+              寿命: 600km
+            </span>
+            <!-- 寿命進行％ -->
+            <div
+              :style="{
+                position: 'absolute',
+                left: 0,
+                width: value < 15 ? 'auto' : value + '%',
+                paddingLeft: value < 15 ? '8px' : '0',
+                textAlign: value < 15 ? 'left' : 'center',
+                zIndex: 2,
+                color: 'white'
+              }"
+              class="text-caption font-weight-bold"
+            >
+              {{ mainShoe.distance > 0 ? Math.round(value) : 0 }}%
             </div>
           </template>
         </v-progress-linear>
@@ -996,6 +1100,15 @@ export default {
       }
     })
 
+    // メイン（走行距離最長）のシューズ情報
+    const mainShoe = computed(() => {
+      const stats = shoeAnalytics.value
+      if (!stats.available || stats.shoes.length === 0) {
+        return { name: '', distance: 0, lifePercent: 0, color: 'grey', status: '未登録' }
+      }
+      return stats.shoes[0]
+    })
+
     return {
       last30DaysDistance,
       estimatedVDOT,
@@ -1015,7 +1128,8 @@ export default {
       goalLongRunLimit,
       targetEI,
       staminaDecouplingAnalysis,
-      shoeAnalytics
+      shoeAnalytics,
+      mainShoe
     }
   }
 }
