@@ -526,7 +526,7 @@ export default {
     // 今後の大会リスト
     const upcomingRacesList = computed(() => {
       if (races.value.length === 0) return []
-      const baseTime = new Date('2026-07-04').getTime()
+      const baseTime = new Date('2026-07-05').getTime()
       
       return races.value
         .filter(race => {
@@ -549,7 +549,7 @@ export default {
     })
 
     const calculateDaysUntil = (dateStr) => {
-      const today = new Date('2026-07-04')
+      const today = new Date('2026-07-05')
       const targetDate = new Date(dateStr)
       const diffTime = targetDate.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -566,7 +566,7 @@ export default {
     // 直近30日間の走行距離
     const last30DaysDistance = computed(() => {
       if (workouts.value.length === 0) return 0
-      const thirtyDaysAgo = new Date('2026-07-04')
+      const thirtyDaysAgo = new Date('2026-07-05')
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       
       return workouts.value
@@ -680,7 +680,7 @@ export default {
 
       const weekDates = []
       const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土']
-      const today = new Date('2026-07-04')
+      const today = new Date('2026-07-05')
       
       for (let i = 0; i < 7; i++) {
         const currentDate = new Date(today)
@@ -739,7 +739,7 @@ export default {
     // 大会診断ステータス（アドバイス連動用）
     const raceDiagnosis = computed(() => {
       const race = upcomingRace.value
-      const BASE_DATE = new Date('2026-07-04')
+      const BASE_DATE = new Date('2026-07-05')
       if (!race) return null
       
       const raceTime = new Date(race.date).getTime()

@@ -775,7 +775,7 @@ export default {
     // 大会登録状況に基づいた動的診断アドバイス
     const raceDiagnosis = computed(() => {
       const race = props.upcomingRace
-      const BASE_DATE = new Date('2026-07-04')
+      const BASE_DATE = new Date('2026-07-05')
       
       if (!race) {
         const G = monthlyGoalDistance.value

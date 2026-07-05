@@ -221,7 +221,7 @@ const targetGoalDistance = computed(() => {
 // Calculate distance run in last 30 days
 const last30DaysDistance = computed(() => {
   if (props.workouts.length === 0) return 0
-  const thirtyDaysAgo = new Date('2026-07-04')
+  const thirtyDaysAgo = new Date('2026-07-05')
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   return props.workouts
