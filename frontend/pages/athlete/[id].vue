@@ -865,13 +865,13 @@ export default {
       selectedPlanData.value = null
     }
 
-    const handleSavePlan = async () => {
+    const handleSavePlan = async (dateStr, planData) => {
       if (!isOwner.value) return
       try {
         const res = await fetch('/api/plans', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dateStr: planFormDate.value, plan: selectedPlanData.value })
+          body: JSON.stringify({ dateStr, plan: planData })
         })
         if (res.ok) {
           showNotification('練習メニューを上書き設定しました。')
@@ -885,13 +885,13 @@ export default {
       }
     }
 
-    const handleRevertPlan = async () => {
+    const handleRevertPlan = async (dateStr) => {
       if (!isOwner.value) return
       try {
         const res = await fetch('/api/plans', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dateStr: planFormDate.value, plan: null })
+          body: JSON.stringify({ dateStr, plan: null })
         })
         if (res.ok) {
           showNotification('メニューを初期状態に戻しました。')
