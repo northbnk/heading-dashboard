@@ -6,7 +6,7 @@
         練習プランの一括作成（テンプレート / 自動推薦）
       </v-card-title>
       <v-card-subtitle class="text-caption text-grey pa-0 pl-1 mb-2">
-        今後一週間（{{ weeklySchedule[0]?.dateStr.replace(/-/g, '/') }} 〜 {{ weeklySchedule[6]?.dateStr.replace(/-/g, '/') }}）の予定メニューを一括作成します。
+        翌日からの7日間（{{ generatedPlan[0]?.dateStr.replace(/-/g, '/') }} 〜 {{ generatedPlan[6]?.dateStr.replace(/-/g, '/') }}）の予定メニューを一括作成します。
       </v-card-subtitle>
 
       <v-tabs v-model="activeTab" color="primary" class="mb-3" align-tabs="start">
@@ -302,10 +302,9 @@ const recommendation = computed(() => {
   }
 })
 
-// Generate generatedPlan daily menus
+// Generate generatedPlan daily menus (starts from tomorrow)
 const generatedPlan = computed(() => {
-  const scheduleDays = props.weeklySchedule
-  if (scheduleDays.length < 7) return []
+  if (props.weeklySchedule.length === 0) return []
 
   const p = paces.value
   const pM = formatPaceText(p.mPace)
@@ -323,10 +322,17 @@ const generatedPlan = computed(() => {
     else mode = 'mid'
   }
 
+  // Base date is Today (weeklySchedule[0])
+  const baseDate = new Date(props.weeklySchedule[0].dateStr)
+  const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土']
+
   const result = []
   for (let i = 0; i < 7; i++) {
-    const day = scheduleDays[i]
-    const dayName = day.day || day.dayName || ''
+    const currentDate = new Date(baseDate)
+    currentDate.setDate(baseDate.getDate() + 1 + i)
+    const dateStr = currentDate.toISOString().split('T')[0]
+    const dayName = daysOfWeek[currentDate.getDay()]
+
     let menuText = '休み'
     let targetDistance = 0
     let isQuality = false
@@ -405,8 +411,8 @@ const generatedPlan = computed(() => {
     }
 
     result.push({
-      dateStr: day.dateStr,
-      dayName: dayName,
+      dateStr,
+      dayName,
       menuText,
       targetDistance,
       isQuality,
