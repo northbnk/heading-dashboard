@@ -105,18 +105,7 @@
             title="詳細・ルートマップを表示"
             @click="showMapDetail(item)"
           ></v-btn>
-          <!-- 外部Stravaリンクボタン -->
-          <v-btn
-            v-if="item.stravaLink"
-            icon="mdi-open-in-new"
-            variant="text"
-            color="orange"
-            size="small"
-            :href="item.stravaLink"
-            target="_blank"
-            title="Stravaで開く"
-          ></v-btn>
-          <span v-if="!item.stravaLink && !item.mapUrl" class="text-grey-darken-1">--</span>
+          <span v-if="!item.mapUrl && (!item.splits || item.splits.length === 0)" class="text-grey-darken-1">--</span>
         </div>
       </template>
     </v-data-table>
@@ -306,16 +295,16 @@ export default {
       return new Date(year, month, day, hour, minute, second)
     }
 
-    // 総ページ数 (3件ずつ)
+    // 総ページ数 (10件ずつ)
     const maxPage = computed(() => {
-      return Math.max(1, Math.ceil(props.workouts.length / 3))
+      return Math.max(1, Math.ceil(props.workouts.length / 10))
     })
 
-    // 最新のワークアウト順にソートし、現在のページの3件のみに切り出す (ページ切り替え方式)
+    // 最新のワークアウト順にソートし、現在のページの10件のみに切り出す (ページ切り替え方式)
     const displayedWorkouts = computed(() => {
       const sorted = [...props.workouts].sort((a, b) => safeParseDate(b.workoutDate) - safeParseDate(a.workoutDate))
-      const start = (currentPage.value - 1) * 3
-      return sorted.slice(start, start + 3)
+      const start = (currentPage.value - 1) * 10
+      return sorted.slice(start, start + 10)
     })
 
     const prevPage = () => {
@@ -365,7 +354,7 @@ export default {
         { title: '心拍数', key: 'averageHeartrate', align: 'start', sortable: true },
         { title: 'ピッチ', key: 'cadence', align: 'start', sortable: true },
         { title: 'ストライド', key: 'averageStride', align: 'start', sortable: true },
-        { title: '詳細/開く', key: 'stravaLink', align: 'center', sortable: false }
+        { title: '詳細', key: 'stravaLink', align: 'center', sortable: false }
       ]
     })
 
@@ -531,7 +520,7 @@ export default {
 }
 
 .splits-table-wrapper {
-  max-height: 250px;
+  max-height: 600px;
   overflow-y: auto;
 }
 
