@@ -267,6 +267,87 @@
       </v-card>
     </v-col>
   </v-row>
+
+  <!-- 心肺耐久スタミナ（デカップリング） & シューズ寿命分析セクション -->
+  <v-row :class="displayMode === 'all' ? 'mt-6' : ''" v-if="displayMode === 'all' || displayMode === 'diagnosis-only'">
+    <!-- 左側：心肺耐久スタミナ診断 -->
+    <v-col cols="12" md="6" class="d-flex">
+      <v-card class="diagnosis-card px-3 px-sm-6 py-4 w-100" elevation="4">
+        <div class="d-flex justify-space-between align-center mb-3">
+          <div class="text-h6 font-weight-bold text-white d-flex align-center">
+            <v-icon color="accent" icon="mdi-heart-pulse" class="mr-2"></v-icon>
+            心肺耐久スタミナ（デカップリング）診断
+          </div>
+          <v-chip
+            v-if="staminaDecouplingAnalysis.available"
+            :color="staminaDecouplingAnalysis.color"
+            variant="flat"
+            size="small"
+            class="font-weight-bold text-black"
+          >
+            {{ staminaDecouplingAnalysis.rating }}
+          </v-chip>
+        </div>
+        <v-divider class="mb-3" style="opacity: 0.1"></v-divider>
+
+        <div v-if="!staminaDecouplingAnalysis.available" class="text-grey text-body-2 py-4 text-center">
+          {{ staminaDecouplingAnalysis.message }}
+        </div>
+        <div v-else>
+          <div class="text-caption text-grey mb-3">
+            直近の最長距離走: <strong>{{ staminaDecouplingAnalysis.activityName }}</strong> ({{ staminaDecouplingAnalysis.workoutDate }} / {{ staminaDecouplingAnalysis.distance.toFixed(1) }}km)
+          </div>
+          
+          <div class="d-flex align-baseline mb-4">
+            <div class="text-h3 font-weight-black text-white mr-2">
+              {{ staminaDecouplingAnalysis.decoupling }}%
+            </div>
+            <div class="text-caption text-grey">後半の心肺出力低下度（デカップリング値）</div>
+          </div>
+          
+          <div class="description-box px-3 py-2 rounded-lg text-body-2 text-grey-lighten-2" style="background: rgba(255,255,255,0.02); border-left: 3px solid #8B5CF6;">
+            {{ staminaDecouplingAnalysis.advice }}
+          </div>
+        </div>
+      </v-card>
+    </v-col>
+
+    <!-- 右側：シューズ走行寿命管理 -->
+    <v-col cols="12" md="6" class="d-flex">
+      <v-card class="diagnosis-card px-3 px-sm-6 py-4 w-100" elevation="4">
+        <div class="text-h6 font-weight-bold text-white d-flex align-center mb-3">
+          <v-icon color="warning" icon="mdi-shoe-run" class="mr-2"></v-icon>
+          シューズ走行寿命 & 効率分析
+        </div>
+        <v-divider class="mb-3" style="opacity: 0.1"></v-divider>
+
+        <div v-if="!shoeAnalytics.available" class="text-grey text-body-2 py-4 text-center">
+          Stravaで使用シューズを登録すると、シューズごとの走行距離とパフォーマンス効率がここに表示されます。
+        </div>
+        
+        <div v-else class="w-100">
+          <div v-for="shoe in shoeAnalytics.shoes" :key="shoe.name" class="mb-4">
+            <div class="d-flex justify-space-between align-center text-body-2 mb-1">
+              <span class="font-weight-bold text-white">{{ shoe.name }}</span>
+              <span class="text-caption text-grey">
+                累計: <strong class="text-white">{{ shoe.distance }} km</strong> ({{ shoe.runs }}回)
+              </span>
+            </div>
+            <div class="d-flex justify-space-between align-center text-caption text-grey-lighten-1 mb-2">
+              <span>平均ペース: {{ shoe.paceStr }}/km <span v-if="shoe.avgHR">| 心拍: {{ shoe.avgHR }} bpm</span></span>
+              <span :class="`text-${shoe.color} font-weight-bold`">{{ shoe.status }}</span>
+            </div>
+            <v-progress-linear
+              :model-value="shoe.lifePercent"
+              :color="shoe.color"
+              height="8"
+              rounded
+            ></v-progress-linear>
+          </div>
+        </div>
+      </v-card>
+    </v-col>
+  </v-row>
 </template>
 
 <script>
@@ -769,6 +850,152 @@ export default {
       return 1.55
     })
 
+    // 心拍耐久スタミナ（デカップリング）分析
+    const staminaDecouplingAnalysis = computed(() => {
+      // 15km以上の距離走で、スプリット情報があり、かつ心拍データが揃っているものをフィルタリング
+      const longRuns = props.workouts.filter(w => 
+        Number(w.distance) >= 15.0 && 
+        w.splits && 
+        w.splits.length >= 6 && 
+        w.splits.every(s => s.averageHeartrate > 0)
+      )
+
+      if (longRuns.length === 0) {
+        return {
+          available: false,
+          message: '15km以上の距離走（心拍データ付き）の練習ログが同期されると、スタミナ心肺ドリフト（デカップリング）分析がここに表示されます。'
+        }
+      }
+
+      // 直近の最長距離走を取得
+      const latestRun = [...longRuns].sort((a, b) => safeParseDate(b.workoutDate) - safeParseDate(a.workoutDate))[0]
+      const splits = latestRun.splits
+      const n = splits.length
+      const mid = Math.floor(n / 2)
+
+      const firstHalf = splits.slice(0, mid)
+      const secondHalf = splits.slice(mid)
+
+      // 前半の心拍効率(EF = 速度(m/分) / 心拍数)を算出
+      const firstTimeSec = firstHalf.reduce((sum, s) => sum + (s.movingTime || s.elapsedTime), 0)
+      const firstAvgHR = firstHalf.reduce((sum, s) => sum + s.averageHeartrate, 0) / mid
+      const firstSpeed = (mid * 1000) / (firstTimeSec / 60)
+      const firstEF = firstSpeed / firstAvgHR
+
+      // 後半の心拍効率(EF)を算出
+      const secondTimeSec = secondHalf.reduce((sum, s) => sum + (s.movingTime || s.elapsedTime), 0)
+      const secondAvgHR = secondHalf.reduce((sum, s) => sum + s.averageHeartrate, 0) / (n - mid)
+      const secondSpeed = ((n - mid) * 1000) / (secondTimeSec / 60)
+      const secondEF = secondSpeed / secondAvgHR
+
+      // 心拍ドリフト低下率 (Decoupling %)
+      const decoupling = ((firstEF - secondEF) / firstEF) * 100
+
+      let rating = ''
+      let color = ''
+      let advice = ''
+
+      if (decoupling < 5.0) {
+        rating = '優良 (スタミナ十分)'
+        color = 'success'
+        advice = '長距離走でも心肺の出力低下（ドリフト）が5%未満に抑えられており、強固な有酸素スタミナの土台があります。この心肺安定性があれば、レース後半の失速リスクは非常に低いです。'
+      } else if (decoupling <= 10.0) {
+        rating = '標準 (スタミナ構築中)'
+        color = 'warning'
+        advice = '後半にかけて5〜10%の緩やかな心拍の上の上昇が見られます。長距離への適応は進んでいますが、さらなるスタミナ強化のために、低強度（心拍130〜140台）での2〜3時間LSD（ロング・スロー・ディスタンス）を月2回ほど取り入れると、後半の余裕度が一段と増します。'
+      } else {
+        rating = '課題あり (スタミナ不足)'
+        color = 'error'
+        advice = '後半の心拍ドリフトが10%を超えており、心肺が後半にオーバーヒート（乳酸閾値の低下）を起こしています。この状態では本番30km以降に急激に失速する可能性が高いため、ペース設定を落とした距離ジョグを優先し、毛細血管を発達させて低燃費な有酸素システムを育て直しましょう。'
+      }
+
+      return {
+        available: true,
+        activityName: latestRun.activityName,
+        workoutDate: latestRun.workoutDate.split(' ')[0],
+        distance: latestRun.distance,
+        decoupling: Number(decoupling.toFixed(1)),
+        rating,
+        color,
+        advice
+      }
+    })
+
+    // シューズ走行寿命および効率分析
+    const shoeAnalytics = computed(() => {
+      const shoesMap = new Map()
+      props.workouts.forEach(w => {
+        if (w.gearName) {
+          const name = w.gearName
+          if (!shoesMap.has(name)) {
+            shoesMap.set(name, {
+              name,
+              totalDistance: 0,
+              totalRuns: 0,
+              totalPaceSum: 0,
+              totalHRSum: 0,
+              hrCount: 0
+            })
+          }
+          const s = shoesMap.get(name)
+          s.totalDistance += Number(w.distance || 0)
+          s.totalRuns += 1
+          if (w.averagePaceSeconds > 0) {
+            s.totalPaceSum += w.averagePaceSeconds
+          }
+          if (w.averageHeartrate > 0) {
+            s.totalHRSum += w.averageHeartrate
+            s.hrCount += 1
+          }
+        }
+      })
+
+      if (shoesMap.size === 0) {
+        return {
+          available: false,
+          shoes: []
+        }
+      }
+
+      const shoes = Array.from(shoesMap.values()).map(s => {
+        const avgPaceSec = Math.round(s.totalPaceSum / s.totalRuns)
+        const avgHR = s.hrCount > 0 ? Math.round(s.totalHRSum / s.hrCount) : null
+        
+        const mins = Math.floor(avgPaceSec / 60)
+        const secs = avgPaceSec % 60
+        const paceStr = `${mins}:${String(secs).padStart(2, '0')}`
+
+        const lifeLimit = 600 // 推奨最大寿命 600km
+        const lifePercent = Math.min((s.totalDistance / lifeLimit) * 100, 100)
+        
+        let color = 'success'
+        let status = '良好'
+        if (s.totalDistance >= 500) {
+          color = 'error'
+          status = '寿命・交換推奨'
+        } else if (s.totalDistance >= 400) {
+          color = 'warning'
+          status = '摩耗・そろそろ交換'
+        }
+
+        return {
+          name: s.name,
+          distance: Number(s.totalDistance.toFixed(1)),
+          runs: s.totalRuns,
+          paceStr,
+          avgHR,
+          lifePercent: Math.round(lifePercent),
+          color,
+          status
+        }
+      }).sort((a, b) => b.distance - a.distance)
+
+      return {
+        available: true,
+        shoes
+      }
+    })
+
     return {
       last30DaysDistance,
       estimatedVDOT,
@@ -786,7 +1013,9 @@ export default {
       goalPaceLimitLabel,
       targetPaceMaxDistance,
       goalLongRunLimit,
-      targetEI
+      targetEI,
+      staminaDecouplingAnalysis,
+      shoeAnalytics
     }
   }
 }
