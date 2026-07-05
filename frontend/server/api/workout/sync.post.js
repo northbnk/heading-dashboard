@@ -10,6 +10,7 @@ function getProjectRoot() {
 }
 
 export default defineEventHandler(async (event) => {
+  checkAdmin(event)
   const root = getProjectRoot()
   const configPath = path.join(root, 'strava_api_config.json')
   const dataFilePath = path.join(root, 'data/workouts.json')

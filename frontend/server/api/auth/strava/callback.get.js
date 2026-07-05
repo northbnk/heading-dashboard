@@ -10,6 +10,7 @@ function getProjectRoot() {
 }
 
 export default defineEventHandler(async (event) => {
+  checkAdmin(event)
   const query = getQuery(event)
   const code = query.code
 

@@ -35,56 +35,58 @@
             </v-btn>
           </v-btn-toggle>
 
-          <!-- Strava連携ステータス -->
-          <template v-if="stravaStatus.linked">
-            <v-chip
-              color="orange-darken-3"
-              variant="flat"
-              size="small"
-              class="font-weight-bold text-white mr-2"
-              prepend-icon="mdi-swap-horizontal"
-            >
-              Strava連携中{{ stravaStatus.athlete ? `: ${stravaStatus.athlete.firstname}` : '' }}
-            </v-chip>
-            <v-btn
-              color="orange-darken-3"
-              size="small"
-              variant="flat"
-              rounded="lg"
-              class="font-weight-bold text-white mr-2"
-              prepend-icon="mdi-sync"
-              :loading="syncing"
-              @click="handleSyncWorkouts"
-            >
-              同期
-            </v-btn>
-          </template>
-          <template v-else>
-            <v-btn
-              v-if="stravaStatus.configSetup"
-              color="orange-darken-3"
-              size="small"
-              variant="flat"
-              rounded="lg"
-              class="font-weight-bold text-white mr-2"
-              prepend-icon="mdi-swap-horizontal"
-              href="/api/auth/strava/connect"
-            >
-              Stravaと連携
-            </v-btn>
-            <v-chip
-              v-else
-              color="grey-darken-2"
-              variant="flat"
-              size="small"
-              class="font-weight-bold text-white mr-2"
-              prepend-icon="mdi-alert-circle"
-            >
-              Strava未設定
-              <v-tooltip activator="parent" location="bottom">
-                strava_api_config.jsonを設定してください。
-              </v-tooltip>
-            </v-chip>
+          <!-- Strava連携ステータス (管理者のみ) -->
+          <template v-if="isAdmin">
+            <template v-if="stravaStatus.linked">
+              <v-chip
+                color="orange-darken-3"
+                variant="flat"
+                size="small"
+                class="font-weight-bold text-white mr-2"
+                prepend-icon="mdi-swap-horizontal"
+              >
+                Strava連携中{{ stravaStatus.athlete ? `: ${stravaStatus.athlete.firstname}` : '' }}
+              </v-chip>
+              <v-btn
+                color="orange-darken-3"
+                size="small"
+                variant="flat"
+                rounded="lg"
+                class="font-weight-bold text-white mr-2"
+                prepend-icon="mdi-sync"
+                :loading="syncing"
+                @click="handleSyncWorkouts"
+              >
+                同期
+              </v-btn>
+            </template>
+            <template v-else>
+              <v-btn
+                v-if="stravaStatus.configSetup"
+                color="orange-darken-3"
+                size="small"
+                variant="flat"
+                rounded="lg"
+                class="font-weight-bold text-white mr-2"
+                prepend-icon="mdi-swap-horizontal"
+                href="/api/auth/strava/connect"
+              >
+                Stravaと連携
+              </v-btn>
+              <v-chip
+                v-else
+                color="grey-darken-2"
+                variant="flat"
+                size="small"
+                class="font-weight-bold text-white mr-2"
+                prepend-icon="mdi-alert-circle"
+              >
+                Strava未設定
+                <v-tooltip activator="parent" location="bottom">
+                  strava_api_config.jsonを設定してください。
+                </v-tooltip>
+              </v-chip>
+            </template>
           </template>
 
           <v-chip
