@@ -14,15 +14,15 @@
           </div>
         </div>
 
-        <!-- 目標設定切り替えトグル & 管理者ログイン -->
-        <div class="d-flex align-center mt-2 mt-sm-0">
+        <!-- 目標設定切り替えトグル & Strava連携 & 管理者ログイン -->
+        <div class="d-flex align-center mt-2 mt-sm-0 flex-wrap gap-1">
           <v-btn-toggle
             v-model="targetGoal"
             color="primary"
             density="compact"
             mandatory
             rounded="lg"
-            class="text-white bg-surface mr-3"
+            class="text-white bg-surface mr-2"
           >
             <v-btn value="sub4" size="small" class="px-3 font-weight-bold">
               サブ4
@@ -34,6 +34,58 @@
               サブ3
             </v-btn>
           </v-btn-toggle>
+
+          <!-- Strava連携ステータス -->
+          <template v-if="stravaStatus.linked">
+            <v-chip
+              color="orange-darken-3"
+              variant="flat"
+              size="small"
+              class="font-weight-bold text-white mr-2"
+              prepend-icon="mdi-swap-horizontal"
+            >
+              Strava連携中{{ stravaStatus.athlete ? `: ${stravaStatus.athlete.firstname}` : '' }}
+            </v-chip>
+            <v-btn
+              color="orange-darken-3"
+              size="small"
+              variant="flat"
+              rounded="lg"
+              class="font-weight-bold text-white mr-2"
+              prepend-icon="mdi-sync"
+              :loading="syncing"
+              @click="handleSyncWorkouts"
+            >
+              同期
+            </v-btn>
+          </template>
+          <template v-else>
+            <v-btn
+              v-if="stravaStatus.configSetup"
+              color="orange-darken-3"
+              size="small"
+              variant="flat"
+              rounded="lg"
+              class="font-weight-bold text-white mr-2"
+              prepend-icon="mdi-swap-horizontal"
+              href="/api/auth/strava/connect"
+            >
+              Stravaと連携
+            </v-btn>
+            <v-chip
+              v-else
+              color="grey-darken-2"
+              variant="flat"
+              size="small"
+              class="font-weight-bold text-white mr-2"
+              prepend-icon="mdi-alert-circle"
+            >
+              Strava未設定
+              <v-tooltip activator="parent" location="bottom">
+                strava_api_config.jsonを設定してください。
+              </v-tooltip>
+            </v-chip>
+          </template>
 
           <v-chip
             v-if="isAdmin"
@@ -347,6 +399,19 @@ export default {
     const targetGoal = ref('sub3.5')
     let autoSyncInterval = null
 
+    // Strava連携関連状態
+    const stravaStatus = ref({ linked: false, configSetup: false, athlete: null })
+    const loadStravaStatus = async () => {
+      try {
+        const res = await fetch('/api/auth/strava/status')
+        if (res.ok) {
+          stravaStatus.value = await res.json()
+        }
+      } catch (err) {
+        console.error('Failed to load Strava status', err)
+      }
+    }
+
     // 通知スナックバー設定
     const snackbar = ref({
       show: false,
@@ -394,7 +459,11 @@ export default {
     const loadWorkouts = async () => {
       loading.value = true
       try {
-        workouts.value = await workoutApi.getAllWorkouts()
+        if (stravaStatus.value.linked) {
+          workouts.value = await workoutApi.getAllWorkouts()
+        } else {
+          workouts.value = []
+        }
       } catch (err) {
         console.error('データの取得に失敗しました', err)
         showNotification('データの取得に失敗しました。接続を確認してください。', 'error', 'mdi-alert-circle')
@@ -857,28 +926,31 @@ export default {
       try {
         const result = await workoutApi.syncWorkouts()
         if (result && result.success) {
-          showNotification(`同期完了: ${result.count}件のアクティビティを読み込みました`)
+          showNotification(`同期完了: ${result.count}件のアクティビティを読み込みました (新規: ${result.newlySynced}件)`)
         } else {
           showNotification('同期に成功しましたが、新しいデータはありませんでした')
         }
         await loadWorkouts()
       } catch (err) {
         console.error('同期に失敗しました', err)
-        showNotification('スプレッドシートとの同期に失敗しました', 'error', 'mdi-alert-circle')
+        showNotification('Stravaとの同期に失敗しました', 'error', 'mdi-alert-circle')
       } finally {
         syncing.value = false
       }
     }
 
-    onMounted(() => {
+    onMounted(async () => {
+      await loadStravaStatus()
       loadWorkouts()
       loadRaces()
       loadCustomPlans()
       checkIsAdmin()
       autoSyncInterval = setInterval(async () => {
         try {
-          await workoutApi.syncWorkouts()
-          workouts.value = await workoutApi.getAllWorkouts()
+          if (stravaStatus.value.linked) {
+            await workoutApi.syncWorkouts()
+            workouts.value = await workoutApi.getAllWorkouts()
+          }
         } catch (err) {
           console.error('Auto-sync failed', err)
         }
@@ -914,6 +986,8 @@ export default {
       planFormDate,
       planFormDayName,
       selectedPlanData,
+      stravaStatus,
+      loadStravaStatus,
       handleLoginSuccess,
       handleLogout,
       openEditRaceForm,

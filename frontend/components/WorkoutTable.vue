@@ -36,7 +36,7 @@
       hide-default-footer
       hover
       class="custom-data-table"
-      no-data-text="ワークアウトがありません。スプレッドシートと同期してください。"
+      no-data-text="ワークアウト記録がありません。右上からStravaと連携して同期してください。"
     >
       <!-- 日付列 -->
       <template #[`item.workoutDate`]="{ item }">
@@ -156,6 +156,7 @@
         <!-- ルートマップ画像 -->
         <div v-if="mapDialog.workout.mapUrl" class="map-image-container rounded-lg overflow-hidden border border-grey-darken-3 mb-4">
           <v-img
+            v-if="!mapDialog.workout.mapUrl.startsWith('polyline:')"
             :src="mapDialog.workout.mapUrl"
             aspect-ratio="1.91"
             cover
@@ -167,6 +168,27 @@
               </div>
             </template>
           </v-img>
+          
+          <!-- Direct SVG polyline rendering for Strava OAuth sync -->
+          <div
+            v-else
+            class="d-flex align-center justify-center bg-grey-darken-4 px-4 py-2"
+            style="min-height: 250px; background: rgba(30, 41, 59, 0.4) !important;"
+          >
+            <svg
+              viewBox="0 0 500 250"
+              style="width: 100%; height: auto; max-height: 250px;"
+            >
+              <polyline
+                :points="getSvgPoints(mapDialog.workout.mapUrl.replace('polyline:', ''))"
+                fill="none"
+                stroke="#6366F1"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
         </div>
 
         <!-- 添付メディア写真 -->
@@ -401,6 +423,69 @@ export default {
       }
     }
 
+    // Polyline decoding helper
+    const decodePolyline = (str) => {
+      let index = 0, lat = 0, lng = 0, coordinates = [], shift = 0, result = 0, byte = null, latitude_change, longitude_change;
+      const factor = Math.pow(10, 5);
+      while (index < str.length) {
+        byte = null;
+        shift = 0;
+        result = 0;
+        do {
+          byte = str.charCodeAt(index++) - 63;
+          result |= (byte & 0x1f) << shift;
+          shift += 5;
+        } while (byte >= 0x20);
+        latitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lat += latitude_change;
+        shift = 0;
+        result = 0;
+        do {
+          byte = str.charCodeAt(index++) - 63;
+          result |= (byte & 0x1f) << shift;
+          shift += 5;
+        } while (byte >= 0x20);
+        longitude_change = ((result & 1) ? ~(result >> 1) : (result >> 1));
+        lng += longitude_change;
+        coordinates.push([lat / factor, lng / factor]);
+      }
+      return coordinates;
+    }
+
+    const getSvgPoints = (polyline) => {
+      if (!polyline) return ''
+      const points = decodePolyline(polyline)
+      if (points.length === 0) return ''
+      
+      let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity
+      points.forEach(([lat, lng]) => {
+        if (lat < minLat) minLat = lat
+        if (lat > maxLat) maxLat = lat
+        if (lng < minLng) minLng = lng
+        if (lng > maxLng) maxLng = lng
+      })
+      
+      const width = 500
+      const height = 250
+      const padding = 25
+      
+      const latRange = maxLat - minLat
+      const lngRange = maxLng - minLng
+      
+      const scale = Math.min((width - padding * 2) / (lngRange || 1), (height - padding * 2) / (latRange || 1))
+      
+      const xOffset = (width - lngRange * scale) / 2
+      const yOffset = (height - latRange * scale) / 2
+      
+      const svgPoints = points.map(([lat, lng]) => {
+        const x = padding + (lng - minLng) * scale + (xOffset - padding)
+        const y = height - (padding + (lat - minLat) * scale + (yOffset - padding))
+        return `${x.toFixed(1)},${y.toFixed(1)}`
+      })
+      
+      return svgPoints.join(' ')
+    }
+
     return {
       search,
       headers,
@@ -414,7 +499,8 @@ export default {
       formatPace,
       formatWorkoutDate,
       formatSplitTime,
-      showMapDetail
+      showMapDetail,
+      getSvgPoints
     }
   }
 }
