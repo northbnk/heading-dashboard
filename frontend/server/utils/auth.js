@@ -9,9 +9,6 @@ export const getSupabaseClient = () => {
     })
   }
   return createClient(config.public.supabaseUrl, config.supabaseServiceKey, {
-    db: {
-      schema: 'training'
-    },
     auth: {
       persistSession: false,
       autoRefreshToken: false
