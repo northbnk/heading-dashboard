@@ -237,7 +237,7 @@
           <div class="text-subtitle-2 font-weight-bold text-white d-flex align-center mb-2 w-100 justify-space-between flex-wrap">
             <div class="d-flex align-center">
               <v-icon color="secondary" icon="mdi-calendar-week" class="mr-1" size="18"></v-icon>
-              今後一週間の練習プラン (7/4〜7/10)
+              今後一週間の練習プラン ({{ weeklySchedule[0]?.dateStr ? weeklySchedule[0].dateStr.substring(5).replace('-', '/') : '' }}〜{{ weeklySchedule[6]?.dateStr ? weeklySchedule[6].dateStr.substring(5).replace('-', '/') : '' }})
             </div>
             <v-btn
               v-if="isOwner"
@@ -681,14 +681,10 @@ export default {
       const weekDates = []
       const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土']
       const today = new Date('2026-07-04')
-      const currentDayIndex = today.getDay()
-      const mondayOffset = currentDayIndex === 0 ? -6 : 1 - currentDayIndex
-      const monday = new Date(today)
-      monday.setDate(today.getDate() + mondayOffset)
       
       for (let i = 0; i < 7; i++) {
-        const currentDate = new Date(monday)
-        currentDate.setDate(monday.getDate() + i)
+        const currentDate = new Date(today)
+        currentDate.setDate(today.getDate() + i)
         const dateStr = currentDate.toISOString().split('T')[0]
         const dayName = daysOfWeek[currentDate.getDay()]
         weekDates.push({ dateStr, dayName })
