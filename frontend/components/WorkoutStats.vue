@@ -262,12 +262,12 @@
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">メインシューズ走行距離</div>
-            <div class="d-flex flex-column flex-sm-row align-baseline">
+            <div>
               <div class="text-h4 font-weight-bold text-orange-darken-3 my-1">
                 {{ mainShoe.distance > 0 ? mainShoe.distance.toFixed(1) : '--' }} <span class="text-caption text-grey-darken-1">km</span>
               </div>
-              <div class="text-caption text-grey-lighten-1 ml-sm-2" v-if="mainShoe.name">
-                ({{ mainShoe.name.substring(0, 10) }}{{ mainShoe.name.length > 10 ? '...' : '' }})
+              <div class="text-caption text-grey-lighten-1 mt-0.5" v-if="mainShoe.name">
+                ({{ mainShoe.name }})
               </div>
             </div>
           </div>
