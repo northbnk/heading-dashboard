@@ -311,145 +311,149 @@
 
   <!-- 診断カードセクション ( displayMode が all または diagnosis-only の時に表示 ) -->
   <v-row :class="displayMode === 'all' ? 'mt-6' : ''" v-if="displayMode === 'all' || displayMode === 'diagnosis-only'">
-    <!-- 1. マラソン特化トレーニング診断 -->
     <v-col cols="12">
-      <v-card class="diagnosis-card px-3 px-sm-6 py-4" elevation="4">
-        <div class="d-flex flex-column flex-sm-row justify-space-between align-start align-sm-center mb-4">
-          <div>
-            <div class="text-h6 font-weight-bold text-white d-flex align-center">
-              <v-icon color="secondary" icon="mdi-trophy-outline" class="mr-2"></v-icon>
-              {{ goalLabel }} マラソン特化トレーニング診断
-            </div>
-          </div>
-          <!-- 総合評価バッジ -->
-          <v-chip
-            :color="marathonDiagnosis.color"
-            variant="flat"
-            size="large"
-            class="font-weight-bold px-4 mt-3 mt-sm-0 text-black"
-          >
-            判定: {{ marathonDiagnosis.rating }}
-          </v-chip>
-        </div>
-
-        <v-divider class="mb-4" style="opacity: 0.1"></v-divider>
-
-        <v-row>
-          <!-- 強み / 達成できている項目 -->
-          <v-col cols="12">
-            <div class="text-subtitle-2 font-weight-bold text-success mb-3 d-flex align-center">
-              <v-icon icon="mdi-check-decagram" class="mr-1" size="18"></v-icon>
-              目標基準をクリアしている項目 (強み)
-            </div>
-            <ul class="diagnosis-list">
-              <li v-for="(item, idx) in marathonDiagnosis.strengths" :key="'s-'+idx" class="d-flex align-start mb-3 text-grey-lighten-2 text-body-2">
-                <v-icon color="success" icon="mdi-check-circle" size="16" class="mr-2 mt-1"></v-icon>
-                {{ item }}
-              </li>
-              <li v-if="marathonDiagnosis.strengths.length === 0" class="text-grey text-body-2 px-6">
-                現在、設定された目標基準をクリアした項目は検出されていません。
-              </li>
-            </ul>
-          </v-col>
-
-          <!-- 課題 / 不足している項目 -->
-          <v-col cols="12" class="mt-4">
-            <div class="text-subtitle-2 font-weight-bold text-warning mb-3 d-flex align-center">
-              <v-icon icon="mdi-alert-decagram" class="mr-1" size="18"></v-icon>
-              さらなるトレーニングが必要な項目 (課題)
-            </div>
-            <ul class="diagnosis-list">
-              <li v-for="(item, idx) in marathonDiagnosis.issues" :key="'i-'+idx" class="d-flex align-start mb-3 text-grey-lighten-2 text-body-2">
-                <v-icon color="warning" icon="mdi-alert-circle" size="16" class="mr-2 mt-1"></v-icon>
-                {{ item }}
-              </li>
-              <li v-if="marathonDiagnosis.issues.length === 0" class="text-success font-weight-bold text-body-2 px-6">
-                目標とする難易度のトレーニング項目をすべて完璧にクリアしています！この調子をキープしましょう。
-              </li>
-            </ul>
-          </v-col>
-        </v-row>
-      </v-card>
-    </v-col>
-
-    <!-- 2. 心肺耐久スタミナ（デカップリング）診断 -->
-    <v-col cols="12" class="mt-4">
-      <v-card class="diagnosis-card px-3 px-sm-6 py-4" elevation="4">
-        <div class="d-flex justify-space-between align-center mb-3">
-          <div class="text-h6 font-weight-bold text-white d-flex align-center">
-            <v-icon color="accent" icon="mdi-heart-pulse" class="mr-2"></v-icon>
-            心肺耐久スタミナ（デカップリング）診断
-          </div>
-          <v-chip
-            v-if="staminaDecouplingAnalysis.available"
-            :color="staminaDecouplingAnalysis.color"
-            variant="flat"
-            size="small"
-            class="font-weight-bold text-black"
-          >
-            {{ staminaDecouplingAnalysis.rating }}
-          </v-chip>
-        </div>
-        <v-divider class="mb-3" style="opacity: 0.1"></v-divider>
-
-        <div v-if="!staminaDecouplingAnalysis.available" class="text-grey text-body-2 py-4 text-center">
-          {{ staminaDecouplingAnalysis.message }}
-        </div>
-        <div v-else>
-          <div class="text-caption text-grey mb-3">
-            直近の最長距離走: <strong>{{ staminaDecouplingAnalysis.activityName }}</strong> ({{ staminaDecouplingAnalysis.workoutDate }} / {{ staminaDecouplingAnalysis.distance.toFixed(1) }}km)
-          </div>
-          
-          <div class="d-flex align-baseline mb-4">
-            <div class="text-h3 font-weight-black text-white mr-2">
-              {{ staminaDecouplingAnalysis.decoupling }}%
-            </div>
-            <div class="text-caption text-grey">後半の心肺出力低下度（デカップリング値）</div>
-          </div>
-          
-          <div class="description-box px-3 py-2 rounded-lg text-body-2 text-grey-lighten-2" style="background: rgba(255,255,255,0.02); border-left: 3px solid #8B5CF6;">
-            {{ staminaDecouplingAnalysis.advice }}
-          </div>
-        </div>
-      </v-card>
-    </v-col>
-
-    <!-- 3. シューズ走行寿命 & 効率分析 -->
-    <v-col cols="12" class="mt-4">
-      <v-card class="diagnosis-card px-3 px-sm-6 py-4" elevation="4">
-        <div class="text-h6 font-weight-bold text-white d-flex align-center mb-3">
-          <v-icon color="warning" icon="mdi-shoe-run" class="mr-2"></v-icon>
-          シューズ走行寿命 & 効率分析
-        </div>
-        <v-divider class="mb-3" style="opacity: 0.1"></v-divider>
-
-        <div v-if="!shoeAnalytics.available" class="text-grey text-body-2 py-4 text-center">
-          Stravaで使用シューズを登録すると、シューズごとの走行距離とパフォーマンス効率がここに表示されます。
+      <v-card class="diagnosis-card px-3 px-sm-6 py-5" elevation="4">
+        <!-- 総合タイトル -->
+        <div class="text-h6 font-weight-bold text-white d-flex align-center mb-4">
+          <v-icon color="secondary" icon="mdi-clipboard-text-search" class="mr-2" size="24"></v-icon>
+          ランニング総合診断・パフォーマンス分析報告
         </div>
         
-        <div v-else class="w-100">
+        <v-divider class="mb-5" style="opacity: 0.15"></v-divider>
+
+        <!-- 1. マラソン特化トレーニング診断 -->
+        <div class="mb-6">
+          <div class="d-flex flex-column flex-sm-row justify-space-between align-start align-sm-center mb-4">
+            <div class="text-subtitle-1 font-weight-bold text-white d-flex align-center">
+              <v-icon color="secondary" icon="mdi-trophy-outline" class="mr-2" size="20"></v-icon>
+              {{ goalLabel }} マラソン特化トレーニング診断
+            </div>
+            <!-- 総合評価バッジ -->
+            <v-chip
+              :color="marathonDiagnosis.color"
+              variant="flat"
+              size="medium"
+              class="font-weight-bold px-3 mt-2 mt-sm-0 text-black"
+            >
+              判定: {{ marathonDiagnosis.rating }}
+            </v-chip>
+          </div>
+
           <v-row>
-            <v-col v-for="shoe in shoeAnalytics.shoes" :key="shoe.name" cols="12" sm="6" md="4" class="mb-2">
-              <v-card variant="outlined" class="pa-4 rounded-lg border-grey-darken-3" style="background: rgba(255,255,255,0.01)">
-                <div class="d-flex justify-space-between align-center text-body-2 mb-1">
-                  <span class="font-weight-bold text-white">{{ shoe.name }}</span>
-                  <span class="text-caption text-grey">
-                    累計: <strong class="text-white">{{ shoe.distance }} km</strong> ({{ shoe.runs }}回)
-                  </span>
-                </div>
-                <div class="d-flex justify-space-between align-center text-caption text-grey-lighten-1 mb-2">
-                  <span>平均ペース: {{ shoe.paceStr }}/km <span v-if="shoe.avgHR">| 心拍: {{ shoe.avgHR }} bpm</span></span>
-                  <span :class="`text-${shoe.color} font-weight-bold`">{{ shoe.status }}</span>
-                </div>
-                <v-progress-linear
-                  :model-value="shoe.lifePercent"
-                  :color="shoe.color"
-                  height="8"
-                  rounded
-                ></v-progress-linear>
-              </v-card>
+            <!-- 強み / 達成できている項目 -->
+            <v-col cols="12" md="6">
+              <div class="text-subtitle-2 font-weight-bold text-success mb-3 d-flex align-center">
+                <v-icon icon="mdi-check-decagram" class="mr-1" size="18"></v-icon>
+                目標基準をクリアしている項目 (強み)
+              </div>
+              <ul class="diagnosis-list">
+                <li v-for="(item, idx) in marathonDiagnosis.strengths" :key="'s-'+idx" class="d-flex align-start mb-3 text-grey-lighten-2 text-body-2">
+                  <v-icon color="success" icon="mdi-check-circle" size="16" class="mr-2 mt-1"></v-icon>
+                  {{ item }}
+                </li>
+                <li v-if="marathonDiagnosis.strengths.length === 0" class="text-grey text-body-2 px-6">
+                  現在、設定された目標基準をクリアした項目は検出されていません。
+                </li>
+              </ul>
+            </v-col>
+
+            <!-- 課題 / 不足している項目 -->
+            <v-col cols="12" md="6" class="mt-4 mt-md-0">
+              <div class="text-subtitle-2 font-weight-bold text-warning mb-3 d-flex align-center">
+                <v-icon icon="mdi-alert-decagram" class="mr-1" size="18"></v-icon>
+                さらなるトレーニングが必要な項目 (課題)
+              </div>
+              <ul class="diagnosis-list">
+                <li v-for="(item, idx) in marathonDiagnosis.issues" :key="'i-'+idx" class="d-flex align-start mb-3 text-grey-lighten-2 text-body-2">
+                  <v-icon color="warning" icon="mdi-alert-circle" size="16" class="mr-2 mt-1"></v-icon>
+                  {{ item }}
+                </li>
+                <li v-if="marathonDiagnosis.issues.length === 0" class="text-success font-weight-bold text-body-2 px-6">
+                  目標とする難易度のトレーニング項目をすべて完璧にクリアしています！この調子をキープしましょう。
+                </li>
+              </ul>
             </v-col>
           </v-row>
+        </div>
+
+        <v-divider class="my-6" style="opacity: 0.15"></v-divider>
+
+        <!-- 2. 心肺耐久スタミナ（デカップリング）診断 -->
+        <div class="mb-6">
+          <div class="d-flex justify-space-between align-center mb-3">
+            <div class="text-subtitle-1 font-weight-bold text-white d-flex align-center">
+              <v-icon color="accent" icon="mdi-heart-pulse" class="mr-2" size="20"></v-icon>
+              心肺耐久スタミナ（デカップリング）診断
+            </div>
+            <v-chip
+              v-if="staminaDecouplingAnalysis.available"
+              :color="staminaDecouplingAnalysis.color"
+              variant="flat"
+              size="small"
+              class="font-weight-bold text-black"
+            >
+              {{ staminaDecouplingAnalysis.rating }}
+            </v-chip>
+          </div>
+
+          <div v-if="!staminaDecouplingAnalysis.available" class="text-grey text-body-2 py-4 text-center">
+            {{ staminaDecouplingAnalysis.message }}
+          </div>
+          <div v-else>
+            <div class="text-caption text-grey mb-3">
+              直近の最長距離走: <strong>{{ staminaDecouplingAnalysis.activityName }}</strong> ({{ staminaDecouplingAnalysis.workoutDate }} / {{ staminaDecouplingAnalysis.distance.toFixed(1) }}km)
+            </div>
+            
+            <div class="d-flex align-baseline mb-4">
+              <div class="text-h3 font-weight-black text-white mr-2">
+                {{ staminaDecouplingAnalysis.decoupling }}%
+              </div>
+              <div class="text-caption text-grey">後半の心肺出力低下度（デカップリング値）</div>
+            </div>
+            
+            <div class="description-box px-3 py-2 rounded-lg text-body-2 text-grey-lighten-2" style="background: rgba(255,255,255,0.02); border-left: 3px solid #8B5CF6;">
+              {{ staminaDecouplingAnalysis.advice }}
+            </div>
+          </div>
+        </div>
+
+        <v-divider class="my-6" style="opacity: 0.15"></v-divider>
+
+        <!-- 3. シューズ走行寿命 & 効率分析 -->
+        <div>
+          <div class="text-subtitle-1 font-weight-bold text-white d-flex align-center mb-3">
+            <v-icon color="warning" icon="mdi-shoe-run" class="mr-2" size="20"></v-icon>
+            シューズ走行寿命 & 効率分析
+          </div>
+
+          <div v-if="!shoeAnalytics.available" class="text-grey text-body-2 py-4 text-center">
+            Stravaで使用シューズを登録すると、シューズごとの走行距離とパフォーマンス効率がここに表示されます。
+          </div>
+          
+          <div v-else class="w-100">
+            <v-row>
+              <v-col v-for="shoe in shoeAnalytics.shoes" :key="shoe.name" cols="12" sm="6" md="4" class="mb-2">
+                <v-card variant="outlined" class="pa-4 rounded-lg border-grey-darken-3" style="background: rgba(255,255,255,0.01)">
+                  <div class="d-flex justify-space-between align-center text-body-2 mb-1">
+                    <span class="font-weight-bold text-white">{{ shoe.name }}</span>
+                    <span class="text-caption text-grey">
+                      累計: <strong class="text-white">{{ shoe.distance }} km</strong> ({{ shoe.runs }}回)
+                    </span>
+                  </div>
+                  <div class="d-flex justify-space-between align-center text-caption text-grey-lighten-1 mb-2">
+                    <span>平均ペース: {{ shoe.paceStr }}/km <span v-if="shoe.avgHR">| 心拍: {{ shoe.avgHR }} bpm</span></span>
+                    <span :class="`text-${shoe.color} font-weight-bold`">{{ shoe.status }}</span>
+                  </div>
+                  <v-progress-linear
+                    :model-value="shoe.lifePercent"
+                    :color="shoe.color"
+                    height="8"
+                    rounded
+                  ></v-progress-linear>
+                </v-card>
+              </v-col>
+            </v-row>
+          </div>
         </div>
       </v-card>
     </v-col>
