@@ -609,17 +609,27 @@ export default {
       return Math.min(estimatedVO2Max, 65)
     }
 
-    // 保存データ全体の最高 VDOT を推定 (心拍数ベースの走力推定を優先)
+    // 保存データ全体の最高 VDOT を推定 (直近30日間の心拍数ベースの走力推定を優先)
     const estimatedVDOT = computed(() => {
-      const validWorkouts = props.workouts.filter(w => 
-        Number(w.distance || 0) >= 5.0 && 
-        w.movingTimeSeconds > 0 && 
-        w.averageHeartrate && 
-        w.averageHeartrate >= 120
-      )
+      const thirtyDaysAgo = new Date('2026-07-05')
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+      const validWorkouts = props.workouts.filter(w => {
+        const d = safeParseDate(w.workoutDate)
+        return d >= thirtyDaysAgo &&
+          Number(w.distance || 0) >= 5.0 && 
+          w.movingTimeSeconds > 0 && 
+          w.averageHeartrate && 
+          w.averageHeartrate >= 120
+      })
       
       if (validWorkouts.length === 0) {
-        const longWorkouts = props.workouts.filter(w => Number(w.distance || 0) >= 5.0 && w.durationSeconds > 0)
+        const longWorkouts = props.workouts.filter(w => {
+          const d = safeParseDate(w.workoutDate)
+          return d >= thirtyDaysAgo &&
+            Number(w.distance || 0) >= 5.0 && 
+            w.durationSeconds > 0
+        })
         if (longWorkouts.length === 0) return 0
         const vdots = longWorkouts.map(w => calculateVDOT(Number(w.distance), w.durationSeconds))
         return Math.max(...vdots, 0)
