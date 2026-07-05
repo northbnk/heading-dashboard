@@ -326,6 +326,7 @@ const generatedPlan = computed(() => {
   const result = []
   for (let i = 0; i < 7; i++) {
     const day = scheduleDays[i]
+    const dayName = day.day || day.dayName || ''
     let menuText = '休み'
     let targetDistance = 0
     let isQuality = false
@@ -333,7 +334,7 @@ const generatedPlan = computed(() => {
 
     if (mode === 'low') {
       // Mon: Rest, Tue: Jog 10, Wed: Rest, Thu: Jog 10, Fri: Rest, Sat: Long Jog 15, Sun: Jog 5
-      switch (day.dayName) {
+      switch (dayName) {
         case '火':
           menuText = 'ジョグ 10km (ベース走)'
           targetDistance = 10
@@ -353,7 +354,7 @@ const generatedPlan = computed(() => {
       }
     } else if (mode === 'high') {
       // Mon: Rest, Tue: Jog 10, Wed: Interval 5k, Thu: Jog 10, Fri: Rest, Sat: M-pace 15k, Sun: Rest
-      switch (day.dayName) {
+      switch (dayName) {
         case '火':
           menuText = 'ジョグ 10km'
           targetDistance = 10
@@ -377,13 +378,13 @@ const generatedPlan = computed(() => {
       }
     } else {
       // Mon: Rest, Tue: Jog 10, Wed: Threshold Run 8k, Thu: Jog 10, Fri: Rest, Sat: Long Run 20k, Sun: Jog 5
-      switch (day.dayName) {
+      switch (dayName) {
         case '火':
           menuText = 'ジョグ 10km'
           targetDistance = 10
           break
         case '水':
-          menuText = `閾値走 8km (設定 ${pT})`
+          menuText = `初中級 閾値走 8km (設定 ${pT})`
           targetDistance = 8
           isQuality = true
           targetPace = p.tPace
@@ -405,7 +406,7 @@ const generatedPlan = computed(() => {
 
     result.push({
       dateStr: day.dateStr,
-      dayName: day.dayName,
+      dayName: dayName,
       menuText,
       targetDistance,
       isQuality,
