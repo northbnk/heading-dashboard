@@ -314,7 +314,7 @@ const generatedPlan = computed(() => {
 
   // Choose generator mode based on activeTab
   let mode = 'mid'
-  if (activeTab.value === 0) {
+  if (Number(activeTab.value) === 0) {
     mode = selectedIntensity.value
   } else {
     const recMode = recommendation.value.mode
