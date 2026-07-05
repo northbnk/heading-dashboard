@@ -199,6 +199,58 @@
           </v-row>
         </div>
 
+        <!-- 詳細パフォーマンス指標 -->
+        <div class="mb-4">
+          <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
+            <v-icon color="secondary" icon="mdi-sine-wave" class="mr-1" size="18"></v-icon>
+            詳細パフォーマンス指標
+          </div>
+          
+          <v-card variant="outlined" class="pa-3 border-grey-darken-3 rounded-lg" style="background: rgba(255,255,255,0.015); border-color: rgba(255,255,255,0.08) !important;">
+            <v-row dense class="text-center">
+              <v-col cols="4" class="py-1">
+                <div class="text-caption text-grey">ピッチ (平均)</div>
+                <div class="text-subtitle-2 font-weight-bold text-white">
+                  {{ mapDialog.workout.cadence ? mapDialog.workout.cadence + ' spm' : '--' }}
+                </div>
+              </v-col>
+              <v-col cols="4" class="py-1" style="border-left: 1px solid rgba(255,255,255,0.08)">
+                <div class="text-caption text-grey">ストライド (平均)</div>
+                <div class="text-subtitle-2 font-weight-bold text-white">
+                  {{ mapDialog.workout.averageStride ? mapDialog.workout.averageStride + ' m' : '--' }}
+                </div>
+              </v-col>
+              <v-col cols="4" class="py-1" style="border-left: 1px solid rgba(255,255,255,0.08)">
+                <div class="text-caption text-grey">獲得標高</div>
+                <div class="text-subtitle-2 font-weight-bold text-white">
+                  {{ mapDialog.workout.elevationGain ? mapDialog.workout.elevationGain + ' m' : '--' }}
+                </div>
+              </v-col>
+              
+              <v-col cols="12" class="my-1"><v-divider style="opacity: 0.08"></v-divider></v-col>
+              
+              <v-col cols="4" class="py-1">
+                <div class="text-caption text-grey">最高心拍数</div>
+                <div class="text-subtitle-2 font-weight-bold text-white">
+                  {{ mapDialog.workout.maxHeartrate ? mapDialog.workout.maxHeartrate + ' bpm' : '--' }}
+                </div>
+              </v-col>
+              <v-col cols="4" class="py-1" style="border-left: 1px solid rgba(255,255,255,0.08)">
+                <div class="text-caption text-grey">走行時間 (実質)</div>
+                <div class="text-subtitle-2 font-weight-bold text-white">
+                  {{ formatDuration(mapDialog.workout.movingTimeSeconds || mapDialog.workout.durationSeconds) }}
+                </div>
+              </v-col>
+              <v-col cols="4" class="py-1" style="border-left: 1px solid rgba(255,255,255,0.08)">
+                <div class="text-caption text-grey">経過時間 (全体)</div>
+                <div class="text-subtitle-2 font-weight-bold text-white">
+                  {{ formatDuration(mapDialog.workout.durationSeconds) }}
+                </div>
+              </v-col>
+            </v-row>
+          </v-card>
+        </div>
+
         <!-- 1kmごとの詳細ラップスプリット [NEW] -->
         <div v-if="mapDialog.workout.splits && mapDialog.workout.splits.length > 0" class="mb-4">
           <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
