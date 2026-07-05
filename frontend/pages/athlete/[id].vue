@@ -689,45 +689,77 @@ export default {
             }
           }
         }
+        return { menuText: '休み', targetDistance: 0, isQuality: false }
       }
 
       // 今日(2026-07-04)から7日分の予定を生成
       const weekDates = []
       const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土']
+      const today = new Date('2026-07-04')
+      
+      const currentDayIndex = today.getDay()
+      const mondayOffset = currentDayIndex === 0 ? -6 : 1 - currentDayIndex
+      
+      const monday = new Date(today)
+      monday.setDate(today.getDate() + mondayOffset)
+      
       for (let i = 0; i < 7; i++) {
-        const d = new Date('2026-07-04')
         const currentDate = new Date(monday)
         currentDate.setDate(monday.getDate() + i)
         
         const dateStr = currentDate.toISOString().split('T')[0]
-        
-        const override = customPlans.value[dateStr]
-        const hasOverride = !!override
-        
-        const menuText = hasOverride ? override.menuText : (i === 0 || i === 4 ? '休み' : i === 6 ? 'ロング走 (有酸素ベース)' : 'ジョグ')
-        const targetDistance = hasOverride ? override.targetDistance : (i === 0 || i === 4 ? 0 : i === 6 ? 20.0 : 10.0)
-        const isQuality = hasOverride ? override.isQuality : (i === 6)
-        const targetPace = hasOverride ? override.targetPace : null
-        
-        const actualRuns = workouts.value.filter(w => {
-          return w.workoutDate.startsWith(dateStr)
-        })
-        const totalActualDistance = actualRuns.reduce((sum, r) => sum + r.distance, 0)
-        
-        const isCleared = totalActualDistance >= (targetDistance > 0 ? targetDistance - 0.5 : 0.1)
-        
-        schedule.push({
-          day: days[i],
-          dateStr,
-          menuText,
-          targetDistance,
-          isQuality,
-          targetPace,
-          actualDistance: Number(totalActualDistance.toFixed(2)),
-          isCleared
-        })
+        const dayName = daysOfWeek[currentDate.getDay()]
+        weekDates.push({ dateStr, dayName })
       }
-      return schedule
+
+      return weekDates.map(({ dateStr, dayName }) => {
+        const menu = getMenuForDay(dayName, dateStr)
+        const dailyWorkouts = workouts.value.filter(w => w.workoutDate && w.workoutDate.startsWith(dateStr))
+        
+        let actualDistance = 0
+        let actualPace = null
+        let hasRun = false
+        
+        if (dailyWorkouts.length > 0) {
+          hasRun = true
+          actualDistance = dailyWorkouts.reduce((sum, w) => sum + Number(w.distance || 0), 0)
+          const totalMovingTime = dailyWorkouts.reduce((sum, w) => w.movingTimeSeconds || w.durationSeconds || 0, 0)
+          
+          if (actualDistance > 0 && totalMovingTime > 0) {
+            actualPace = Math.round(totalMovingTime / actualDistance)
+          }
+        }
+
+        let isCleared = false
+        if (menu.targetDistance > 0 && hasRun) {
+          if (!menu.isQuality) {
+            isCleared = actualDistance >= menu.targetDistance * 0.90
+          } else {
+            const minPace = menu.targetPace ? menu.targetPace - 10 : 0
+            const maxPace = menu.targetPace ? menu.targetPace + 20 : 9999
+            const paceOk = actualPace && actualPace >= minPace && actualPace <= maxPace
+            isCleared = actualDistance >= menu.targetDistance && paceOk
+          }
+        }
+
+        const formatPaceText = (sec) => {
+          if (!sec) return ''
+          const m = Math.floor(sec / 60)
+          const s = sec % 60
+          return `${m}:${String(s).padStart(2, '0')}/km`
+        }
+
+        return {
+          ...menu,
+          day: dayName,
+          dateStr,
+          hasRun,
+          actualDistance,
+          actualPace,
+          actualPaceStr: actualPace ? formatPaceText(actualPace) : '',
+          isCleared
+        }
+      })
     })
 
     // 大会登録ダイアログ制御
@@ -784,20 +816,12 @@ export default {
       if (!isOwner.value) return
       planFormDate.value = day.dateStr
       planFormDayName.value = day.day
-      
-      const override = customPlans.value[day.dateStr]
-      selectedPlanData.value = override ? {
-        menuText: override.menuText,
-        targetDistance: override.targetDistance,
-        isQuality: override.isQuality,
-        targetPace: override.targetPace
-      } : {
+      selectedPlanData.value = {
         menuText: day.menuText,
         targetDistance: day.targetDistance,
         isQuality: day.isQuality,
         targetPace: day.targetPace || null
       }
-      
       planFormActive.value = true
     }
 
@@ -809,71 +833,51 @@ export default {
     const handleSavePlan = async () => {
       if (!isOwner.value) return
       try {
-        const headers = {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        }
+        const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() }
         const res = await fetch('/api/plans', {
           method: 'POST',
           headers,
-          body: JSON.stringify({
-            dateStr: planFormDate.value,
-            plan: selectedPlanData.value
-          })
+          body: JSON.stringify({ dateStr: planFormDate.value, plan: selectedPlanData.value })
         })
         if (res.ok) {
           showNotification('練習メニューを上書き設定しました。')
           await loadAthleteData()
           closePlanForm()
-        } else {
-          const errData = await res.json()
-          throw new Error(errData.statusMessage || '保存エラー')
         }
       } catch (err) {
-        showNotification('練習メニューの保存に失敗しました: ' + err.message, 'error', 'mdi-alert-circle')
+        showNotification('保存失敗: ' + err.message, 'error', 'mdi-alert-circle')
       }
     }
 
     const handleRevertPlan = async () => {
       if (!isOwner.value) return
       try {
-        const headers = {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders()
-        }
+        const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() }
         const res = await fetch('/api/plans', {
           method: 'POST',
           headers,
-          body: JSON.stringify({
-            dateStr: planFormDate.value,
-            plan: null // nullを渡すとバックエンド側でオーバーライド設定を削除
-          })
+          body: JSON.stringify({ dateStr: planFormDate.value, plan: null })
         })
         if (res.ok) {
-          showNotification('メニューを初期状態（デフォルト）に戻しました。')
+          showNotification('メニューを初期状態に戻しました。')
           await loadAthleteData()
           closePlanForm()
-        } else {
-          const errData = await res.json()
-          throw new Error(errData.statusMessage || '復元エラー')
         }
       } catch (err) {
-        showNotification('プランの復元に失敗しました: ' + err.message, 'error', 'mdi-alert-circle')
+        showNotification('復元失敗: ' + err.message, 'error', 'mdi-alert-circle')
       }
     }
 
-    const hasCustomOverride = (dateStr) => {
-      return !!customPlans.value[dateStr]
-    }
+    const hasCustomOverride = (dateStr) => !!customPlans.value[dateStr]
 
-    // ワークアウト手動登録は無効化されているためダミーメソッド
+    // ワークアウト関連のダミーメソッド
     const openNewWorkoutForm = () => {}
     const openEditWorkoutForm = () => {}
     const closeWorkoutForm = () => {}
     const handleSaveWorkout = () => {}
     const handleDeleteWorkout = () => {}
 
-    // 手動同期処理 (Authorizationトークン付与)
+    // 手動同期処理
     const handleSyncWorkouts = async () => {
       if (!isOwner.value) return
       syncing.value = true
@@ -896,33 +900,17 @@ export default {
     onMounted(async () => {
       await loadAthleteData()
       await checkOwnership()
-
-      // セッション監視
       if ($supabase) {
-        $supabase.auth.onAuthStateChange(async (event, session) => {
-          await checkOwnership()
-        })
+        $supabase.auth.onAuthStateChange(async () => { await checkOwnership() })
       }
-
-      // 所有者本人のみ15分ごとの自動同期
       autoSyncInterval = setInterval(async () => {
-        try {
-          if (isOwner.value && stravaStatus.value.linked) {
-            const headers = getAuthHeaders()
-            await workoutApi.syncWorkouts(headers)
-            await loadAthleteData()
-          }
-        } catch (err) {
-          console.error('Auto-sync failed:', err)
+        if (isOwner.value && stravaStatus.value.linked) {
+          try { await workoutApi.syncWorkouts(getAuthHeaders()); await loadAthleteData() } catch (e) { console.error(e) }
         }
       }, 900000)
     })
 
-    onUnmounted(() => {
-      if (autoSyncInterval) {
-        clearInterval(autoSyncInterval)
-      }
-    })
+    onUnmounted(() => { if (autoSyncInterval) clearInterval(autoSyncInterval) })
 
     return {
       workouts,
