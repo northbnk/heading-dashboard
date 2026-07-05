@@ -62,10 +62,11 @@ export default defineEventHandler(async (event) => {
       })
 
     if (upsertError) {
-      console.error('Failed to save tokens to Supabase:', upsertError)
+      console.error('Failed to save tokens to Supabase:', JSON.stringify(upsertError), upsertError)
+      const errMsg = upsertError.message || (typeof upsertError === 'object' ? JSON.stringify(upsertError) : String(upsertError))
       throw createError({
         statusCode: 500,
-        statusMessage: 'Failed to save Strava credentials to database: ' + upsertError.message
+        statusMessage: 'Failed to save Strava credentials to database: ' + errMsg
       })
     }
 
