@@ -251,6 +251,29 @@
           </v-card>
         </div>
 
+        <!-- この練習のスポーツ科学分析 -->
+        <div v-if="getWorkoutAnalysis(mapDialog.workout)" class="mb-4">
+          <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
+            <v-icon color="success" icon="mdi-lightbulb-on-outline" class="mr-1" size="18"></v-icon>
+            このワークアウトのスポーツ科学分析
+          </div>
+          
+          <v-card class="pa-4 rounded-lg border" style="background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.15) !important;">
+            <div class="d-flex align-center mb-3">
+              <span class="text-caption text-grey mr-2">トレーニング種別:</span>
+              <v-chip color="success" size="small" variant="flat" class="font-weight-bold text-black">
+                {{ getWorkoutAnalysis(mapDialog.workout).typeLabel }}
+              </v-chip>
+            </div>
+            
+            <ul class="pl-4" style="list-style-type: disc; color: rgba(255, 255, 255, 0.85); font-size: 13px; line-height: 1.6;">
+              <li v-for="(bullet, idx) in getWorkoutAnalysis(mapDialog.workout).bullets" :key="idx" class="mb-2">
+                {{ bullet }}
+              </li>
+            </ul>
+          </v-card>
+        </div>
+
         <!-- 1kmごとの詳細ラップスプリット [NEW] -->
         <div v-if="mapDialog.workout.splits && mapDialog.workout.splits.length > 0" class="mb-4">
           <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
@@ -527,6 +550,92 @@ export default {
       return svgPoints.join(' ')
     }
 
+    // 1回のワークアウトのスポーツ科学分析レポートの作成
+    const getWorkoutAnalysis = (w) => {
+      if (!w) return null
+
+      const analyses = []
+      
+      // 1. 練習種別の自動判定
+      let typeLabel = 'ジョグ・その他'
+      const dist = Number(w.distance || 0)
+      const paceSec = w.averagePaceSeconds || 0
+      
+      if (dist >= 20.0) {
+        typeLabel = 'ロング走（有酸素持久力強化）'
+      } else if (dist >= 10.0 && paceSec > 0 && paceSec <= 295) { // 4:55/km以下 (サブ3.5目標ペース以上)
+        typeLabel = 'ペース走・ビルドアップ（乳酸閾値向上）'
+      } else if (dist < 8.0 && paceSec >= 360) {
+        typeLabel = '回復ジョグ（アクティブリカバリー）'
+      } else if (dist >= 8.0) {
+        typeLabel = '有酸素ジョグ（基礎スタミナ構築）'
+      }
+
+      // 2. 心肺効率 (EF) 分析
+      if (w.averageHeartrate > 0 && paceSec > 0) {
+        const speedMmin = 1000 / (paceSec / 60)
+        const ef = speedMmin / w.averageHeartrate
+        let efText = ''
+        if (ef >= 1.25) {
+          efText = '【心肺効率: 優良】心拍に対する走行速度が非常に高く、極めて低燃費で高効率な有酸素運動ができています。心肺の仕上がりは最高水準です。'
+        } else if (ef >= 1.10) {
+          efText = '【心肺効率: 標準】標準的な心肺効率が維持されています。この強度設定はトレーニングターゲットに合致しています。'
+        } else {
+          efText = '【心肺効率: 負荷高め】設定ペースに対して心拍がやや高めに推移しており、体に疲労が残っているか、心肺のオーバーヒート傾向が見られます。次回は強度を落とした回復ジョグを推奨します。'
+        }
+        analyses.push(efText)
+      }
+
+      // 3. ピッチ・ストライド分析
+      if (w.cadence > 0) {
+        let cadenceText = ''
+        if (w.cadence >= 180) {
+          cadenceText = `【ピッチ走法 (平均 ${w.cadence} spm)】理想的な高ピッチが維持されており、足脚関節への着地衝撃が低く抑えられています。故障しにくい理想的なステップです。`
+        } else if (w.cadence < 170) {
+          cadenceText = `【ストライド走法傾向 (平均 ${w.cadence} spm)】歩幅が広く、ピッチがやや低めです。着地衝撃が増大しやすいため、ピッチを175付近に引き上げる意識を持つと後半の脚持ちが良くなります。`
+        } else {
+          cadenceText = `【標準ピッチ (平均 ${w.cadence} spm)】ランニングにおける理想的なピッチとストライドのバランスです。推進効率が適正です。`
+        }
+        analyses.push(cadenceText)
+      }
+
+      // 4. デカップリング (スタミナ維持度) 分析
+      if (w.splits && w.splits.length >= 6 && w.splits.every(s => s.averageHeartrate > 0)) {
+        const splits = w.splits
+        const n = splits.length
+        const mid = Math.floor(n / 2)
+        const firstHalf = splits.slice(0, mid)
+        const secondHalf = splits.slice(mid)
+
+        const firstTimeSec = firstHalf.reduce((sum, s) => sum + (s.movingTime || s.elapsedTime), 0)
+        const firstAvgHR = firstHalf.reduce((sum, s) => sum + s.averageHeartrate, 0) / mid
+        const firstSpeed = (mid * 1000) / (firstTimeSec / 60)
+        const firstEF = firstSpeed / firstAvgHR
+
+        const secondTimeSec = secondHalf.reduce((sum, s) => sum + (s.movingTime || s.elapsedTime), 0)
+        const secondAvgHR = secondHalf.reduce((sum, s) => sum + s.averageHeartrate, 0) / (n - mid)
+        const secondSpeed = ((n - mid) * 1000) / (secondTimeSec / 60)
+        const secondEF = secondSpeed / secondAvgHR
+
+        const decoupling = ((firstEF - secondEF) / firstEF) * 100
+        
+        let decText = ''
+        if (decoupling < 5.0) {
+          decText = `【スタミナ維持度: 優秀】後半の心拍ドリフト（デカップリング）が ${decoupling.toFixed(1)}% と極めて低く抑えられており、後半も最後まで心肺のエネルギー効率が安定していました。`
+        } else if (decoupling <= 10.0) {
+          decText = `【スタミナ維持度: 標準】後半のドリフト率は ${decoupling.toFixed(1)}% です。徐々に疲労による有酸素心拍の上昇が見られますが、長距離練習としては良好な耐性です。`
+        } else {
+          decText = `【スタミナ低下: 課題あり】後半のドリフト率が ${decoupling.toFixed(1)}% と10%を超えており、心肺が後半に疲労困憊状態になっています。水分補給の不足、またはペース配分がオーバーペースだった可能性があります。`
+        }
+        analyses.push(decText)
+      }
+
+      return {
+        typeLabel,
+        bullets: analyses
+      }
+    }
+
     return {
       search,
       headers,
@@ -541,7 +650,8 @@ export default {
       formatWorkoutDate,
       formatSplitTime,
       showMapDetail,
-      getSvgPoints
+      getSvgPoints,
+      getWorkoutAnalysis
     }
   }
 }
