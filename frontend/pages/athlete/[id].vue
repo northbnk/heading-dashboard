@@ -239,18 +239,26 @@
               <v-icon color="secondary" icon="mdi-calendar-week" class="mr-1" size="18"></v-icon>
               今後一週間の練習プラン ({{ weeklySchedule[0]?.dateStr ? weeklySchedule[0].dateStr.substring(5).replace('-', '/') : '' }}〜{{ weeklySchedule[6]?.dateStr ? weeklySchedule[6].dateStr.substring(5).replace('-', '/') : '' }})
             </div>
-            <v-btn
-              v-if="isOwner"
-              color="primary"
-              prepend-icon="mdi-wizard-hat"
-              density="compact"
-              variant="outlined"
-              rounded="lg"
-              class="font-weight-bold text-caption text-white ml-2"
-              @click="openAutoPlanDialog"
-            >
-              プラン一括作成
-            </v-btn>
+            <div class="d-flex align-center mt-1 mt-sm-0 flex-wrap gap-1">
+              <v-chip size="small" variant="tonal" color="secondary" class="font-weight-bold text-caption">
+                目標: {{ weeklyTotalTarget }}km
+              </v-chip>
+              <v-chip size="small" variant="tonal" color="success" class="font-weight-bold text-caption">
+                実績: {{ weeklyTotalActual }}km
+              </v-chip>
+              <v-btn
+                v-if="isOwner"
+                color="primary"
+                prepend-icon="mdi-wizard-hat"
+                density="compact"
+                variant="outlined"
+                rounded="lg"
+                class="font-weight-bold text-caption text-white ml-2"
+                @click="openAutoPlanDialog"
+              >
+                プラン一括作成
+              </v-btn>
+            </div>
           </div>
 
           <v-divider class="mb-2" style="opacity: 0.08"></v-divider>
@@ -736,6 +744,16 @@ export default {
       })
     })
 
+    const weeklyTotalTarget = computed(() => {
+      const sum = weeklySchedule.value.reduce((total, d) => total + Number(d.targetDistance || 0), 0)
+      return Math.round(sum * 10) / 10
+    })
+
+    const weeklyTotalActual = computed(() => {
+      const sum = weeklySchedule.value.reduce((total, d) => total + Number(d.actualDistance || 0), 0)
+      return Math.round(sum * 10) / 10
+    })
+
     // 大会診断ステータス（アドバイス連動用）
     const raceDiagnosis = computed(() => {
       const race = upcomingRace.value
@@ -1015,7 +1033,9 @@ export default {
       openRaceForm,
       closeRaceForm,
       handleSaveRace,
-      handleDeleteRace
+      handleDeleteRace,
+      weeklyTotalTarget,
+      weeklyTotalActual
     }
   }
 }

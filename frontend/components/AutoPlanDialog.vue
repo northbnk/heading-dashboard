@@ -76,9 +76,14 @@
         </v-window>
 
         <!-- Preview Header -->
-        <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center pl-1">
-          <v-icon icon="mdi-table-eye" size="16" class="mr-1 text-grey"></v-icon>
-          適用される7日間のメニュープレビュー
+        <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center justify-space-between pl-1 w-100 flex-wrap">
+          <div class="d-flex align-center">
+            <v-icon icon="mdi-table-eye" size="16" class="mr-1 text-grey"></v-icon>
+            適用される7日間のメニュープレビュー
+          </div>
+          <v-chip size="small" color="primary" variant="tonal" class="font-weight-bold">
+            総走行距離: {{ generatedPlanTotalDistance }}km
+          </v-chip>
         </div>
 
         <!-- Scrollable Generated Plan List -->
@@ -421,6 +426,10 @@ const generatedPlan = computed(() => {
   }
 
   return result
+})
+
+const generatedPlanTotalDistance = computed(() => {
+  return generatedPlan.value.reduce((sum, d) => sum + Number(d.targetDistance || 0), 0)
 })
 
 const getDayColor = (dayName) => {
