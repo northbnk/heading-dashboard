@@ -1,41 +1,33 @@
-import fs from 'fs'
-import path from 'path'
-
-function getProjectRoot() {
-  let cwd = process.cwd()
-  if (cwd.includes('.output')) {
-    return cwd.split('.output')[0]
-  }
-  return cwd
-}
+import { createClient } from '@supabase/supabase-js'
 
 export default defineEventHandler(async (event) => {
-  checkAdmin(event)
-  const root = getProjectRoot()
-  const configPath = path.join(root, 'strava_api_config.json')
+  const query = getQuery(event)
+  const token = query.token
 
-  if (!fs.existsSync(configPath)) {
+  if (!token) {
     throw createError({
-      statusCode: 400,
-      statusMessage: 'Config file not found. Please create strava_api_config.json.'
+      statusCode: 401,
+      statusMessage: 'Unauthorized. Session token is missing in redirect URL.'
     })
   }
 
-  let config = {}
-  try {
-    config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
-  } catch (err) {
+  const config = useRuntimeConfig()
+  const supabase = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey)
+  
+  // Verify user token
+  const { data: { user }, error } = await supabase.auth.getUser(token)
+  if (error || !user) {
     throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to read config file: ' + err.message
+      statusCode: 401,
+      statusMessage: 'Invalid session token: ' + (error?.message || 'User not found')
     })
   }
 
-  const clientId = config.client_id
-  if (!clientId || clientId === 'YOUR_STRAVA_CLIENT_ID') {
+  const clientId = config.public.stravaClientId
+  if (!clientId) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Strava client_id is not configured in strava_api_config.json.'
+      statusMessage: 'Strava client_id is not configured on server.'
     })
   }
 
@@ -44,11 +36,11 @@ export default defineEventHandler(async (event) => {
   const protocol = host.includes('localhost') ? 'http' : 'https'
   const redirectUri = `${protocol}://${host}/api/auth/strava/callback`
 
-  console.log(`OAuth Initiated. Host: ${host}, Protocol: ${protocol}, Redirect URI: ${redirectUri}`)
+  console.log(`OAuth Connect. Host: ${host}, Protocol: ${protocol}, Redirect URI: ${redirectUri}, User ID: ${user.id}`)
 
-  // Redirect user to Strava OAuth consent screen
+  // Redirect user to Strava OAuth consent screen with user.id in state
   const scope = 'activity:read_all'
-  const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`
+  const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}&state=${user.id}`
 
   return sendRedirect(event, authUrl)
 })

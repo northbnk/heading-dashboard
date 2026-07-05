@@ -32,10 +32,13 @@ export default {
   /**
    * Strava APIから最新データを同期・フェッチします。
    */
-  async syncWorkouts() {
+  async syncWorkouts(headers = {}) {
     try {
       const response = await fetch('/api/workout/sync', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          ...headers
+        }
       })
       if (!response.ok) {
         const errorData = await response.json()
@@ -43,14 +46,6 @@ export default {
       }
       
       const result = await response.json()
-      
-      // 同期成功後、キャッシュを再読込
-      if (result && result.success) {
-        const fetchNewRes = await fetch('/api/workouts')
-        if (fetchNewRes.ok) {
-          cachedWorkouts = await fetchNewRes.json()
-        }
-      }
       return result
     } catch (err) {
       console.error('Failed to sync running data from Strava API', err)

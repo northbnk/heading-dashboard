@@ -1,18 +1,9 @@
-import fs from 'fs'
-import path from 'path'
-
-function getProjectRoot() {
-  let cwd = process.cwd()
-  if (cwd.includes('.output')) {
-    return cwd.split('.output')[0]
-  }
-  return cwd
-}
+import { getSupabaseClient } from '../../../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  checkAdmin(event)
   const query = getQuery(event)
   const code = query.code
+  const userId = query.state // user_id passed via state parameter
 
   if (!code) {
     throw createError({
@@ -21,49 +12,56 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const root = getProjectRoot()
-  const configPath = path.join(root, 'strava_api_config.json')
-
-  if (!fs.existsSync(configPath)) {
+  if (!userId) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Config file not found.'
+      statusMessage: 'State parameter (user ID) is missing.'
     })
   }
 
-  let config = {}
-  try {
-    config = JSON.parse(fs.readFileSync(configPath, 'utf8'))
-  } catch (err) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Failed to read config file.'
-    })
-  }
+  const config = useRuntimeConfig()
+  const supabase = getSupabaseClient()
 
   try {
-    // Exchange authorization code for token
-    console.log(`Exchanging authorization code for token...`)
+    console.log(`Exchanging authorization code for token for user ${userId}...`)
     const tokenResponse = await $fetch('https://www.strava.com/oauth/token', {
       method: 'POST',
       body: {
-        client_id: config.client_id,
-        client_secret: config.client_secret,
+        client_id: config.public.stravaClientId,
+        client_secret: config.stravaClientSecret,
         code: code,
         grant_type: 'authorization_code'
       }
     })
 
-    // Store tokens and athlete info
-    config.access_token = tokenResponse.access_token
-    config.refresh_token = tokenResponse.refresh_token
-    config.expires_at = tokenResponse.expires_at
-    config.athlete = tokenResponse.athlete || null
+    const athlete = tokenResponse.athlete || {}
 
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8')
+    // Store tokens and athlete info in Supabase strava_tokens table
+    const { error: upsertError } = await supabase
+      .from('strava_tokens')
+      .upsert({
+        user_id: userId,
+        access_token: tokenResponse.access_token,
+        refresh_token: tokenResponse.refresh_token,
+        expires_at: tokenResponse.expires_at,
+        athlete_id: athlete.id,
+        athlete_firstname: athlete.firstname || '',
+        athlete_lastname: athlete.lastname || '',
+        updated_at: new Date().toISOString()
+      })
 
-    // Redirect user back to dashboard home page
-    return sendRedirect(event, '/')
+    if (upsertError) {
+      console.error('Failed to save tokens to Supabase:', upsertError)
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Failed to save Strava credentials to database: ' + upsertError.message
+      })
+    }
+
+    console.log(`Successfully linked Strava account for user ${userId}. Athlete ID: ${athlete.id}`)
+
+    // Redirect user back to their dynamic sharing athlete URL page!
+    return sendRedirect(event, `/athlete/${athlete.id}`)
   } catch (err) {
     console.error('Failed to exchange Strava token:', err)
     throw createError({

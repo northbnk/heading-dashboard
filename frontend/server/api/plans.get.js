@@ -1,18 +1,34 @@
-import fs from 'fs'
-import path from 'path'
+import { verifyUser, getSupabaseClient } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const dataFilePath = path.join(process.cwd(), 'data/plans.json')
-  
-  if (!fs.existsSync(dataFilePath)) {
-    return {}
-  }
-
   try {
-    const fileData = fs.readFileSync(dataFilePath, 'utf8')
-    return JSON.parse(fileData)
+    const user = await verifyUser(event)
+    const supabase = getSupabaseClient()
+
+    const { data, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Failed to query plans from Supabase:', error)
+      return {}
+    }
+
+    const plansObj = {}
+    if (data) {
+      data.forEach(p => {
+        plansObj[p.date] = {
+          menuText: p.menu_text,
+          targetDistance: Number(p.target_distance || 0),
+          isQuality: !!p.is_quality,
+          targetPace: p.target_pace
+        }
+      })
+    }
+    return plansObj
   } catch (err) {
-    console.error('Failed to read plans file, returning empty object', err)
+    console.error('Error verifying user in plans.get:', err.message)
     return {}
   }
 })

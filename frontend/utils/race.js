@@ -11,11 +11,12 @@ export default {
     return []
   },
 
-  async createRace(raceData) {
+  async createRace(raceData, headers = {}) {
     const res = await fetch('/api/races', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...headers
       },
       body: JSON.stringify(raceData)
     })
@@ -26,9 +27,12 @@ export default {
     return await res.json()
   },
 
-  async deleteRace(id) {
+  async deleteRace(id, headers = {}) {
     const res = await fetch(`/api/races/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        ...headers
+      }
     })
     if (!res.ok) {
       const error = await res.json()

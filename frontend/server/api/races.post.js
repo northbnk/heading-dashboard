@@ -1,30 +1,9 @@
-import fs from 'fs'
-import path from 'path'
+import { verifyUser, getSupabaseClient } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  // Verify administrator session
-  checkAdmin(event)
-
-  const dataFilePath = path.join(process.cwd(), 'data/races.json')
+  const user = await verifyUser(event)
   const body = await readBody(event)
   
-  // Ensure directory exists
-  const dir = path.dirname(dataFilePath)
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-  
-  let races = []
-  if (fs.existsSync(dataFilePath)) {
-    try {
-      const fileData = fs.readFileSync(dataFilePath, 'utf8')
-      races = JSON.parse(fileData)
-    } catch (err) {
-      console.warn('Failed to parse races file, starting with empty list', err)
-    }
-  }
-  
-  // Validate request body
   if (!body.name || !body.date) {
     throw createError({
       statusCode: 400,
@@ -32,40 +11,70 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const supabase = getSupabaseClient()
+
   if (body.id) {
-    // Editing an existing race
-    const index = races.findIndex(r => r.id === Number(body.id))
-    if (index === -1) {
+    // Edit existing race
+    const { data, error } = await supabase
+      .from('races')
+      .update({
+        name: body.name,
+        date: body.date,
+        category: body.category || 'フルマラソン',
+        target_time: body.targetTime || 'サブ3.5'
+      })
+      .eq('user_id', user.id)
+      .eq('id', Number(body.id))
+      .select()
+      .maybeSingle()
+
+    if (error) {
       throw createError({
-        statusCode: 404,
-        statusMessage: `Race with id ${body.id} not found.`
+        statusCode: 500,
+        statusMessage: 'Failed to update race: ' + error.message
       })
     }
-    
-    races[index] = {
-      ...races[index],
-      name: body.name,
-      date: body.date,
-      category: body.category || 'フルマラソン',
-      targetTime: body.targetTime || 'サブ3.5',
-      updatedAt: new Date().toISOString()
+
+    return { 
+      success: true, 
+      race: data ? {
+        id: data.id,
+        name: data.name,
+        date: data.date,
+        category: data.category,
+        targetTime: data.target_time
+      } : null
     }
-    
-    fs.writeFileSync(dataFilePath, JSON.stringify(races, null, 2), 'utf8')
-    return { success: true, race: races[index] }
   } else {
-    // Creating a new race
-    const newRace = {
-      id: Date.now(),
-      name: body.name,
-      date: body.date, // "YYYY-MM-DD"
-      category: body.category || 'フルマラソン',
-      targetTime: body.targetTime || 'サブ3.5',
-      createdAt: new Date().toISOString()
+    // Insert new race
+    const { data, error } = await supabase
+      .from('races')
+      .insert({
+        user_id: user.id,
+        name: body.name,
+        date: body.date,
+        category: body.category || 'フルマラソン',
+        target_time: body.targetTime || 'サブ3.5'
+      })
+      .select()
+      .single()
+
+    if (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Failed to insert race: ' + error.message
+      })
     }
-    
-    races.push(newRace)
-    fs.writeFileSync(dataFilePath, JSON.stringify(races, null, 2), 'utf8')
-    return { success: true, race: newRace }
+
+    return { 
+      success: true, 
+      race: {
+        id: data.id,
+        name: data.name,
+        date: data.date,
+        category: data.category,
+        targetTime: data.target_time
+      }
+    }
   }
 })

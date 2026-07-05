@@ -1,28 +1,8 @@
-import fs from 'fs'
-import path from 'path'
+import { verifyUser, getSupabaseClient } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  // Verify administrator session
-  checkAdmin(event)
-  
-  const dataFilePath = path.join(process.cwd(), 'data/plans.json')
+  const user = await verifyUser(event)
   const body = await readBody(event)
-  
-  // Ensure directory exists
-  const dir = path.dirname(dataFilePath)
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-  
-  let plans = {}
-  if (fs.existsSync(dataFilePath)) {
-    try {
-      const fileData = fs.readFileSync(dataFilePath, 'utf8')
-      plans = JSON.parse(fileData)
-    } catch (err) {
-      console.warn('Failed to parse plans file, starting with empty object', err)
-    }
-  }
   
   const { dateStr, plan } = body
   if (!dateStr) {
@@ -32,20 +12,42 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const supabase = getSupabaseClient()
+
   if (plan === null || plan === undefined) {
-    // Delete override to revert to default dynamic menu
-    delete plans[dateStr]
+    // Delete override
+    const { error } = await supabase
+      .from('plans')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('date', dateStr)
+
+    if (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Failed to delete plan override: ' + error.message
+      })
+    }
   } else {
-    // Save override
-    plans[dateStr] = {
-      menuText: plan.menuText || '休み',
-      targetDistance: Number(plan.targetDistance || 0),
-      isQuality: !!plan.isQuality,
-      targetPace: plan.targetPace ? Number(plan.targetPace) : null
+    // Save override using upsert
+    const { error } = await supabase
+      .from('plans')
+      .upsert({
+        user_id: user.id,
+        date: dateStr,
+        menu_text: plan.menuText || '休み',
+        target_distance: Number(plan.targetDistance || 0),
+        is_quality: !!plan.isQuality,
+        target_pace: plan.targetPace ? Number(plan.targetPace) : null
+      })
+
+    if (error) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Failed to upsert plan override: ' + error.message
+      })
     }
   }
-  
-  fs.writeFileSync(dataFilePath, JSON.stringify(plans, null, 2), 'utf8')
   
   return { success: true }
 })

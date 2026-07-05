@@ -1,26 +1,30 @@
-import fs from 'fs'
-import path from 'path'
+import { verifyUser, getSupabaseClient } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const dataFilePath = path.join(process.cwd(), 'data/races.json')
-  
-  // Ensure directory exists
-  const dir = path.dirname(dataFilePath)
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-  
-  // If file doesn't exist, create it with empty array or a sample race
-  if (!fs.existsSync(dataFilePath)) {
-    // Let's create an empty array as default
-    fs.writeFileSync(dataFilePath, JSON.stringify([], null, 2), 'utf8')
-  }
-
   try {
-    const fileData = fs.readFileSync(dataFilePath, 'utf8')
-    return JSON.parse(fileData)
+    const user = await verifyUser(event)
+    const supabase = getSupabaseClient()
+
+    const { data, error } = await supabase
+      .from('races')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: true })
+
+    if (error) {
+      console.error('Failed to query races from Supabase:', error)
+      return []
+    }
+
+    return (data || []).map(r => ({
+      id: r.id,
+      name: r.name,
+      date: r.date,
+      category: r.category,
+      targetTime: r.target_time
+    }))
   } catch (err) {
-    console.error('Failed to read races file, returning empty array', err)
+    console.error('Error verifying user in races.get:', err.message)
     return []
   }
 })
