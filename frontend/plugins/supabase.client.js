@@ -15,7 +15,11 @@ export default defineNuxtPlugin((nuxtApp) => {
     }
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey)
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    db: {
+      schema: 'training'
+    }
+  })
 
   return {
     provide: {

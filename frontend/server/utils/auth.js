@@ -9,6 +9,9 @@ export const getSupabaseClient = () => {
     })
   }
   return createClient(config.public.supabaseUrl, config.supabaseServiceKey, {
+    db: {
+      schema: 'training'
+    },
     auth: {
       persistSession: false,
       autoRefreshToken: false
@@ -30,6 +33,9 @@ export const verifyUser = async (event) => {
   const config = useRuntimeConfig()
   // Verify token via public anon client
   const client = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey, {
+    db: {
+      schema: 'training'
+    },
     auth: {
       persistSession: false,
       autoRefreshToken: false
