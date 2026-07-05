@@ -54,11 +54,11 @@
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">推定最高VDOT</div>
-            <div class="d-flex flex-column flex-sm-row align-baseline">
+            <div>
               <div class="text-h4 font-weight-bold text-success my-1">
                 {{ estimatedVDOT > 0 ? estimatedVDOT.toFixed(1) : '--' }}
               </div>
-              <div class="text-caption text-grey-lighten-1 ml-sm-2" v-if="estimatedVDOT > 0">
+              <div class="text-caption text-grey-lighten-1 mt-0.5" v-if="estimatedVDOT > 0">
                 (フル予測: <span class="text-success font-weight-bold">{{ formattedPredictedTime }}</span>)
               </div>
             </div>
@@ -158,11 +158,11 @@
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">ランニング心拍効率</div>
-            <div class="d-flex flex-column flex-sm-row align-baseline">
+            <div>
               <div class="text-h4 font-weight-bold text-accent my-1">
                 {{ heartEfficiency > 0 ? heartEfficiency.toFixed(2) : '--' }} <span class="text-caption text-grey-darken-1">m/b</span>
               </div>
-              <div class="text-caption text-grey-lighten-1 ml-sm-2" v-if="heartEfficiency > 0 && averageHeartRate > 0">
+              <div class="text-caption text-grey-lighten-1 mt-0.5" v-if="heartEfficiency > 0 && averageHeartRate > 0">
                 (平均心拍: <span class="text-white">{{ Math.round(averageHeartRate) }} bpm</span>)
               </div>
             </div>
@@ -210,11 +210,11 @@
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">心肺デカップリング値</div>
-            <div class="d-flex flex-column flex-sm-row align-baseline">
+            <div>
               <div class="text-h4 font-weight-bold text-deep-purple-accent-3 my-1">
                 {{ staminaDecouplingAnalysis.available ? staminaDecouplingAnalysis.decoupling.toFixed(1) : '--' }} <span class="text-caption text-grey-darken-1">%</span>
               </div>
-              <div class="text-caption text-grey-lighten-1 ml-sm-2" v-if="staminaDecouplingAnalysis.available">
+              <div class="text-caption text-grey-lighten-1 mt-0.5" v-if="staminaDecouplingAnalysis.available">
                 (判定: <span class="text-white font-weight-bold">{{ staminaDecouplingAnalysis.rating.split(' ')[0] }}</span>)
               </div>
             </div>
