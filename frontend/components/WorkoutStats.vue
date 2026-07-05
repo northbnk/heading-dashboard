@@ -106,11 +106,11 @@
         <div class="d-flex justify-space-between align-center">
           <div>
             <div class="text-caption text-grey">{{ goalLabel }}ペース最長距離 {{ goalPaceLimitLabel }}</div>
-            <div class="d-flex flex-column flex-sm-row align-baseline">
+            <div>
               <div class="text-h4 font-weight-bold text-secondary my-1">
                 {{ targetPaceMaxDistance.distance > 0 ? targetPaceMaxDistance.distance.toFixed(1) : '--' }} <span class="text-caption text-grey-darken-1">km</span>
               </div>
-              <div class="text-caption text-grey-lighten-1 ml-sm-2" v-if="targetPaceMaxDistance.date">
+              <div class="text-caption text-grey-lighten-1 mt-0.5" v-if="targetPaceMaxDistance.date">
                 (記録日: <span class="text-white">{{ targetPaceMaxDistance.date }}</span>)
               </div>
             </div>
@@ -1149,6 +1149,10 @@ export default {
   border-radius: 20px !important;
   transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
   box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.3) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  height: 100% !important;
 }
 
 .stat-card:hover {
