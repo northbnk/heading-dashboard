@@ -361,6 +361,71 @@
       </v-col>
     </v-row>
 
+    <!-- マイシューズボックス パネル -->
+    <v-row v-if="!loading" class="mt-4">
+      <v-col cols="12">
+        <v-card class="menu-card px-4 py-4 rounded-xl" elevation="3">
+          <div class="text-subtitle-1 font-weight-bold text-white d-flex align-center mb-3">
+            <v-icon color="warning" icon="mdi-archive-outline" class="mr-2" size="22"></v-icon>
+            マイシューズボックス (登録シューズコレクション)
+          </div>
+          <v-divider class="mb-4" style="opacity: 0.08"></v-divider>
+
+          <div v-if="allShoes.length === 0" class="text-grey text-body-2 py-8 text-center">
+            <v-icon icon="mdi-shoe-sneaker" size="32" class="mb-2 text-grey-darken-2 d-block mx-auto"></v-icon>
+            Stravaでランニングアクティビティと紐付いたシューズがまだ同期されていません。
+          </div>
+          <div v-else>
+            <div class="shoes-box-grid">
+              <v-card
+                v-for="shoe in allShoes"
+                :key="shoe.name"
+                variant="outlined"
+                class="shoe-box-item pa-3 rounded-lg border-grey-darken-3 d-flex flex-column align-center justify-space-between text-center"
+                style="background: rgba(25, 28, 41, 0.4);"
+              >
+                <div class="shoe-status-tag w-100 d-flex justify-end mb-1">
+                  <v-chip
+                    size="x-small"
+                    :color="shoe.color"
+                    variant="flat"
+                    class="font-weight-bold text-black px-1.5"
+                    style="height: 16px;"
+                  >
+                    {{ shoe.status }}
+                  </v-chip>
+                </div>
+                <ShoeIcon :name="shoe.name" :size="72" class="my-1"></ShoeIcon>
+                <div class="w-100">
+                  <div class="text-caption font-weight-bold text-white text-truncate mb-0.5 px-1" style="font-size: 0.75rem;">
+                    {{ shoe.name }}
+                  </div>
+                  <div class="text-h6 font-weight-black text-white" style="font-size: 1.1rem; line-height: 1.1;">
+                    {{ shoe.distance.toFixed(0) }} <span class="text-caption text-grey" style="font-size: 0.65rem;">km</span>
+                  </div>
+                  <div class="text-caption text-grey-lighten-1" style="font-size: 0.6rem; margin-top: 2px;">
+                    使用回数: {{ shoe.runs }}回
+                  </div>
+                </div>
+                <div class="w-100 mt-2 px-1">
+                  <v-progress-linear
+                    :model-value="shoe.lifePercent"
+                    :color="shoe.color"
+                    height="4"
+                    rounded
+                  ></v-progress-linear>
+                  <div class="d-flex justify-space-between text-grey-darken-1" style="font-size: 0.55rem; margin-top: 2px;">
+                    <span>0km</span>
+                    <span>寿命 600km</span>
+                  </div>
+                </div>
+              </v-card>
+            </div>
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
+
     <!-- 大会登録・編集ダイアログ -->
     <race-form
       :active="raceFormActive"
@@ -410,9 +475,13 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import ShoeIcon from '~/components/ShoeIcon.vue'
 
 export default {
   name: 'AthleteDashboardView',
+  components: {
+    ShoeIcon
+  },
   setup() {
     const route = useRoute()
     const athleteId = route.params.id
@@ -754,6 +823,50 @@ export default {
       return Math.round(sum * 10) / 10
     })
 
+    // 全てのシューズデータを集計 (マイシューズボックス用)
+    const allShoes = computed(() => {
+      const shoesMap = new Map()
+      workouts.value.forEach(w => {
+        if (w.gearName) {
+          const name = w.gearName
+          if (!shoesMap.has(name)) {
+            shoesMap.set(name, {
+              name,
+              totalDistance: 0,
+              totalRuns: 0
+            })
+          }
+          const s = shoesMap.get(name)
+          s.totalDistance += Number(w.distance || 0)
+          s.totalRuns += 1
+        }
+      })
+
+      return Array.from(shoesMap.values()).map(s => {
+        const lifeLimit = 600
+        const lifePercent = Math.min((s.totalDistance / lifeLimit) * 100, 100)
+        
+        let color = 'success'
+        let status = '良好'
+        if (s.totalDistance >= 500) {
+          color = 'error'
+          status = '交換推奨'
+        } else if (s.totalDistance >= 400) {
+          color = 'warning'
+          status = 'そろそろ'
+        }
+
+        return {
+          name: s.name,
+          distance: s.totalDistance,
+          runs: s.totalRuns,
+          lifePercent: Math.round(lifePercent),
+          color,
+          status
+        }
+      }).sort((a, b) => b.distance - a.distance)
+    })
+
     // 大会診断ステータス（アドバイス連動用）
     const raceDiagnosis = computed(() => {
       const race = upcomingRace.value
@@ -1035,13 +1148,32 @@ export default {
       handleSaveRace,
       handleDeleteRace,
       weeklyTotalTarget,
-      weeklyTotalActual
+      weeklyTotalActual,
+      allShoes
     }
   }
 }
 </script>
 
 <style scoped>
+.shoes-box-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.shoe-box-item {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  min-height: 195px;
+}
+
+.shoe-box-item:hover {
+  transform: translateY(-4px);
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.04) !important;
+}
+
 .dashboard-container {
   background: radial-gradient(circle at 80% 20%, rgba(99, 102, 241, 0.1) 0%, rgba(15, 17, 26, 1) 75%);
 }

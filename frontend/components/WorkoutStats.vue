@@ -271,9 +271,12 @@
               </div>
             </div>
           </div>
-          <v-avatar color="rgba(245, 158, 11, 0.1)" rounded size="48">
-            <v-icon color="orange-darken-3" icon="mdi-shoe-run" size="28"></v-icon>
-          </v-avatar>
+          <div class="d-flex align-center flex-shrink-0">
+            <ShoeIcon :name="mainShoe.name" :size="48" v-if="mainShoe.name"></ShoeIcon>
+            <v-avatar color="rgba(245, 158, 11, 0.1)" rounded size="48" v-else>
+              <v-icon color="orange-darken-3" icon="mdi-shoe-run" size="28"></v-icon>
+            </v-avatar>
+          </div>
         </div>
         <!-- プログレスバー（シューズ寿命600kmに対する割合） -->
         <v-progress-linear
@@ -433,23 +436,26 @@
           <div v-else class="w-100">
             <v-row>
               <v-col v-for="shoe in shoeAnalytics.shoes" :key="shoe.name" cols="12" sm="6" md="4" class="mb-2">
-                <v-card variant="outlined" class="pa-4 rounded-lg border-grey-darken-3" style="background: rgba(255,255,255,0.01)">
-                  <div class="d-flex justify-space-between align-center text-body-2 mb-1">
-                    <span class="font-weight-bold text-white">{{ shoe.name }}</span>
-                    <span class="text-caption text-grey">
-                      累計: <strong class="text-white">{{ shoe.distance }} km</strong> ({{ shoe.runs }}回)
-                    </span>
+                <v-card variant="outlined" class="pa-4 rounded-lg border-grey-darken-3 d-flex gap-3 align-center" style="background: rgba(255,255,255,0.01)">
+                  <ShoeIcon :name="shoe.name" :size="52" class="flex-shrink-0"></ShoeIcon>
+                  <div class="flex-grow-1 overflow-hidden" style="min-width: 0;">
+                    <div class="d-flex justify-space-between align-center text-body-2 mb-1 gap-1">
+                      <span class="font-weight-bold text-white text-truncate">{{ shoe.name }}</span>
+                      <span class="text-caption text-grey flex-shrink-0">
+                        <strong>{{ shoe.distance }} km</strong>
+                      </span>
+                    </div>
+                    <div class="d-flex justify-space-between align-center text-caption text-grey-lighten-1 mb-2">
+                      <span class="text-truncate">Pace: {{ shoe.paceStr }}/k <span v-if="shoe.avgHR" class="d-none d-sm-inline">| HR: {{ shoe.avgHR }}</span></span>
+                      <span :class="`text-${shoe.color} font-weight-bold flex-shrink-0`">{{ shoe.runs }}回</span>
+                    </div>
+                    <v-progress-linear
+                      :model-value="shoe.lifePercent"
+                      :color="shoe.color"
+                      height="6"
+                      rounded
+                    ></v-progress-linear>
                   </div>
-                  <div class="d-flex justify-space-between align-center text-caption text-grey-lighten-1 mb-2">
-                    <span>平均ペース: {{ shoe.paceStr }}/km <span v-if="shoe.avgHR">| 心拍: {{ shoe.avgHR }} bpm</span></span>
-                    <span :class="`text-${shoe.color} font-weight-bold`">{{ shoe.status }}</span>
-                  </div>
-                  <v-progress-linear
-                    :model-value="shoe.lifePercent"
-                    :color="shoe.color"
-                    height="8"
-                    rounded
-                  ></v-progress-linear>
                 </v-card>
               </v-col>
             </v-row>
@@ -462,9 +468,13 @@
 
 <script>
 import { computed } from 'vue'
+import ShoeIcon from './ShoeIcon.vue'
 
 export default {
   name: 'WorkoutStats',
+  components: {
+    ShoeIcon
+  },
   props: {
     workouts: {
       type: Array,
