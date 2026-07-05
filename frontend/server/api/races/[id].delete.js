@@ -1,7 +1,7 @@
 import { verifyUser, getSupabaseClient } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const user = await verifyUser(event)
+  const athleteId = await verifyUser(event)
   const idStr = event.context.params.id
   const id = parseInt(idStr, 10)
 
@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   const { error } = await supabase
     .from('races')
     .delete()
-    .eq('user_id', user.id)
+    .eq('athlete_id', athleteId)
     .eq('id', id)
 
   if (error) {

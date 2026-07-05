@@ -2,13 +2,13 @@ import { verifyUser, getSupabaseClient } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
-    const user = await verifyUser(event)
+    const athleteId = await verifyUser(event)
     const supabase = getSupabaseClient()
 
     const { data, error } = await supabase
       .from('plans')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('athlete_id', athleteId)
 
     if (error) {
       console.error('Failed to query plans from Supabase:', error)

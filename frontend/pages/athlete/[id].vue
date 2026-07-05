@@ -83,7 +83,7 @@
                 rounded="lg"
                 class="font-weight-bold text-white mr-2"
                 prepend-icon="mdi-swap-horizontal"
-                :href="`/api/auth/strava/connect?token=${sessionToken}`"
+                href="/api/auth/strava/connect"
               >
                 Stravaと連携
               </v-btn>
@@ -104,7 +104,7 @@
 
           <!-- ログイン・ログアウト -->
           <v-btn
-            v-if="!user"
+            v-if="!isLoggedIn"
             color="primary"
             size="small"
             variant="flat"
@@ -157,7 +157,7 @@
           <v-divider class="mb-2" style="opacity: 0.08"></v-divider>
 
           <div v-if="upcomingRacesList.length > 0" class="d-flex flex-column justify-space-between flex-grow-1">
-            <!-- Sleek Countdown Display -->
+            <!-- Countdown Display -->
             <div class="main-countdown-compact pa-2 mb-2 d-flex align-center justify-space-between">
               <div class="overflow-hidden">
                 <div class="text-caption text-primary font-weight-bold mb-0.5" style="font-size: 0.7rem">
@@ -186,7 +186,7 @@
                 :class="{ 'main-race-row-compact': race.id === upcomingRace.id }"
               >
                 <div class="d-flex align-center overflow-hidden">
-                  <v-icon
+                   <v-icon
                     :color="race.id === upcomingRace.id ? 'secondary' : 'grey-darken-2'"
                     :icon="race.id === upcomingRace.id ? 'mdi-star' : 'mdi-star-outline'"
                     class="mr-1 flex-shrink-0"
@@ -318,10 +318,10 @@
     <v-row v-else class="mt-0">
       <!-- 左側カラム (スタッツ4項目 ＆ トレーニング診断) -->
       <v-col cols="12" lg="6">
-        <!-- 距離、VDOT、目標ペース距離、心肺効率 (2x2で配置) -->
+        <!-- 距離、VDOT、目標ペース距離、心肺効率 -->
         <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="stats-only" class="mb-4"></workout-stats>
         
-        <!-- トレーニング診断 (全幅) -->
+        <!-- トレーニング診断 -->
         <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="diagnosis-only" class="mb-4"></workout-stats>
       </v-col>
 
@@ -334,14 +334,6 @@
         <workout-table :workouts="workouts"></workout-table>
       </v-col>
     </v-row>
-
-    <!-- ワークアウト登録・編集ダイアログフォーム -->
-    <workout-form
-      :active="formActive"
-      :workout="selectedWorkout"
-      @close="closeWorkoutForm"
-      @save="handleSaveWorkout"
-    ></workout-form>
 
     <!-- 大会登録・編集ダイアログ -->
     <race-form
@@ -364,13 +356,6 @@
       @revert="handleRevertPlan"
     ></plan-form>
 
-    <!-- 管理者ログインダイアログ -->
-    <login-dialog
-      :active="loginDialogActive"
-      @close="loginDialogActive = false"
-      @success="handleLoginSuccess"
-    ></login-dialog>
-
     <!-- スナックバーによる通知フィードバック -->
     <v-snackbar
       v-model="snackbar.show"
@@ -388,46 +373,32 @@
 </template>
 
 <script>
-import workoutApi from '~/utils/workout'
-import raceApi from '~/utils/race'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 export default {
-  name: 'DashboardView',
+  name: 'AthleteDashboardView',
   setup() {
+    const route = useRoute()
+    const athleteId = route.params.id
+
+    // 認証・権限状態
+    const isLoggedIn = ref(false)
+    const isOwner = ref(false)
+    const athleteInfo = ref(null)
+
+    // ダッシュボード表示用データ
     const workouts = ref([])
     const races = ref([])
+    const customPlans = ref({})
     const loading = ref(true)
-    const formActive = ref(false)
-    const raceFormActive = ref(false)
-    const selectedWorkout = ref(null)
     const syncing = ref(false)
     const targetGoal = ref('sub3.5')
     let autoSyncInterval = null
 
-    // Strava連携関連状態
-    const stravaStatus = ref({ linked: false, configSetup: false, athlete: null })
-    const loadStravaStatus = async () => {
-      try {
-        const res = await fetch('/api/auth/strava/status')
-        if (res.ok) {
-          stravaStatus.value = await res.json()
-        }
-      } catch (err) {
-        console.error('Failed to load Strava status', err)
-      }
-    }
-
-    // 通知スナックバー設定
-    const snackbar = ref({
-      show: false,
-      text: '',
-      color: 'success',
-      icon: 'mdi-check-circle'
-    })
-
-    // 管理者関連状態
-    const loginDialogActive = ref(false)
-    const isAdmin = ref(false)
+    // フォーム関連状態
+    const formActive = ref(false)
+    const raceFormActive = ref(false)
+    const selectedWorkout = ref(null)
     const selectedRace = ref(null)
 
     // 練習プラン編集用状態
@@ -435,70 +406,93 @@ export default {
     const planFormDate = ref('')
     const planFormDayName = ref('')
     const selectedPlanData = ref(null)
-    const customPlans = ref({})
 
-    const checkIsAdmin = () => {
+    // Strava連携ステータス
+    const stravaStatus = ref({ linked: false, configSetup: false, athlete: null })
+
+    // 通知スナックバー
+    const snackbar = ref({
+      show: false,
+      text: '',
+      color: 'success',
+      icon: 'mdi-check-circle'
+    })
+
+    const showNotification = (text, color = 'success', icon = 'mdi-check-circle') => {
+      snackbar.value = {
+        show: true,
+        text,
+        color,
+        icon
+      }
+    }
+
+    // 共有リンクのコピー
+    const copySharingUrl = () => {
       if (import.meta.client) {
-        const match = document.cookie.match(/(^|;)\s*admin_session\s*=\s*([^;]+)/)
-        isAdmin.value = !!(match && match[2] === 'authenticated')
+        navigator.clipboard.writeText(window.location.href)
+        showNotification('共有用URLをクリップボードにコピーしました！', 'success', 'mdi-clipboard-check')
       }
     }
 
-    const handleLoginSuccess = () => {
-      isAdmin.value = true
-      loginDialogActive.value = false
-      showNotification('管理者としてログインしました')
-    }
-
-    const handleLogout = async () => {
-      try {
-        await fetch('/api/auth/logout', { method: 'POST' })
-        isAdmin.value = false
-        showNotification('ログアウトしました')
-      } catch (err) {
-        console.error('Logout error:', err)
-      }
-    }
-
-    // 全ワークアウトの読み込み
-    const loadWorkouts = async () => {
+    // 指定されたアスリートIDのデータを取得
+    const loadAthleteData = async () => {
       loading.value = true
       try {
-        if (stravaStatus.value.linked) {
-          workouts.value = await workoutApi.getAllWorkouts()
+        const res = await fetch(`/api/athlete/${athleteId}/data`)
+        if (res.ok) {
+          const data = await res.json()
+          workouts.value = data.workouts || []
+          races.value = data.races || []
+          customPlans.value = data.plans || {}
+          athleteInfo.value = data.athlete || null
         } else {
-          workouts.value = []
+          showNotification('指定されたアスリート情報が見つかりません。', 'error', 'mdi-alert-circle')
+          setTimeout(() => navigateTo('/'), 1500)
         }
       } catch (err) {
-        console.error('データの取得に失敗しました', err)
-        showNotification('データの取得に失敗しました。接続を確認してください。', 'error', 'mdi-alert-circle')
+        console.error('Failed to load athlete data:', err)
+        showNotification('データの読み込みに失敗しました。', 'error', 'mdi-alert-circle')
       } finally {
         loading.value = false
       }
     }
 
-    // 大会データの読み込み
-    const loadRaces = async () => {
+    // ログインユーザーのセッション確認と所有者判定
+    const checkOwnership = async () => {
       try {
-        races.value = await raceApi.getRaces()
-      } catch (err) {
-        console.error('大会情報の取得に失敗しました', err)
-      }
-    }
-
-    // カスタム上書き練習メニューの読み込み
-    const loadCustomPlans = async () => {
-      try {
-        const res = await fetch('/api/plans')
+        const res = await fetch('/api/auth/strava/status')
         if (res.ok) {
-          customPlans.value = await res.json()
+          const status = await res.json()
+          stravaStatus.value = status
+          isLoggedIn.value = status.linked && !!status.athlete?.id
+          isOwner.value = status.linked && Number(status.athlete?.id) === Number(athleteId)
+        } else {
+          isLoggedIn.value = false
+          isOwner.value = false
         }
       } catch (err) {
-        console.error('Failed to load custom plans', err)
+        console.error('Failed to retrieve Strava link status:', err)
+        isLoggedIn.value = false
+        isOwner.value = false
       }
     }
 
-    // エントリー済みのすべての今後の大会（今日 2026-07-04 以降）
+    // ログアウト処理
+    const handleLogout = async () => {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' })
+        isLoggedIn.value = false
+        isOwner.value = false
+        stravaStatus.value = { linked: false, configSetup: false, athlete: null }
+        showNotification('ログアウトしました')
+        navigateTo('/')
+      } catch (err) {
+        console.error('Logout error:', err)
+      }
+    }
+
+    // 今後の大会リスト
     const upcomingRacesList = computed(() => {
       if (races.value.length === 0) return []
       const baseTime = new Date('2026-07-04').getTime()
@@ -511,62 +505,25 @@ export default {
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     })
 
-    // 直近の大会（今日以降で最も近いもの）
+    // 直近のターゲット大会
     const upcomingRace = computed(() => {
       if (upcomingRacesList.value.length === 0) return null
       return upcomingRacesList.value[0]
     })
 
-    // 直近レースまでのカウントダウン日数
+    // 残り日数
     const upcomingRaceDays = computed(() => {
       if (!upcomingRace.value) return 0
       return calculateDaysUntil(upcomingRace.value.date)
     })
 
-    // 日付差分の計算ユーティリティ
     const calculateDaysUntil = (dateStr) => {
-      const BASE_DATE = new Date('2026-07-04')
-      const raceTime = new Date(dateStr).getTime()
-      const diffTime = raceTime - BASE_DATE.getTime()
-      return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
-    }
-
-    // 大会診断ステータス（アドバイス連動用）
-    const raceDiagnosis = computed(() => {
-      const race = upcomingRace.value
-      const BASE_DATE = new Date('2026-07-04')
-      if (!race) return null
-      
-      const raceTime = new Date(race.date).getTime()
-      const diffTime = raceTime - BASE_DATE.getTime()
+      const today = new Date('2026-07-04')
+      const targetDate = new Date(dateStr)
+      const diffTime = targetDate.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-      
-      if (diffDays >= 91) {
-        return {
-          mode: 'VOLUME_ADJUSTMENT',
-          heading: 'ベースアップ期間（走行ボリューム意識）'
-        }
-      } else {
-        const weeksRemaining = Math.max(0, Math.ceil(diffDays / 7))
-        let phaseName = ''
-        if (weeksRemaining >= 9) {
-          phaseName = '鍛錬期（脚作り）'
-        } else if (weeksRemaining >= 5) {
-          phaseName = '実戦強化期'
-        } else if (weeksRemaining >= 2) {
-          phaseName = '調整期（テーパリング）'
-        } else {
-          phaseName = '直前期'
-        }
-        
-        return {
-          mode: 'PERIODIZATION',
-          heading: `${race.name} まで あと ${weeksRemaining}週 ｜ ${phaseName}`,
-          phaseName,
-          weeksRemaining
-        }
-      }
-    })
+      return diffDays < 0 ? 0 : diffDays
+    }
 
     // 目標に応じた月間走行距離のノルマ
     const monthlyGoalDistance = computed(() => {
@@ -594,7 +551,7 @@ export default {
         .reduce((sum, w) => sum + Number(w.distance || 0), 0)
     })
 
-    // 今後一週間の練習メニューデータ生成
+    // カレンダー情報の自動構築
     const weeklySchedule = computed(() => {
       const diag = raceDiagnosis.value
       const G = monthlyGoalDistance.value
@@ -617,7 +574,6 @@ export default {
       }
 
       const getMenuForDay = (dayName, dateStr) => {
-        // Check custom overrides first
         if (customPlans.value && customPlans.value[dateStr]) {
           const override = customPlans.value[dateStr]
           return {
@@ -628,7 +584,6 @@ export default {
           }
         }
 
-        // Default dynamic menu logic
         if (!upcomingRace.value || (diag && diag.mode === 'VOLUME_ADJUSTMENT')) {
           const gap = Math.max(0, G - D)
           const weeklyTarget = gap > 0 ? gap : G / 4
@@ -692,21 +647,17 @@ export default {
         return { menuText: '休み', targetDistance: 0, isQuality: false }
       }
 
-      // 今日(2026-07-04)から7日分の予定を生成
       const weekDates = []
       const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土']
       const today = new Date('2026-07-04')
-      
       const currentDayIndex = today.getDay()
       const mondayOffset = currentDayIndex === 0 ? -6 : 1 - currentDayIndex
-      
       const monday = new Date(today)
       monday.setDate(today.getDate() + mondayOffset)
       
       for (let i = 0; i < 7; i++) {
         const currentDate = new Date(monday)
         currentDate.setDate(monday.getDate() + i)
-        
         const dateStr = currentDate.toISOString().split('T')[0]
         const dayName = daysOfWeek[currentDate.getDay()]
         weekDates.push({ dateStr, dayName })
@@ -724,17 +675,13 @@ export default {
           hasRun = true
           actualDistance = dailyWorkouts.reduce((sum, w) => sum + Number(w.distance || 0), 0)
           const totalMovingTime = dailyWorkouts.reduce((sum, w) => w.movingTimeSeconds || w.durationSeconds || 0, 0)
-          
-          if (actualDistance > 0 && totalMovingTime > 0) {
-            actualPace = Math.round(totalMovingTime / actualDistance)
-          }
+          if (actualDistance > 0 && totalMovingTime > 0) actualPace = Math.round(totalMovingTime / actualDistance)
         }
 
         let isCleared = false
         if (menu.targetDistance > 0 && hasRun) {
-          if (!menu.isQuality) {
-            isCleared = actualDistance >= menu.targetDistance * 0.90
-          } else {
+          if (!menu.isQuality) isCleared = actualDistance >= menu.targetDistance * 0.90
+          else {
             const minPace = menu.targetPace ? menu.targetPace - 10 : 0
             const maxPace = menu.targetPace ? menu.targetPace + 20 : 9999
             const paceOk = actualPace && actualPace >= minPace && actualPace <= maxPace
@@ -762,6 +709,43 @@ export default {
       })
     })
 
+    // 大会診断ステータス（アドバイス連動用）
+    const raceDiagnosis = computed(() => {
+      const race = upcomingRace.value
+      const BASE_DATE = new Date('2026-07-04')
+      if (!race) return null
+      
+      const raceTime = new Date(race.date).getTime()
+      const diffTime = raceTime - BASE_DATE.getTime()
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      
+      if (diffDays >= 91) {
+        return {
+          mode: 'VOLUME_ADJUSTMENT',
+          heading: 'ベースアップ期間（走行ボリューム意識）'
+        }
+      } else {
+        const weeksRemaining = Math.max(0, Math.ceil(diffDays / 7))
+        let phaseName = ''
+        if (weeksRemaining >= 9) {
+          phaseName = '鍛錬期（脚作り）'
+        } else if (weeksRemaining >= 5) {
+          phaseName = '実戦強化期'
+        } else if (weeksRemaining >= 2) {
+          phaseName = '調整期（テーパリング）'
+        } else {
+          phaseName = '直前期'
+        }
+        
+        return {
+          mode: 'PERIODIZATION',
+          heading: `${race.name} まで あと ${weeksRemaining}週 ｜ ${phaseName}`,
+          phaseName,
+          weeksRemaining
+        }
+      }
+    })
+
     // 大会登録ダイアログ制御
     const openRaceForm = () => {
       if (!isOwner.value) return
@@ -783,12 +767,17 @@ export default {
     const handleSaveRace = async (raceData) => {
       if (!isOwner.value) return
       try {
-        const headers = getAuthHeaders()
-        const result = await raceApi.createRace(raceData, headers)
-        if (result.success) {
+        const res = await fetch('/api/races', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(raceData)
+        })
+        if (res.ok) {
           showNotification('大会スケジュールを保存しました。')
           await loadAthleteData()
           closeRaceForm()
+        } else {
+          throw new Error('Save endpoint returned error status')
         }
       } catch (err) {
         showNotification('大会情報の保存に失敗しました: ' + err.message, 'error', 'mdi-alert-circle')
@@ -799,11 +788,12 @@ export default {
       if (!isOwner.value) return
       if (confirm('本当にこの大会予定を削除しますか？')) {
         try {
-          const headers = getAuthHeaders()
-          const result = await raceApi.deleteRace(id, headers)
-          if (result.success) {
+          const res = await fetch(`/api/races/${id}`, { method: 'DELETE' })
+          if (res.ok) {
             showNotification('大会スケジュールを削除しました。')
             await loadAthleteData()
+          } else {
+            throw new Error('Delete endpoint returned error status')
           }
         } catch (err) {
           showNotification('大会情報の削除に失敗しました: ' + err.message, 'error', 'mdi-alert-circle')
@@ -833,16 +823,17 @@ export default {
     const handleSavePlan = async () => {
       if (!isOwner.value) return
       try {
-        const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() }
         const res = await fetch('/api/plans', {
           method: 'POST',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dateStr: planFormDate.value, plan: selectedPlanData.value })
         })
         if (res.ok) {
           showNotification('練習メニューを上書き設定しました。')
           await loadAthleteData()
           closePlanForm()
+        } else {
+          throw new Error('Save endpoint returned error status')
         }
       } catch (err) {
         showNotification('保存失敗: ' + err.message, 'error', 'mdi-alert-circle')
@@ -852,16 +843,17 @@ export default {
     const handleRevertPlan = async () => {
       if (!isOwner.value) return
       try {
-        const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() }
         const res = await fetch('/api/plans', {
           method: 'POST',
-          headers,
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dateStr: planFormDate.value, plan: null })
         })
         if (res.ok) {
           showNotification('メニューを初期状態に戻しました。')
           await loadAthleteData()
           closePlanForm()
+        } else {
+          throw new Error('Revert endpoint returned error status')
         }
       } catch (err) {
         showNotification('復元失敗: ' + err.message, 'error', 'mdi-alert-circle')
@@ -882,13 +874,17 @@ export default {
       if (!isOwner.value) return
       syncing.value = true
       try {
-        const headers = getAuthHeaders()
-        const result = await workoutApi.syncWorkouts(headers)
-        if (result && result.success) {
-          showNotification(`同期完了: ${result.newlySynced}件の新規アクティビティを読み込みました`)
-          await loadAthleteData()
+        const response = await fetch('/api/workout/sync', { method: 'POST' })
+        if (response.ok) {
+          const result = await response.json()
+          if (result && result.success) {
+            showNotification(`同期完了: ${result.newlySynced}件の新規アクティビティを読み込みました`)
+            await loadAthleteData()
+          } else {
+            showNotification('データはすべて同期済みです。')
+          }
         } else {
-          showNotification('データはすべて同期済みです。')
+          throw new Error('Sync endpoint returned error status')
         }
       } catch (err) {
         showNotification('同期に失敗しました: ' + err.message, 'error', 'mdi-alert-circle')
@@ -900,12 +896,16 @@ export default {
     onMounted(async () => {
       await loadAthleteData()
       await checkOwnership()
-      if ($supabase) {
-        $supabase.auth.onAuthStateChange(async () => { await checkOwnership() })
-      }
+
+      // 所有者本人のみ15分ごとの自動同期
       autoSyncInterval = setInterval(async () => {
         if (isOwner.value && stravaStatus.value.linked) {
-          try { await workoutApi.syncWorkouts(getAuthHeaders()); await loadAthleteData() } catch (e) { console.error(e) }
+          try {
+            await fetch('/api/workout/sync', { method: 'POST' })
+            await loadAthleteData()
+          } catch (e) {
+            console.error(e)
+          }
         }
       }, 900000)
     })
@@ -928,8 +928,7 @@ export default {
       snackbar,
       syncing,
       targetGoal,
-      user,
-      sessionToken,
+      isLoggedIn,
       isOwner,
       athleteInfo,
       stravaStatus,

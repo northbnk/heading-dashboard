@@ -1,7 +1,7 @@
 import { verifyUser, getSupabaseClient } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const user = await verifyUser(event)
+  const athleteId = await verifyUser(event)
   const body = await readBody(event)
   
   const { dateStr, plan } = body
@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
     const { error } = await supabase
       .from('plans')
       .delete()
-      .eq('user_id', user.id)
+      .eq('athlete_id', athleteId)
       .eq('date', dateStr)
 
     if (error) {
@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
     const { error } = await supabase
       .from('plans')
       .upsert({
-        user_id: user.id,
+        athlete_id: athleteId,
         date: dateStr,
         menu_text: plan.menuText || '休み',
         target_distance: Number(plan.targetDistance || 0),

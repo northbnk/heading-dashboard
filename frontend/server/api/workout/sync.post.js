@@ -1,14 +1,14 @@
 import { verifyUser, getSupabaseClient } from '../../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const user = await verifyUser(event)
+  const athleteId = await verifyUser(event)
   const supabase = getSupabaseClient()
 
-  // 1. Get user Strava credentials
+  // 1. Get athlete Strava credentials
   const { data: config, error: configError } = await supabase
     .from('strava_tokens')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('athlete_id', athleteId)
     .maybeSingle()
 
   if (configError || !config) {
@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   const { data: existingWorkouts, error: workoutsError } = await supabase
     .from('workouts')
     .select('id, splits, gear_name')
-    .eq('user_id', user.id)
+    .eq('athlete_id', athleteId)
 
   if (workoutsError) {
     console.warn('Failed to load existing cache from Supabase:', workoutsError.message)
@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     // 4. Fetch latest activities from Strava API
-    console.log(`Syncing workouts for user ${user.id} from Strava...`)
+    console.log(`Syncing workouts for athlete ${athleteId} from Strava...`)
     const activities = await $fetch('https://www.strava.com/api/v3/athlete/activities', {
       headers: {
         Authorization: `Bearer ${accessToken}`
@@ -112,7 +112,7 @@ export default defineEventHandler(async (event) => {
           .from('workouts')
           .upsert({
             id: activityId,
-            user_id: user.id,
+            athlete_id: athleteId,
             workout_date: detailed.start_date_local,
             activity_name: detailed.name || 'ランニング',
             distance: distanceKm,
@@ -160,7 +160,7 @@ export default defineEventHandler(async (event) => {
           .from('workouts')
           .upsert({
             id: activityId,
-            user_id: user.id,
+            athlete_id: athleteId,
             workout_date: activity.start_date_local,
             activity_name: activity.name || 'ランニング',
             distance: distanceKm,
@@ -204,7 +204,7 @@ async function getValidToken(config, supabase) {
     return config.access_token
   }
 
-  console.log('Refreshing expired Strava access token for user:', config.user_id)
+  console.log('Refreshing expired Strava access token for athlete:', config.athlete_id)
   const runtimeConfig = useRuntimeConfig()
   try {
     const refreshResponse = await $fetch('https://www.strava.com/oauth/token', {
@@ -225,7 +225,7 @@ async function getValidToken(config, supabase) {
         expires_at: refreshResponse.expires_at,
         updated_at: new Date().toISOString()
       })
-      .eq('user_id', config.user_id)
+      .eq('athlete_id', config.athlete_id)
 
     if (updateError) {
       throw new Error('Failed to update refreshed tokens in Supabase: ' + updateError.message)

@@ -2,13 +2,13 @@ import { verifyUser, getSupabaseClient } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
   try {
-    const user = await verifyUser(event)
+    const athleteId = await verifyUser(event)
     const supabase = getSupabaseClient()
 
     const { data, error } = await supabase
       .from('races')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('athlete_id', athleteId)
       .order('date', { ascending: true })
 
     if (error) {

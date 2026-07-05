@@ -1,7 +1,7 @@
 import { verifyUser, getSupabaseClient } from '../utils/auth'
 
 export default defineEventHandler(async (event) => {
-  const user = await verifyUser(event)
+  const athleteId = await verifyUser(event)
   const body = await readBody(event)
   
   if (!body.name || !body.date) {
@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
         category: body.category || 'フルマラソン',
         target_time: body.targetTime || 'サブ3.5'
       })
-      .eq('user_id', user.id)
+      .eq('athlete_id', athleteId)
       .eq('id', Number(body.id))
       .select()
       .maybeSingle()
@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
     const { data, error } = await supabase
       .from('races')
       .insert({
-        user_id: user.id,
+        athlete_id: athleteId,
         name: body.name,
         date: body.date,
         category: body.category || 'フルマラソン',

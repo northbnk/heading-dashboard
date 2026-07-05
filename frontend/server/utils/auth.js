@@ -19,36 +19,50 @@ export const getSupabaseClient = () => {
   })
 }
 
+/**
+ * HTTPOnly Cookie からセッションを確認し、ログイン中の athlete_id を返す
+ */
 export const verifyUser = async (event) => {
-  const authHeader = getHeader(event, 'authorization')
-  const token = authHeader?.replace('Bearer ', '')
+  const sessionCookie = getCookie(event, 'athlete_session')
 
-  if (!token) {
+  if (!sessionCookie) {
     throw createError({
       statusCode: 401,
-      statusMessage: 'Unauthorized. Supabase token is missing.'
+      statusMessage: 'Unauthorized. Session cookie is missing.'
     })
   }
 
-  const config = useRuntimeConfig()
-  // Verify token via public anon client
-  const client = createClient(config.public.supabaseUrl, config.public.supabaseAnonKey, {
-    db: {
-      schema: 'training'
-    },
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    }
-  })
-  
-  const { data: { user }, error } = await client.auth.getUser(token)
-  if (error || !user) {
+  const parts = sessionCookie.split(':')
+  if (parts.length !== 2) {
     throw createError({
       statusCode: 401,
-      statusMessage: 'Invalid session token: ' + (error?.message || 'User not found')
+      statusMessage: 'Unauthorized. Invalid session format.'
     })
   }
 
-  return user
+  const [athleteIdStr, sessionToken] = parts
+  const athleteId = Number(athleteIdStr)
+
+  if (isNaN(athleteId) || !sessionToken) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized. Invalid session parameters.'
+    })
+  }
+
+  const supabase = getSupabaseClient()
+  const { data, error } = await supabase
+    .from('strava_tokens')
+    .select('athlete_id, session_token')
+    .eq('athlete_id', athleteId)
+    .maybeSingle()
+
+  if (error || !data || data.session_token !== sessionToken) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: 'Unauthorized. Session token is invalid or expired.'
+    })
+  }
+
+  return athleteId
 }

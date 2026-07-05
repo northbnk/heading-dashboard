@@ -12,10 +12,10 @@ export default defineEventHandler(async (event) => {
 
   const supabase = getSupabaseClient()
 
-  // 1. Find user associated with this athlete_id
+  // 1. Find athlete info
   const { data: tokenData, error: tokenError } = await supabase
     .from('strava_tokens')
-    .select('user_id, athlete_firstname, athlete_lastname')
+    .select('athlete_firstname, athlete_lastname')
     .eq('athlete_id', Number(athleteId))
     .maybeSingle()
 
@@ -26,24 +26,22 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const userId = tokenData.user_id
-
-  // 2. Fetch all user data in parallel
+  // 2. Fetch all data in parallel by athlete_id
   const [workoutsRes, racesRes, plansRes] = await Promise.all([
     supabase
       .from('workouts')
       .select('*')
-      .eq('user_id', userId)
+      .eq('athlete_id', Number(athleteId))
       .order('workout_date', { ascending: false }),
     supabase
       .from('races')
       .select('*')
-      .eq('user_id', userId)
+      .eq('athlete_id', Number(athleteId))
       .order('date', { ascending: true }),
     supabase
       .from('plans')
       .select('*')
-      .eq('user_id', userId)
+      .eq('athlete_id', Number(athleteId))
   ])
 
   if (workoutsRes.error || racesRes.error || plansRes.error) {

@@ -3,7 +3,10 @@ import { getSupabaseClient } from '../../../utils/auth'
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const code = query.code
-  const userId = query.state // user_id passed via state parameter
+  const state = query.state
+
+  const oauthState = getCookie(event, 'oauth_state')
+  deleteCookie(event, 'oauth_state')
 
   if (!code) {
     throw createError({
@@ -12,10 +15,10 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  if (!userId) {
+  if (!state || state !== oauthState) {
     throw createError({
-      statusCode: 400,
-      statusMessage: 'State parameter (user ID) is missing.'
+      statusCode: 403,
+      statusMessage: 'CSRF validation failed. Invalid state parameter.'
     })
   }
 
@@ -23,7 +26,7 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseClient()
 
   try {
-    console.log(`Exchanging authorization code for token for user ${userId}...`)
+    console.log(`Exchanging authorization code for token...`)
     const tokenResponse = await $fetch('https://www.strava.com/oauth/token', {
       method: 'POST',
       body: {
@@ -35,18 +38,26 @@ export default defineEventHandler(async (event) => {
     })
 
     const athlete = tokenResponse.athlete || {}
+    const athleteId = Number(athlete.id)
+
+    if (!athleteId) {
+      throw new Error('Failed to retrieve athlete ID from Strava response.')
+    }
+
+    // Generate a secure session token
+    const sessionToken = crypto.randomUUID()
 
     // Store tokens and athlete info in Supabase strava_tokens table
     const { error: upsertError } = await supabase
       .from('strava_tokens')
       .upsert({
-        user_id: userId,
+        athlete_id: athleteId,
         access_token: tokenResponse.access_token,
         refresh_token: tokenResponse.refresh_token,
         expires_at: tokenResponse.expires_at,
-        athlete_id: athlete.id,
         athlete_firstname: athlete.firstname || '',
         athlete_lastname: athlete.lastname || '',
+        session_token: sessionToken,
         updated_at: new Date().toISOString()
       })
 
@@ -58,10 +69,19 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    console.log(`Successfully linked Strava account for user ${userId}. Athlete ID: ${athlete.id}`)
+    console.log(`Successfully linked Strava account. Athlete ID: ${athleteId}`)
 
-    // Redirect user back to their dynamic sharing athlete URL page!
-    return sendRedirect(event, `/athlete/${athlete.id}`)
+    // Set secure HTTPOnly session cookie (holds athleteId:sessionToken)
+    const host = event.node.req.headers.host || 'localhost:3000'
+    setCookie(event, 'athlete_session', `${athleteId}:${sessionToken}`, {
+      httpOnly: true,
+      secure: !host.includes('localhost'),
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 3600 // 30 days
+    })
+
+    // Redirect user back to their dashboard!
+    return sendRedirect(event, `/athlete/${athleteId}`)
   } catch (err) {
     console.error('Failed to exchange Strava token:', err)
     throw createError({
