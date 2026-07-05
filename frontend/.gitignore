@@ -26,4 +26,5 @@ dist-ssr
 # Nuxt 3 directories
 .nuxt
 .output
+.env
 
