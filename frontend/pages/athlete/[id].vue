@@ -14,7 +14,7 @@
           </div>
         </div>
 
-        <!-- 目標設定切り替えトグル & Strava連携 & 管理者ログイン -->
+        <!-- 目標設定切り替えトグル & Strava連携 & ログイン・ログアウト -->
         <div class="d-flex align-center mt-2 mt-sm-0 flex-wrap gap-1">
           <v-btn-toggle
             v-model="targetGoal"
@@ -234,9 +234,23 @@
       <!-- 右側：今後一週間の練習プラン (cols="12" md="8") -->
       <v-col cols="12" md="8" class="d-flex">
         <v-card class="menu-card px-3 py-3 w-100 d-flex flex-column justify-space-between" elevation="3">
-          <div class="text-subtitle-2 font-weight-bold text-white d-flex align-center mb-2">
-            <v-icon color="secondary" icon="mdi-calendar-week" class="mr-1" size="18"></v-icon>
-            今後一週間の練習プラン (7/4〜7/10)
+          <div class="text-subtitle-2 font-weight-bold text-white d-flex align-center mb-2 w-100 justify-space-between flex-wrap">
+            <div class="d-flex align-center">
+              <v-icon color="secondary" icon="mdi-calendar-week" class="mr-1" size="18"></v-icon>
+              今後一週間の練習プラン (7/4〜7/10)
+            </div>
+            <v-btn
+              v-if="isOwner"
+              color="primary"
+              prepend-icon="mdi-wizard-hat"
+              density="compact"
+              variant="outlined"
+              rounded="lg"
+              class="font-weight-bold text-caption text-white ml-2"
+              @click="openAutoPlanDialog"
+            >
+              プラン一括作成
+            </v-btn>
           </div>
 
           <v-divider class="mb-2" style="opacity: 0.08"></v-divider>
@@ -319,10 +333,14 @@
       <!-- 左側カラム (スタッツ4項目 ＆ トレーニング診断) -->
       <v-col cols="12" lg="6">
         <!-- 距離、VDOT、目標ペース距離、心肺効率 -->
-        <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="stats-only" class="mb-4"></workout-stats>
-        
-        <!-- トレーニング診断 -->
-        <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="diagnosis-only" class="mb-4"></workout-stats>
+        <v-row>
+          <v-col cols="12">
+            <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="stats-only" class="mb-4"></workout-stats>
+          </v-col>
+          <v-col cols="12">
+            <workout-stats :workouts="workouts" :target-goal="targetGoal" :upcoming-race="upcomingRace" display-mode="diagnosis-only" class="mb-4"></workout-stats>
+          </v-col>
+        </v-row>
       </v-col>
 
       <!-- 右側カラム (トレーニング統合分析グラフ ＆ アクティビティ履歴) -->
@@ -343,7 +361,7 @@
       @save="handleSaveRace"
     ></race-form>
 
-    <!-- 練習メニュー編集ダイアログ -->
+    <!-- 練習メニュー個別編集ダイアログ -->
     <plan-form
       v-if="planFormDate"
       :active="planFormActive"
@@ -355,6 +373,16 @@
       @save="handleSavePlan"
       @revert="handleRevertPlan"
     ></plan-form>
+
+    <!-- 練習プラン一括作成・自動推薦ダイアログ -->
+    <auto-plan-dialog
+      :active="autoPlanActive"
+      :workouts="workouts"
+      :target-goal="targetGoal"
+      :weekly-schedule="weeklySchedule"
+      @close="closeAutoPlanDialog"
+      @save="handleSaveAutoPlan"
+    ></auto-plan-dialog>
 
     <!-- スナックバーによる通知フィードバック -->
     <v-snackbar
@@ -401,11 +429,14 @@ export default {
     const selectedWorkout = ref(null)
     const selectedRace = ref(null)
 
-    // 練習プラン編集用状態
+    // 練習プラン個別編集用状態
     const planFormActive = ref(false)
     const planFormDate = ref('')
     const planFormDayName = ref('')
     const selectedPlanData = ref(null)
+
+    // 練習プラン一括作成用状態
+    const autoPlanActive = ref(false)
 
     // Strava連携ステータス
     const stravaStatus = ref({ linked: false, configSetup: false, athlete: null })
@@ -801,7 +832,7 @@ export default {
       }
     }
 
-    // 練習プラン編集ダイアログ制御
+    // 練習プラン個別編集ダイアログ制御
     const openPlanForm = (day) => {
       if (!isOwner.value) return
       planFormDate.value = day.dateStr
@@ -861,6 +892,36 @@ export default {
     }
 
     const hasCustomOverride = (dateStr) => !!customPlans.value[dateStr]
+
+    // 練習プラン一括作成ダイアログ制御
+    const openAutoPlanDialog = () => {
+      if (!isOwner.value) return
+      autoPlanActive.value = true
+    }
+
+    const closeAutoPlanDialog = () => {
+      autoPlanActive.value = false
+    }
+
+    const handleSaveAutoPlan = async (plansToSave) => {
+      if (!isOwner.value) return
+      try {
+        const res = await fetch('/api/plans/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plans: plansToSave })
+        })
+        if (res.ok) {
+          showNotification('1週間分の練習プランを一括適用しました。')
+          await loadAthleteData()
+          closeAutoPlanDialog()
+        } else {
+          throw new Error('Bulk save endpoint returned error status')
+        }
+      } catch (err) {
+        showNotification('一括保存失敗: ' + err.message, 'error', 'mdi-alert-circle')
+      }
+    }
 
     // ワークアウト関連のダミーメソッド
     const openNewWorkoutForm = () => {}
@@ -937,6 +998,7 @@ export default {
       planFormDate,
       planFormDayName,
       selectedPlanData,
+      autoPlanActive,
       copySharingUrl,
       handleLogout,
       openEditRaceForm,
@@ -945,6 +1007,9 @@ export default {
       handleSavePlan,
       handleRevertPlan,
       hasCustomOverride,
+      openAutoPlanDialog,
+      closeAutoPlanDialog,
+      handleSaveAutoPlan,
       openNewWorkoutForm,
       openEditWorkoutForm,
       closeWorkoutForm,
