@@ -309,8 +309,9 @@
     </v-col>
   </v-row>
 
-  <!-- マラソン特化トレーニング診断セクション ( displayMode が all または diagnosis-only の時に表示 ) -->
+  <!-- 診断カードセクション ( displayMode が all または diagnosis-only の時に表示 ) -->
   <v-row :class="displayMode === 'all' ? 'mt-6' : ''" v-if="displayMode === 'all' || displayMode === 'diagnosis-only'">
+    <!-- 1. マラソン特化トレーニング診断 -->
     <v-col cols="12">
       <v-card class="diagnosis-card px-3 px-sm-6 py-4" elevation="4">
         <div class="d-flex flex-column flex-sm-row justify-space-between align-start align-sm-center mb-4">
@@ -370,13 +371,10 @@
         </v-row>
       </v-card>
     </v-col>
-  </v-row>
 
-  <!-- 心肺耐久スタミナ（デカップリング） & シューズ寿命分析セクション -->
-  <v-row :class="displayMode === 'all' ? 'mt-6' : ''" v-if="displayMode === 'all' || displayMode === 'diagnosis-only'">
-    <!-- 左側：心肺耐久スタミナ診断 -->
-    <v-col cols="12" md="6" class="d-flex">
-      <v-card class="diagnosis-card px-3 px-sm-6 py-4 w-100" elevation="4">
+    <!-- 2. 心肺耐久スタミナ（デカップリング）診断 -->
+    <v-col cols="12" class="mt-4">
+      <v-card class="diagnosis-card px-3 px-sm-6 py-4" elevation="4">
         <div class="d-flex justify-space-between align-center mb-3">
           <div class="text-h6 font-weight-bold text-white d-flex align-center">
             <v-icon color="accent" icon="mdi-heart-pulse" class="mr-2"></v-icon>
@@ -416,9 +414,9 @@
       </v-card>
     </v-col>
 
-    <!-- 右側：シューズ走行寿命管理 -->
-    <v-col cols="12" md="6" class="d-flex">
-      <v-card class="diagnosis-card px-3 px-sm-6 py-4 w-100" elevation="4">
+    <!-- 3. シューズ走行寿命 & 効率分析 -->
+    <v-col cols="12" class="mt-4">
+      <v-card class="diagnosis-card px-3 px-sm-6 py-4" elevation="4">
         <div class="text-h6 font-weight-bold text-white d-flex align-center mb-3">
           <v-icon color="warning" icon="mdi-shoe-run" class="mr-2"></v-icon>
           シューズ走行寿命 & 効率分析
@@ -430,24 +428,28 @@
         </div>
         
         <div v-else class="w-100">
-          <div v-for="shoe in shoeAnalytics.shoes" :key="shoe.name" class="mb-4">
-            <div class="d-flex justify-space-between align-center text-body-2 mb-1">
-              <span class="font-weight-bold text-white">{{ shoe.name }}</span>
-              <span class="text-caption text-grey">
-                累計: <strong class="text-white">{{ shoe.distance }} km</strong> ({{ shoe.runs }}回)
-              </span>
-            </div>
-            <div class="d-flex justify-space-between align-center text-caption text-grey-lighten-1 mb-2">
-              <span>平均ペース: {{ shoe.paceStr }}/km <span v-if="shoe.avgHR">| 心拍: {{ shoe.avgHR }} bpm</span></span>
-              <span :class="`text-${shoe.color} font-weight-bold`">{{ shoe.status }}</span>
-            </div>
-            <v-progress-linear
-              :model-value="shoe.lifePercent"
-              :color="shoe.color"
-              height="8"
-              rounded
-            ></v-progress-linear>
-          </div>
+          <v-row>
+            <v-col v-for="shoe in shoeAnalytics.shoes" :key="shoe.name" cols="12" sm="6" md="4" class="mb-2">
+              <v-card variant="outlined" class="pa-4 rounded-lg border-grey-darken-3" style="background: rgba(255,255,255,0.01)">
+                <div class="d-flex justify-space-between align-center text-body-2 mb-1">
+                  <span class="font-weight-bold text-white">{{ shoe.name }}</span>
+                  <span class="text-caption text-grey">
+                    累計: <strong class="text-white">{{ shoe.distance }} km</strong> ({{ shoe.runs }}回)
+                  </span>
+                </div>
+                <div class="d-flex justify-space-between align-center text-caption text-grey-lighten-1 mb-2">
+                  <span>平均ペース: {{ shoe.paceStr }}/km <span v-if="shoe.avgHR">| 心拍: {{ shoe.avgHR }} bpm</span></span>
+                  <span :class="`text-${shoe.color} font-weight-bold`">{{ shoe.status }}</span>
+                </div>
+                <v-progress-linear
+                  :model-value="shoe.lifePercent"
+                  :color="shoe.color"
+                  height="8"
+                  rounded
+                ></v-progress-linear>
+              </v-card>
+            </v-col>
+          </v-row>
         </div>
       </v-card>
     </v-col>
