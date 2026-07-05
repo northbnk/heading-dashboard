@@ -1,8 +1,17 @@
 import fs from 'fs'
 import path from 'path'
 
+function getProjectRoot() {
+  let cwd = process.cwd()
+  if (cwd.includes('.output')) {
+    return cwd.split('.output')[0]
+  }
+  return cwd
+}
+
 export default defineEventHandler(async (event) => {
-  const dataFilePath = path.join(process.cwd(), 'data/workouts.json')
+  const root = getProjectRoot()
+  const dataFilePath = path.join(root, 'data/workouts.json')
 
   if (!fs.existsSync(dataFilePath)) {
     return []

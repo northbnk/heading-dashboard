@@ -1,13 +1,22 @@
 import fs from 'fs'
 import path from 'path'
 
+function getProjectRoot() {
+  let cwd = process.cwd()
+  if (cwd.includes('.output')) {
+    return cwd.split('.output')[0]
+  }
+  return cwd
+}
+
 export default defineEventHandler(async (event) => {
-  const configPath = path.join(process.cwd(), 'strava_api_config.json')
-  
+  const root = getProjectRoot()
+  const configPath = path.join(root, 'strava_api_config.json')
+
   if (!fs.existsSync(configPath)) {
     throw createError({
-      statusCode: 500,
-      statusMessage: 'Strava API configuration file (strava_api_config.json) is missing.'
+      statusCode: 400,
+      statusMessage: 'Config file not found. Please create strava_api_config.json.'
     })
   }
 
@@ -17,7 +26,7 @@ export default defineEventHandler(async (event) => {
   } catch (err) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to parse strava_api_config.json: ' + err.message
+      statusMessage: 'Failed to read config file: ' + err.message
     })
   }
 
@@ -25,20 +34,20 @@ export default defineEventHandler(async (event) => {
   if (!clientId || clientId === 'YOUR_STRAVA_CLIENT_ID') {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Strava Client ID is not configured. Please set your client_id in strava_api_config.json first.'
+      statusMessage: 'Strava client_id is not configured in strava_api_config.json.'
     })
   }
 
-  // Construct dynamic redirect URI based on the incoming request host
+  // Construct dynamic redirect URL (works on localhost or production)
   const host = event.node.req.headers.host || 'localhost:3000'
   const protocol = host.includes('localhost') ? 'http' : 'https'
   const redirectUri = `${protocol}://${host}/api/auth/strava/callback`
 
-  const authUrl = `https://www.strava.com/oauth/authorize` +
-    `?client_id=${clientId}` +
-    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-    `&response_type=code` +
-    `&scope=activity:read_all`
+  console.log(`OAuth Initiated. Host: ${host}, Protocol: ${protocol}, Redirect URI: ${redirectUri}`)
+
+  // Redirect user to Strava OAuth consent screen
+  const scope = 'activity:read_all'
+  const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`
 
   return sendRedirect(event, authUrl)
 })

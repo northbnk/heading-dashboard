@@ -1,9 +1,18 @@
 import fs from 'fs'
 import path from 'path'
 
+function getProjectRoot() {
+  let cwd = process.cwd()
+  if (cwd.includes('.output')) {
+    return cwd.split('.output')[0]
+  }
+  return cwd
+}
+
 export default defineEventHandler(async (event) => {
-  const configPath = path.join(process.cwd(), 'strava_api_config.json')
-  const dataFilePath = path.join(process.cwd(), 'data/workouts.json')
+  const root = getProjectRoot()
+  const configPath = path.join(root, 'strava_api_config.json')
+  const dataFilePath = path.join(root, 'data/workouts.json')
 
   if (!fs.existsSync(configPath)) {
     throw createError({
@@ -248,6 +257,5 @@ async function getValidToken(config, configPath) {
 
 function convertDate(isoString) {
   if (!isoString) return ''
-  // "2026-07-04T18:25:34Z" -> "2026-07-04 18:25:34"
   return isoString.replace('T', ' ').replace('Z', '').split('.')[0]
 }

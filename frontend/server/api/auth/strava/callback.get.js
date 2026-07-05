@@ -1,6 +1,14 @@
 import fs from 'fs'
 import path from 'path'
 
+function getProjectRoot() {
+  let cwd = process.cwd()
+  if (cwd.includes('.output')) {
+    return cwd.split('.output')[0]
+  }
+  return cwd
+}
+
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const code = query.code
@@ -8,16 +16,17 @@ export default defineEventHandler(async (event) => {
   if (!code) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Authorization code is missing from callback query parameters.'
+      statusMessage: 'Authorization code is missing.'
     })
   }
 
-  const configPath = path.join(process.cwd(), 'strava_api_config.json')
-  
+  const root = getProjectRoot()
+  const configPath = path.join(root, 'strava_api_config.json')
+
   if (!fs.existsSync(configPath)) {
     throw createError({
-      statusCode: 500,
-      statusMessage: 'Strava API configuration file (strava_api_config.json) is missing.'
+      statusCode: 400,
+      statusMessage: 'Config file not found.'
     })
   }
 
@@ -27,47 +36,38 @@ export default defineEventHandler(async (event) => {
   } catch (err) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to parse strava_api_config.json: ' + err.message
-    })
-  }
-
-  const clientId = config.client_id
-  const clientSecret = config.client_secret
-
-  if (!clientId || clientId === 'YOUR_STRAVA_CLIENT_ID' || !clientSecret || clientSecret === 'YOUR_STRAVA_CLIENT_SECRET') {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Strava Client ID or Client Secret is not configured in strava_api_config.json.'
+      statusMessage: 'Failed to read config file.'
     })
   }
 
   try {
-    // Exchange authorization code for tokens
+    // Exchange authorization code for token
+    console.log(`Exchanging authorization code for token...`)
     const tokenResponse = await $fetch('https://www.strava.com/oauth/token', {
       method: 'POST',
       body: {
-        client_id: clientId,
-        client_secret: clientSecret,
+        client_id: config.client_id,
+        client_secret: config.client_secret,
         code: code,
         grant_type: 'authorization_code'
       }
     })
 
-    // Update config with tokens and athlete profile
+    // Store tokens and athlete info
     config.access_token = tokenResponse.access_token
     config.refresh_token = tokenResponse.refresh_token
     config.expires_at = tokenResponse.expires_at
-    config.athlete = tokenResponse.athlete
+    config.athlete = tokenResponse.athlete || null
 
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf8')
 
-    // Redirect user back to dashboard home
+    // Redirect user back to dashboard home page
     return sendRedirect(event, '/')
   } catch (err) {
-    console.error('Failed to exchange token with Strava API:', err)
+    console.error('Failed to exchange Strava token:', err)
     throw createError({
       statusCode: 500,
-      statusMessage: 'Failed to exchange authorization code: ' + (err.data?.message || err.message)
+      statusMessage: 'Failed to retrieve Strava access tokens: ' + (err.data?.message || err.message)
     })
   }
 })

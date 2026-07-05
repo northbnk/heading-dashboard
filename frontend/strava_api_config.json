@@ -1,8 +1,29 @@
 {
-  "client_id": "YOUR_STRAVA_CLIENT_ID",
-  "client_secret": "YOUR_STRAVA_CLIENT_SECRET",
-  "access_token": "",
-  "refresh_token": "",
-  "expires_at": 0,
-  "athlete": null
+  "client_id": "262959",
+  "client_secret": "14ef1a51b469c523179885499bd53a5af37ee01b",
+  "access_token": "a07247ce628875ee97cf08049f06524c05b1cc26",
+  "refresh_token": "6a8432588fd45d6573ad7d18d468c21851c2e92c",
+  "expires_at": 1783246250,
+  "athlete": {
+    "id": 21815751,
+    "id_str": "21815751",
+    "username": "fujino_takahiro",
+    "resource_state": 2,
+    "firstname": "Fujino",
+    "lastname": "Takahiro",
+    "bio": null,
+    "city": null,
+    "state": null,
+    "country": null,
+    "sex": "M",
+    "premium": true,
+    "summit": true,
+    "created_at": "2017-05-09T06:20:22Z",
+    "updated_at": "2026-07-05T04:01:53Z",
+    "badge_type_id": 1,
+    "profile_medium": "https://lh3.googleusercontent.com/a/ACg8ocKKai9_PiW-ZtpARitEQGNKn99KbXDjMLmyuSuVI4T4g9T1rnu1=s96-c",
+    "profile": "https://lh3.googleusercontent.com/a/ACg8ocKKai9_PiW-ZtpARitEQGNKn99KbXDjMLmyuSuVI4T4g9T1rnu1=s96-c",
+    "friend": null,
+    "follower": null
+  }
 }
