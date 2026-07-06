@@ -31,6 +31,7 @@ const popularModelsMap = {
   'vaporfly': { col: 1, row: 0 },
   'adios pro': { col: 2, row: 0 },
   'metaspeed': { col: 3, row: 0 },
+  'magic speed': { col: 3, row: 0 },
   'sc elite': { col: 4, row: 0 },
   // Trainers (Row 1)
   'pegasus': { col: 0, row: 1 },
@@ -44,6 +45,7 @@ const popularModelsMap = {
   'bondi': { col: 1, row: 2 },
   'cloudmonster': { col: 2, row: 2 },
   'nimbus': { col: 3, row: 2 },
+  '1080': { col: 3, row: 2 },
   'invincible': { col: 4, row: 2 },
   // Trail (Row 3)
   'speedgoat': { col: 0, row: 3 },
