@@ -10,15 +10,18 @@
 
       <v-card-text class="px-6 py-4">
         <v-form ref="formRef" v-model="isValid" lazy-validation>
-          <!-- シューズ名 -->
-          <v-text-field
+          <!-- シューズ名 (オートコンプリート候補付き) -->
+          <v-combobox
             v-model="form.name"
+            :items="shoeNames"
             label="シューズ名 *"
-            placeholder="例: Nike Pegasus 40"
+            placeholder="例: Nike Pegasus 40 (検索入力・新規入力どちらも可)"
             variant="outlined"
             :rules="[rules.required]"
             class="mb-3"
-          ></v-text-field>
+            clearable
+            @update:model-value="onShoeNameChange"
+          ></v-combobox>
 
           <!-- カテゴリ分類 (スプライトの行マッピング用) -->
           <v-select
@@ -80,7 +83,8 @@
 </template>
 
 <script>
-import { ref, watch, reactive } from 'vue'
+import { ref, watch, reactive, computed } from 'vue'
+import { popularShoesList } from '~/utils/popularShoes'
 
 export default {
   name: 'ShoeForm',
@@ -110,6 +114,18 @@ export default {
       runs: 0
     })
 
+    const shoeNames = computed(() => popularShoesList.map(s => s.name))
+
+    const onShoeNameChange = (val) => {
+      if (!val) return
+      // オブジェクト/文字列の安全な比較
+      const nameStr = typeof val === 'string' ? val : val.name
+      const matched = popularShoesList.find(s => s.name.toLowerCase() === nameStr.toLowerCase())
+      if (matched && matched.category) {
+        form.category = matched.category
+      }
+    }
+
     const rules = {
       required: v => !!v || '必須項目です。'
     }
@@ -132,8 +148,11 @@ export default {
       const { valid } = await formRef.value.validate()
       if (!valid) return
 
+      // v-combobox がオブジェクトを返す場合があるため、文字列に変換
+      const finalName = typeof form.name === 'string' ? form.name : form.name.name
+
       emit('save', {
-        name: form.name.trim(),
+        name: finalName.trim(),
         category: form.category,
         distance: Number(form.distance || 0),
         runs: Number(form.runs || 0)
@@ -146,6 +165,8 @@ export default {
       formRef,
       form,
       categories,
+      shoeNames,
+      onShoeNameChange,
       rules,
       closeForm,
       submitForm
