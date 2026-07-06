@@ -25,37 +25,124 @@ const props = defineProps({
   }
 })
 
-const popularModelsMap = {
-  // Racing (Row 0)
-  'alphafly': { col: 0, row: 0 },
-  'vaporfly': { col: 1, row: 0 },
-  'adios pro': { col: 2, row: 0 },
-  'metaspeed': { col: 3, row: 0 },
-  'magic speed': { col: 3, row: 0 },
-  'sc elite': { col: 4, row: 0 },
-  // Trainers (Row 1)
-  'pegasus': { col: 0, row: 1 },
-  'boston': { col: 1, row: 1 },
-  'novablast': { col: 2, row: 1 },
-  'endorphin': { col: 3, row: 1 },
-  'deviate nitro': { col: 4, row: 1 },
-  'velocity nitro': { col: 4, row: 1 },
-  // Cushion (Row 2)
-  'clifton': { col: 0, row: 2 },
-  'bondi': { col: 1, row: 2 },
-  'cloudmonster': { col: 2, row: 2 },
-  'nimbus': { col: 3, row: 2 },
-  '1080': { col: 3, row: 2 },
-  'invincible': { col: 4, row: 2 },
-  // Trail (Row 3)
-  'speedgoat': { col: 0, row: 3 },
-  'salomon': { col: 1, row: 3 },
-  'sense ride': { col: 1, row: 3 },
-  'trabuco': { col: 2, row: 3 },
-  'wildhorse': { col: 3, row: 3 },
-  'lone peak': { col: 4, row: 3 },
-  'timp': { col: 4, row: 3 }
-}
+const popularModelsMap = [
+  // Racing (Row 0, 1)
+  { pattern: 'alphafly 3', col: 0, row: 0 },
+  { pattern: 'alphafly 4', col: 0, row: 0 },
+  { pattern: 'alphafly', col: 0, row: 0 },
+  { pattern: 'vaporfly 3', col: 1, row: 0 },
+  { pattern: 'vaporfly 4', col: 1, row: 0 },
+  { pattern: 'vaporfly', col: 1, row: 0 },
+  { pattern: 'adios pro 3', col: 2, row: 0 },
+  { pattern: 'adios pro 4', col: 2, row: 0 },
+  { pattern: 'adios pro', col: 2, row: 0 },
+  { pattern: 'metaspeed sky', col: 3, row: 0 },
+  { pattern: 'metaspeed edge', col: 3, row: 0 },
+  { pattern: 'metaspeed', col: 3, row: 0 },
+  { pattern: 'magic speed 4', col: 3, row: 0 },
+  { pattern: 'magic speed 5', col: 3, row: 0 },
+  { pattern: 'magic speed', col: 3, row: 0 },
+  { pattern: 'sc elite v4', col: 4, row: 0 },
+  { pattern: 'sc elite v5', col: 4, row: 0 },
+  { pattern: 'sc elite', col: 4, row: 0 },
+  { pattern: 'cielo', col: 5, row: 0 },
+  { pattern: 'rocket', col: 5, row: 0 },
+  { pattern: 'fast-r', col: 4, row: 1 },
+  { pattern: 'phantasm', col: 5, row: 1 },
+
+  // Pegasus
+  { pattern: 'pegasus 40', col: 0, row: 2 },
+  { pattern: 'pegasus 41', col: 0, row: 3 },
+  { pattern: 'pegasus 42', col: 0, row: 4 },
+  { pattern: 'pegasus', col: 0, row: 2 },
+
+  // Boston
+  { pattern: 'boston 12', col: 1, row: 2 },
+  { pattern: 'boston 13', col: 1, row: 4 },
+  { pattern: 'boston', col: 1, row: 2 },
+
+  // Novablast
+  { pattern: 'novablast 4', col: 2, row: 2 },
+  { pattern: 'novablast 5', col: 2, row: 3 },
+  { pattern: 'novablast 6', col: 2, row: 4 },
+  { pattern: 'novablast', col: 2, row: 2 },
+
+  // Endorphin Speed / Pro
+  { pattern: 'endorphin pro', col: 3, row: 2 },
+  { pattern: 'endorphin speed', col: 3, row: 4 },
+  { pattern: 'endorphin', col: 3, row: 2 },
+
+  // Rebel
+  { pattern: 'rebel v4', col: 4, row: 2 },
+  { pattern: 'rebel v5', col: 5, row: 1 },
+  { pattern: 'rebel', col: 4, row: 2 },
+
+  // Wave Rider
+  { pattern: 'wave rider', col: 5, row: 2 },
+  { pattern: 'wave inspire', col: 5, row: 2 },
+
+  // Ghost
+  { pattern: 'ghost 16', col: 4, row: 3 },
+  { pattern: 'ghost 17', col: 4, row: 5 },
+  { pattern: 'ghost', col: 4, row: 3 },
+
+  // On Cloudrunner / Surfer / Flow
+  { pattern: 'cloudrunner', col: 5, row: 4 },
+  { pattern: 'cloudsurfer', col: 5, row: 4 },
+  { pattern: 'cloudflow', col: 5, row: 4 },
+
+  // Asics Trainers
+  { pattern: 'gt-2000', col: 2, row: 5 },
+  { pattern: 'cumulus', col: 3, row: 5 },
+
+  // Saucony Ride
+  { pattern: 'ride', col: 5, row: 5 },
+
+  // Hoka Clifton
+  { pattern: 'clifton 9', col: 0, row: 6 },
+  { pattern: 'clifton 10', col: 0, row: 7 },
+  { pattern: 'clifton', col: 0, row: 6 },
+
+  // Hoka Bondi
+  { pattern: 'bondi 8', col: 1, row: 6 },
+  { pattern: 'bondi 9', col: 1, row: 7 },
+  { pattern: 'bondi', col: 1, row: 6 },
+
+  // On Cloudmonster / Cloudeclipse
+  { pattern: 'cloudmonster', col: 2, row: 6 },
+  { pattern: 'cloudeclipse', col: 2, row: 6 },
+
+  // Gel-Nimbus
+  { pattern: 'nimbus', col: 3, row: 6 },
+  { pattern: 'glideride', col: 3, row: 6 },
+
+  // Invincible / Vomero
+  { pattern: 'invincible', col: 4, row: 6 },
+  { pattern: 'vomero', col: 4, row: 6 },
+
+  // NB 1080 / More
+  { pattern: '1080', col: 5, row: 6 },
+  { pattern: 'vongo', col: 5, row: 6 },
+  { pattern: 'more', col: 5, row: 6 },
+
+  // Brooks Glycerin
+  { pattern: 'glycerin', col: 3, row: 7 },
+
+  // Trail
+  { pattern: 'speedgoat', col: 0, row: 8 },
+  { pattern: 'sense ride', col: 1, row: 8 },
+  { pattern: 'salomon', col: 1, row: 8 },
+  { pattern: 'trabuco', col: 2, row: 8 },
+  { pattern: 'wildhorse', col: 3, row: 8 },
+  { pattern: 'kiger', col: 3, row: 8 },
+  { pattern: 'zegama', col: 3, row: 8 },
+  { pattern: 'lone peak', col: 4, row: 8 },
+  { pattern: 'timp', col: 4, row: 8 },
+  { pattern: 'peregrine', col: 5, row: 8 },
+  { pattern: 'cascadia', col: 4, row: 9 },
+  { pattern: 'hierro', col: 5, row: 9 },
+  { pattern: 'cloudultra', col: 3, row: 10 }
+]
 
 const imageSrc = computed(() => {
   let col = 0
@@ -69,18 +156,12 @@ const imageSrc = computed(() => {
     const safeHash = Math.abs(hash)
     const nameLower = props.name.toLowerCase()
 
-    // 1. Check direct matches for iconic real shoe models
-    let matchedKey = null
-    for (const key in popularModelsMap) {
-      if (nameLower.includes(key)) {
-        matchedKey = key
-        break
-      }
-    }
+    // 1. Check direct matches for iconic real shoe models in the array map
+    let matchedItem = popularModelsMap.find(item => nameLower.includes(item.pattern))
 
-    if (matchedKey) {
-      col = popularModelsMap[matchedKey].col
-      row = popularModelsMap[matchedKey].row
+    if (matchedItem) {
+      col = matchedItem.col
+      row = matchedItem.row
     } else {
       // 2. Map other shoes to a matching category coordinate
       let cat = props.category
@@ -98,52 +179,24 @@ const imageSrc = computed(() => {
 
       cat = cat.toLowerCase()
       if (cat === 'racing') {
-        const racingCoords = [
-          { col: 0, row: 0 }, // Alphafly
-          { col: 1, row: 0 }, // Vaporfly
-          { col: 2, row: 0 }, // Adizero Pro
-          { col: 3, row: 0 }, // Metaspeed
-          { col: 4, row: 0 }  // SC Elite
-        ]
-        const coord = racingCoords[safeHash % racingCoords.length]
-        col = coord.col
-        row = coord.row
+        // Map to racing row 0 or 1
+        row = safeHash % 2
+        col = safeHash % 6
       } else if (cat === 'daily') {
-        const dailyCoords = [
-          { col: 0, row: 1 }, // Pegasus
-          { col: 1, row: 1 }, // Boston
-          { col: 2, row: 1 }, // Novablast
-          { col: 3, row: 1 }, // Endorphin Speed
-          { col: 4, row: 1 }  // Puma Deviate
-        ]
-        const coord = dailyCoords[safeHash % dailyCoords.length]
-        col = coord.col
-        row = coord.row
+        // Map to daily rows 2 to 5
+        row = 2 + (safeHash % 4)
+        col = safeHash % 6
       } else if (cat === 'cushion') {
-        const cushionCoords = [
-          { col: 0, row: 2 }, // Clifton
-          { col: 1, row: 2 }, // Bondi
-          { col: 2, row: 2 }, // Cloudmonster
-          { col: 3, row: 2 }, // Nimbus
-          { col: 4, row: 2 }  // Invincible
-        ]
-        const coord = cushionCoords[safeHash % cushionCoords.length]
-        col = coord.col
-        row = coord.row
+        // Map to cushion rows 6 to 7
+        row = 6 + (safeHash % 2)
+        col = safeHash % 6
       } else if (cat === 'trail') {
-        const trailCoords = [
-          { col: 0, row: 3 }, // Speedgoat
-          { col: 1, row: 3 }, // Salomon
-          { col: 2, row: 3 }, // Trabuco
-          { col: 3, row: 3 }, // Wildhorse
-          { col: 4, row: 3 }  // Lone Peak
-        ]
-        const coord = trailCoords[safeHash % trailCoords.length]
-        col = coord.col
-        row = coord.row
+        // Map to trail rows 8 to 10
+        row = 8 + (safeHash % 3)
+        col = safeHash % 6
       } else {
-        col = safeHash % 5
-        row = safeHash % 5
+        row = safeHash % 11
+        col = safeHash % 6
       }
     }
   }
