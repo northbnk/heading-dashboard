@@ -32,40 +32,47 @@ const containerStyle = computed(() => {
     for (let i = 0; i < props.name.length; i++) {
       hash = props.name.charCodeAt(i) + ((hash << 5) - hash)
     }
-    col = Math.abs(hash) % 4 // 4 columns (0 to 3)
+    const safeHash = Math.abs(hash)
+    col = safeHash % 10 // 10 columns (0 to 9)
 
-    if (props.category) {
-      const cat = props.category.toLowerCase()
-      if (cat === 'racing') row = 0
-      else if (cat === 'daily') row = 1
-      else if (cat === 'cushion') row = 2
-      else if (cat === 'trail') row = 3
-      else row = Math.abs(hash) % 5
-    } else {
-      // Infer category from shoe name heuristics
+    // Determine row based on category (racing=rows 0-2, daily=rows 3-6, cushion=rows 7-9, trail=rows 10-12)
+    let cat = props.category
+    if (!cat) {
+      // Infer category from name heuristics if not provided
       const nameLower = props.name.toLowerCase()
       if (nameLower.includes('vapor') || nameLower.includes('alpha') || nameLower.includes('metaspeed') || nameLower.includes('adizero') || nameLower.includes('pro')) {
-        row = 0 // Racing
-      } else if (nameLower.includes('pegasus') || nameLower.includes('ghost') || nameLower.includes('clifton') || nameLower.includes('rider')) {
-        row = 1 // Daily
-      } else if (nameLower.includes('bondi') || nameLower.includes('invincible') || nameLower.includes('kayano') || nameLower.includes('nimbus')) {
-        row = 2 // Cushion
+        cat = 'racing'
       } else if (nameLower.includes('trail') || nameLower.includes('speedgoat') || nameLower.includes('wildhorse') || nameLower.includes('trabuco')) {
-        row = 3 // Trail
+        cat = 'trail'
+      } else if (nameLower.includes('bondi') || nameLower.includes('invincible') || nameLower.includes('kayano') || nameLower.includes('nimbus') || nameLower.includes('cushion')) {
+        cat = 'cushion'
       } else {
-        row = Math.abs(hash) % 5
+        cat = 'daily'
       }
+    }
+
+    cat = cat.toLowerCase()
+    if (cat === 'racing') {
+      row = safeHash % 3 // Rows 0-2
+    } else if (cat === 'daily') {
+      row = 3 + (safeHash % 4) // Rows 3-6
+    } else if (cat === 'cushion') {
+      row = 7 + (safeHash % 3) // Rows 7-9
+    } else if (cat === 'trail') {
+      row = 10 + (safeHash % 3) // Rows 10-12
+    } else {
+      row = safeHash % 13 // Fallback across all rows
     }
   }
 
-  const posX = col * (100 / 3) // 4 columns, indices 0-3 -> 3 steps
-  const posY = row * (100 / 4) // 5 rows, indices 0-4 -> 4 steps
+  const posX = col * (100 / 9)   // 10 columns -> indices 0-9 -> 9 steps
+  const posY = row * (100 / 12)  // 13 rows -> indices 0-12 -> 12 steps
 
   return {
     width: `${props.size}px`,
     height: `${props.size}px`,
-    backgroundImage: 'url("/shoes_sprite.jpg")',
-    backgroundSize: '400% 500%', // 4 columns, 5 rows (20 shoes total)
+    backgroundImage: 'url("/popular_shoes_sprite_right.jpg")',
+    backgroundSize: '1000% 1300%', // 10 columns, 13 rows
     backgroundPosition: `${posX}% ${posY}%`,
     backgroundRepeat: 'no-repeat',
     borderRadius: '12px',
