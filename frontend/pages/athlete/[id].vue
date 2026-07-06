@@ -1278,15 +1278,15 @@ export default {
 <style scoped>
 .shoes-box-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
   gap: 12px;
 }
 
 .shoe-box-item {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  min-height: 155px;
-  height: 155px;
+  min-height: 165px;
+  height: 165px;
   position: relative;
   overflow: hidden;
 }
@@ -1302,7 +1302,7 @@ export default {
 }
 
 .shoe-box-item:hover .shoe-main-content {
-  transform: translateY(-26px);
+  transform: translateY(-30px);
 }
 
 .shoe-stats-overlay {
