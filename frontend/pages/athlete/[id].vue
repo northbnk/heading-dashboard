@@ -365,9 +365,23 @@
     <v-row v-if="!loading" class="mt-4">
       <v-col cols="12">
         <v-card class="menu-card px-4 py-4 rounded-xl" elevation="3">
-          <div class="text-subtitle-1 font-weight-bold text-white d-flex align-center mb-3">
-            <v-icon color="warning" icon="mdi-archive-outline" class="mr-2" size="22"></v-icon>
-            マイシューズボックス (登録シューズコレクション)
+          <div class="text-subtitle-1 font-weight-bold text-white d-flex align-center justify-space-between mb-3 w-100 flex-wrap">
+            <div class="d-flex align-center">
+              <v-icon color="warning" icon="mdi-archive-outline" class="mr-2" size="22"></v-icon>
+              マイシューズボックス (登録シューズコレクション)
+            </div>
+            <v-btn
+              v-if="isOwner"
+              color="warning"
+              prepend-icon="mdi-plus"
+              density="compact"
+              variant="outlined"
+              rounded="lg"
+              class="font-weight-bold text-caption text-white mt-1 mt-sm-0"
+              @click="openShoeForm"
+            >
+              シューズ登録
+            </v-btn>
           </div>
           <v-divider class="mb-4" style="opacity: 0.08"></v-divider>
 
@@ -384,7 +398,19 @@
                 class="shoe-box-item pa-3 rounded-lg border-grey-darken-3 d-flex flex-column align-center justify-space-between text-center"
                 style="background: rgba(25, 28, 41, 0.4);"
               >
-                <div class="shoe-status-tag w-100 d-flex justify-end mb-1">
+                <div class="shoe-status-tag w-100 d-flex justify-space-between align-center mb-1">
+                  <v-btn
+                    v-if="isOwner && shoe.isCustom"
+                    icon="mdi-delete"
+                    variant="text"
+                    color="error"
+                    density="compact"
+                    size="x-small"
+                    class="pa-0 mr-1"
+                    style="width: 16px; height: 16px; min-width: 16px;"
+                    @click.stop="handleDeleteShoe(shoe.name)"
+                  ></v-btn>
+                  <div v-else></div>
                   <v-chip
                     size="x-small"
                     :color="shoe.color"
@@ -395,7 +421,7 @@
                     {{ shoe.status }}
                   </v-chip>
                 </div>
-                <ShoeIcon :name="shoe.name" :size="72" class="my-1"></ShoeIcon>
+                <ShoeIcon :name="shoe.name" :category="shoe.category" :size="72" class="my-1"></ShoeIcon>
                 <div class="w-100">
                   <div class="text-caption font-weight-bold text-white text-truncate mb-0.5 px-1" style="font-size: 0.75rem;">
                     {{ shoe.name }}
@@ -457,6 +483,13 @@
       @save="handleSaveAutoPlan"
     ></auto-plan-dialog>
 
+    <!-- シューズ登録ダイアログ -->
+    <shoe-form
+      :active="shoeFormActive"
+      @close="closeShoeForm"
+      @save="handleSaveShoe"
+    ></shoe-form>
+
     <!-- スナックバーによる通知フィードバック -->
     <v-snackbar
       v-model="snackbar.show"
@@ -476,11 +509,13 @@
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import ShoeIcon from '~/components/ShoeIcon.vue'
+import ShoeForm from '~/components/ShoeForm.vue'
 
 export default {
   name: 'AthleteDashboardView',
   components: {
-    ShoeIcon
+    ShoeIcon,
+    ShoeForm
   },
   setup() {
     const route = useRoute()
@@ -826,6 +861,8 @@ export default {
     // 全てのシューズデータを集計 (マイシューズボックス用)
     const allShoes = computed(() => {
       const shoesMap = new Map()
+
+      // 1. Strava等から同期されたワークアウトでの使用実績を集計
       workouts.value.forEach(w => {
         if (w.gearName) {
           const name = w.gearName
@@ -833,12 +870,34 @@ export default {
             shoesMap.set(name, {
               name,
               totalDistance: 0,
-              totalRuns: 0
+              totalRuns: 0,
+              category: '',
+              isCustom: false
             })
           }
           const s = shoesMap.get(name)
           s.totalDistance += Number(w.distance || 0)
           s.totalRuns += 1
+        }
+      })
+
+      // 2. ダッシュボードから直接登録されたカスタムシューズをマージ
+      customShoes.value.forEach(cs => {
+        if (!shoesMap.has(cs.name)) {
+          shoesMap.set(cs.name, {
+            name: cs.name,
+            totalDistance: Number(cs.distance || 0),
+            totalRuns: Number(cs.runs || 0),
+            category: cs.category,
+            isCustom: true
+          })
+        } else {
+          // すでにStrava側で実績がある場合、手動入力分をオフセット加算
+          const s = shoesMap.get(cs.name)
+          s.totalDistance += Number(cs.distance || 0)
+          s.totalRuns += Number(cs.runs || 0)
+          s.category = cs.category
+          s.isCustom = true
         }
       })
 
@@ -860,6 +919,8 @@ export default {
           name: s.name,
           distance: s.totalDistance,
           runs: s.totalRuns,
+          category: s.category,
+          isCustom: s.isCustom,
           lifePercent: Math.round(lifePercent),
           color,
           status
@@ -1081,7 +1142,53 @@ export default {
       }
     }
 
+    // シューズ登録関連処理
+    const shoeFormActive = ref(false)
+    const customShoes = ref([])
+
+    const openShoeForm = () => {
+      if (!isOwner.value) return
+      shoeFormActive.value = true
+    }
+
+    const closeShoeForm = () => {
+      shoeFormActive.value = false
+    }
+
+    const loadCustomShoes = () => {
+      if (import.meta.client) {
+        const stored = localStorage.getItem(`custom_shoes_${athleteId}`)
+        customShoes.value = stored ? JSON.parse(stored) : []
+      }
+    }
+
+    const handleSaveShoe = (shoeData) => {
+      if (!isOwner.value) return
+      if (customShoes.value.some(s => s.name === shoeData.name)) {
+        showNotification('同じ名前のシューズが既に登録されています。', 'error', 'mdi-alert-circle')
+        return
+      }
+      customShoes.value.push(shoeData)
+      if (import.meta.client) {
+        localStorage.setItem(`custom_shoes_${athleteId}`, JSON.stringify(customShoes.value))
+      }
+      showNotification('シューズを登録しました！', 'success', 'mdi-shoe-sneaker')
+      closeShoeForm()
+    }
+
+    const handleDeleteShoe = (name) => {
+      if (!isOwner.value) return
+      if (confirm(`「${name}」の登録を解除しますか？`)) {
+        customShoes.value = customShoes.value.filter(s => s.name !== name)
+        if (import.meta.client) {
+          localStorage.setItem(`custom_shoes_${athleteId}`, JSON.stringify(customShoes.value))
+        }
+        showNotification('シューズの登録を解除しました。')
+      }
+    }
+
     onMounted(async () => {
+      loadCustomShoes()
       await loadAthleteData()
       await checkOwnership()
 
@@ -1149,7 +1256,13 @@ export default {
       handleDeleteRace,
       weeklyTotalTarget,
       weeklyTotalActual,
-      allShoes
+      allShoes,
+      shoeFormActive,
+      customShoes,
+      openShoeForm,
+      closeShoeForm,
+      handleSaveShoe,
+      handleDeleteShoe
     }
   }
 }
