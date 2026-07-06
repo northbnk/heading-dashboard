@@ -24,32 +24,33 @@ const props = defineProps({
 })
 
 const popularModelsMap = {
-  // Racing
+  // Racing (Row 0)
   'alphafly': { col: 0, row: 0 },
   'vaporfly': { col: 1, row: 0 },
   'adios pro': { col: 2, row: 0 },
   'metaspeed': { col: 3, row: 0 },
-  // Trainers
+  'sc elite': { col: 4, row: 0 },
+  // Trainers (Row 1)
   'pegasus': { col: 0, row: 1 },
   'boston': { col: 1, row: 1 },
-  'novablast': { col: 2, row: 2 },
-  'endorphin': { col: 3, row: 2 },
-  // Cushion
-  'clifton': { col: 0, row: 3 },
-  'bondi': { col: 1, row: 3 },
-  'cloudmonster': { col: 2, row: 3 },
-  'deviate nitro': { col: 3, row: 3 },
-  'velocity nitro': { col: 3, row: 3 },
-  'nimbus': { col: 2, row: 4 },
-  'invincible': { col: 3, row: 4 },
-  // Trail
-  'speedgoat': { col: 0, row: 5 },
-  'salomon': { col: 1, row: 6 },
-  'sense ride': { col: 1, row: 6 },
-  'trabuco': { col: 2, row: 6 },
-  'wildhorse': { col: 3, row: 6 },
-  'lone peak': { col: 4, row: 6 },
-  'timp': { col: 4, row: 6 }
+  'novablast': { col: 2, row: 1 },
+  'endorphin': { col: 3, row: 1 },
+  'deviate nitro': { col: 4, row: 1 },
+  'velocity nitro': { col: 4, row: 1 },
+  // Cushion (Row 2)
+  'clifton': { col: 0, row: 2 },
+  'bondi': { col: 1, row: 2 },
+  'cloudmonster': { col: 2, row: 2 },
+  'nimbus': { col: 3, row: 2 },
+  'invincible': { col: 4, row: 2 },
+  // Trail (Row 3)
+  'speedgoat': { col: 0, row: 3 },
+  'salomon': { col: 1, row: 3 },
+  'sense ride': { col: 1, row: 3 },
+  'trabuco': { col: 2, row: 3 },
+  'wildhorse': { col: 3, row: 3 },
+  'lone peak': { col: 4, row: 3 },
+  'timp': { col: 4, row: 3 }
 }
 
 const containerStyle = computed(() => {
@@ -97,7 +98,8 @@ const containerStyle = computed(() => {
           { col: 0, row: 0 }, // Alphafly
           { col: 1, row: 0 }, // Vaporfly
           { col: 2, row: 0 }, // Adizero Pro
-          { col: 3, row: 0 }  // Metaspeed
+          { col: 3, row: 0 }, // Metaspeed
+          { col: 4, row: 0 }  // SC Elite
         ]
         const coord = racingCoords[safeHash % racingCoords.length]
         col = coord.col
@@ -106,51 +108,51 @@ const containerStyle = computed(() => {
         const dailyCoords = [
           { col: 0, row: 1 }, // Pegasus
           { col: 1, row: 1 }, // Boston
-          { col: 2, row: 2 }, // Novablast
-          { col: 3, row: 2 }  // Endorphin Speed
+          { col: 2, row: 1 }, // Novablast
+          { col: 3, row: 1 }, // Endorphin Speed
+          { col: 4, row: 1 }  // Puma Deviate
         ]
         const coord = dailyCoords[safeHash % dailyCoords.length]
         col = coord.col
         row = coord.row
       } else if (cat === 'cushion') {
         const cushionCoords = [
-          { col: 0, row: 3 }, // Clifton
-          { col: 1, row: 3 }, // Bondi
-          { col: 2, row: 3 }, // Cloudmonster
-          { col: 3, row: 3 }, // Deviate Nitro
-          { col: 2, row: 4 }, // Nimbus
-          { col: 3, row: 4 }  // Invincible
+          { col: 0, row: 2 }, // Clifton
+          { col: 1, row: 2 }, // Bondi
+          { col: 2, row: 2 }, // Cloudmonster
+          { col: 3, row: 2 }, // Nimbus
+          { col: 4, row: 2 }  // Invincible
         ]
         const coord = cushionCoords[safeHash % cushionCoords.length]
         col = coord.col
         row = coord.row
       } else if (cat === 'trail') {
         const trailCoords = [
-          { col: 0, row: 5 }, // Speedgoat
-          { col: 1, row: 6 }, // Salomon
-          { col: 2, row: 6 }, // Trabuco
-          { col: 3, row: 6 }, // Wildhorse
-          { col: 4, row: 6 }  // Lone Peak
+          { col: 0, row: 3 }, // Speedgoat
+          { col: 1, row: 3 }, // Salomon
+          { col: 2, row: 3 }, // Trabuco
+          { col: 3, row: 3 }, // Wildhorse
+          { col: 4, row: 3 }  // Lone Peak
         ]
         const coord = trailCoords[safeHash % trailCoords.length]
         col = coord.col
         row = coord.row
       } else {
         col = safeHash % 5
-        row = safeHash % 7
+        row = safeHash % 5
       }
     }
   }
 
-  // Divisors for 5 columns and 7 rows
+  // Divisors for 5 columns and 5 rows
   const posX = col * (100 / 4)   // 5 columns -> indices 0-4 -> 4 steps
-  const posY = row * (100 / 6)   // 7 rows -> indices 0-6 -> 6 steps
+  const posY = row * (100 / 4)   // 5 rows -> indices 0-4 -> 4 steps
 
   return {
     width: `${props.size}px`,
     height: `${props.size}px`,
     backgroundImage: 'url("/real_shoes_sprite_right.jpg")',
-    backgroundSize: '500% 700%', // 5 columns, 7 rows
+    backgroundSize: '500% 500%', // 5 columns, 5 rows
     backgroundPosition: `${posX}% ${posY}%`,
     backgroundRepeat: 'no-repeat',
     borderRadius: '12px',
