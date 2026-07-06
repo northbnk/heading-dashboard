@@ -209,12 +209,8 @@ const imageSrc = computed(() => {
 .shoe-illustration-image {
   display: inline-block;
   object-fit: contain;
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  background-color: transparent;
   transition: transform 0.2s ease;
-  padding: 6px;
 }
 .shoe-illustration-image:hover {
   transform: scale(1.05);

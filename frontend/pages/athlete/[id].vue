@@ -395,9 +395,10 @@
                 v-for="shoe in allShoes"
                 :key="shoe.name"
                 variant="outlined"
-                class="shoe-box-item pa-3 rounded-lg border-grey-darken-3 d-flex flex-column align-center justify-space-between text-center"
-                style="background: rgba(25, 28, 41, 0.4);"
+                class="shoe-box-item pa-3 rounded-lg border-grey-darken-3 d-flex flex-column align-center justify-start text-center"
+                style="background: rgba(25, 28, 41, 0.4); position: relative; overflow: hidden;"
               >
+                <!-- status chip & delete button -->
                 <div class="shoe-status-tag w-100 d-flex justify-space-between align-center mb-1">
                   <v-btn
                     v-if="isOwner && shoe.isCustom"
@@ -407,7 +408,7 @@
                     density="compact"
                     size="x-small"
                     class="pa-0 mr-1"
-                    style="width: 16px; height: 16px; min-width: 16px;"
+                    style="width: 16px; height: 16px; min-width: 16px; z-index: 5;"
                     @click.stop="handleDeleteShoe(shoe.name)"
                   ></v-btn>
                   <div v-else></div>
@@ -416,33 +417,39 @@
                     :color="shoe.color"
                     variant="flat"
                     class="font-weight-bold text-black px-1.5"
-                    style="height: 16px;"
+                    style="height: 16px; z-index: 5;"
                   >
                     {{ shoe.status }}
                   </v-chip>
                 </div>
-                <ShoeIcon :name="shoe.name" :category="shoe.category" :size="72" class="my-1"></ShoeIcon>
-                <div class="w-100">
-                  <div class="text-caption font-weight-bold text-white text-truncate mb-0.5 px-1" style="font-size: 0.75rem;">
+
+                <!-- Main display content: shifts up on hover -->
+                <div class="shoe-main-content w-100 d-flex flex-column align-center justify-start mt-1">
+                  <ShoeIcon :name="shoe.name" :category="shoe.category" :size="76" class="mb-2"></ShoeIcon>
+                  <div class="text-caption font-weight-bold text-white mb-1 px-1" style="font-size: 0.72rem; line-height: 1.25; white-space: normal; word-break: break-word; overflow: visible;">
                     {{ shoe.name }}
                   </div>
-                  <div class="text-h6 font-weight-black text-white" style="font-size: 1.1rem; line-height: 1.1;">
+                </div>
+
+                <!-- Hover Overlay Content: slides up from bottom -->
+                <div class="shoe-stats-overlay w-100 d-flex flex-column align-center justify-end px-2 pb-2">
+                  <div class="text-h6 font-weight-black text-white" style="font-size: 1.05rem; line-height: 1.1;">
                     {{ shoe.distance.toFixed(0) }} <span class="text-caption text-grey" style="font-size: 0.65rem;">km</span>
                   </div>
-                  <div class="text-caption text-grey-lighten-1" style="font-size: 0.6rem; margin-top: 2px;">
+                  <div class="text-caption text-grey-lighten-1" style="font-size: 0.6rem; margin-top: 1px;">
                     使用回数: {{ shoe.runs }}回
                   </div>
-                </div>
-                <div class="w-100 mt-2 px-1">
-                  <v-progress-linear
-                    :model-value="shoe.lifePercent"
-                    :color="shoe.color"
-                    height="4"
-                    rounded
-                  ></v-progress-linear>
-                  <div class="d-flex justify-space-between text-grey-darken-1" style="font-size: 0.55rem; margin-top: 2px;">
-                    <span>0km</span>
-                    <span>寿命 600km</span>
+                  <div class="w-100 mt-1.5">
+                    <v-progress-linear
+                      :model-value="shoe.lifePercent"
+                      :color="shoe.color"
+                      height="3.5"
+                      rounded
+                    ></v-progress-linear>
+                    <div class="d-flex justify-space-between text-grey-darken-1" style="font-size: 0.55rem; margin-top: 1.5px; line-height: 1;">
+                      <span>0km</span>
+                      <span>寿命 600km</span>
+                    </div>
                   </div>
                 </div>
               </v-card>
@@ -1278,13 +1285,43 @@ export default {
 .shoe-box-item {
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  min-height: 195px;
+  min-height: 155px;
+  height: 155px;
+  position: relative;
+  overflow: hidden;
 }
 
 .shoe-box-item:hover {
   transform: translateY(-4px);
   border-color: rgba(245, 158, 11, 0.3) !important;
-  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.04) !important;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.08) !important;
+}
+
+.shoe-main-content {
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.shoe-box-item:hover .shoe-main-content {
+  transform: translateY(-26px);
+}
+
+.shoe-stats-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  transform: translateY(100%);
+  opacity: 0;
+  transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease;
+  z-index: 2;
+  background: linear-gradient(to top, rgba(15, 17, 26, 0.95) 75%, rgba(15, 17, 26, 0.7) 100%);
+  backdrop-filter: blur(4px);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.shoe-box-item:hover .shoe-stats-overlay {
+  transform: translateY(0);
+  opacity: 1;
 }
 
 .dashboard-container {
