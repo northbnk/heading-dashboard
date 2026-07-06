@@ -1,8 +1,10 @@
 <template>
-  <div
-    class="shoe-sprite-container"
-    :style="containerStyle"
-  ></div>
+  <img
+    :src="imageSrc"
+    :style="{ width: size + 'px', height: size + 'px' }"
+    class="shoe-illustration-image"
+    alt="Shoe"
+  />
 </template>
 
 <script setup>
@@ -53,7 +55,7 @@ const popularModelsMap = {
   'timp': { col: 4, row: 3 }
 }
 
-const containerStyle = computed(() => {
+const imageSrc = computed(() => {
   let col = 0
   let row = 0
 
@@ -144,31 +146,22 @@ const containerStyle = computed(() => {
     }
   }
 
-  // Divisors for 5 columns and 5 rows
-  const posX = col * (100 / 4)   // 5 columns -> indices 0-4 -> 4 steps
-  const posY = row * (100 / 4)   // 5 rows -> indices 0-4 -> 4 steps
-
-  return {
-    width: `${props.size}px`,
-    height: `${props.size}px`,
-    backgroundImage: 'url("/real_shoes_sprite_right.jpg")',
-    backgroundSize: '500% 500%', // 5 columns, 5 rows
-    backgroundPosition: `${posX}% ${posY}%`,
-    backgroundRepeat: 'no-repeat',
-    borderRadius: '12px',
-    backgroundColor: '#ffffff',
-    border: '1px solid rgba(255, 255, 255, 0.1)',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-  }
+  return `/shoes/shoe_${row}_${col}.png`
 })
 </script>
 
 <style scoped>
-.shoe-sprite-container {
+.shoe-illustration-image {
   display: inline-block;
+  object-fit: contain;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transition: transform 0.2s ease;
+  padding: 6px;
 }
-.shoe-sprite-container:hover {
+.shoe-illustration-image:hover {
   transform: scale(1.05);
 }
 </style>
