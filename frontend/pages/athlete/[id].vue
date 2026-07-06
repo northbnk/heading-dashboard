@@ -351,20 +351,16 @@
         </v-row>
       </v-col>
 
-      <!-- 右側カラム (トレーニング統合分析グラフ ＆ アクティビティ履歴) -->
+      <!-- 右側カラム (トレーニング統合分析グラフ ＆ アクティビティ履歴 & シューズボックス) -->
       <v-col cols="12" lg="6">
         <!-- グラフ -->
         <workout-chart :workouts="workouts" :target-goal="targetGoal" :height="270" class="mb-4"></workout-chart>
         
         <!-- アクティビティ履歴 -->
-        <workout-table :workouts="workouts"></workout-table>
-      </v-col>
-    </v-row>
+        <workout-table :workouts="workouts" class="mb-4"></workout-table>
 
-    <!-- マイシューズボックス パネル -->
-    <v-row v-if="!loading" class="mt-4">
-      <v-col cols="12">
-        <v-card class="menu-card px-4 py-4 rounded-xl" elevation="3">
+        <!-- マイシューズボックス パネル -->
+        <v-card v-if="!loading" class="menu-card px-4 py-4 rounded-xl shadow-md" elevation="3">
           <div class="text-subtitle-1 font-weight-bold text-white d-flex align-center justify-space-between mb-3 w-100 flex-wrap">
             <div class="d-flex align-center">
               <v-icon color="warning" icon="mdi-archive-outline" class="mr-2" size="22"></v-icon>
