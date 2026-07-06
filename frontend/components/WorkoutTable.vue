@@ -142,6 +142,25 @@
           {{ mapDialog.workout.description }}
         </div>
 
+        <!-- 使用シューズ表示カード -->
+        <div v-if="mapDialog.workout.gearName" class="mb-4">
+          <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
+            <v-icon color="warning" icon="mdi-shoe-run" class="mr-1" size="18"></v-icon>
+            使用シューズ
+          </div>
+          <v-card variant="outlined" class="pa-4 rounded-lg border-grey-darken-3 d-flex align-center justify-center text-center" style="background: rgba(25, 28, 41, 0.4); border: 1px solid rgba(255, 255, 255, 0.08) !important; min-height: 120px;">
+            <div class="d-flex flex-column align-center justify-center">
+              <ShoeIcon :name="mapDialog.workout.gearName" :size="76" class="mb-2"></ShoeIcon>
+              <div class="text-subtitle-2 font-weight-bold text-white">
+                {{ mapDialog.workout.gearName }}
+              </div>
+              <div class="text-caption text-grey mt-0.5">
+                このアクティビティで使用されたランニングシューズです。
+              </div>
+            </div>
+          </v-card>
+        </div>
+
         <!-- ルートマップ画像 -->
         <div v-if="mapDialog.workout.mapUrl" class="map-image-container rounded-lg overflow-hidden border border-grey-darken-3 mb-4">
           <v-img
@@ -336,9 +355,13 @@
 <script>
 import { ref, computed, watch } from 'vue'
 import { useDisplay } from 'vuetify'
+import ShoeIcon from './ShoeIcon.vue'
 
 export default {
   name: 'WorkoutTable',
+  components: {
+    ShoeIcon
+  },
   props: {
     workouts: {
       type: Array,
