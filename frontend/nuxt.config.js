@@ -1,6 +1,9 @@
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 
 export default defineNuxtConfig({
+  devServer: {
+    port: 3001
+  },
   runtimeConfig: {
     supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
     stravaClientSecret: process.env.STRAVA_CLIENT_SECRET,
