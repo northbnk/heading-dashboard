@@ -619,18 +619,18 @@ export default {
       return Math.min(estimatedVO2Max, 65)
     }
 
-    // アクティビティの推移（過去60日間の線形回帰トレンド）から現在の VDOT を算出
+    // アクティビティの推移（過去40日間の線形回帰トレンド）から現在の VDOT を算出
     const estimatedVDOT = computed(() => {
       const dates = props.workouts.map(w => safeParseDate(w.workoutDate)).filter(d => d.getTime() > 0)
       const latestDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date('2026-07-05')
 
-      const sixtyDaysAgo = new Date(latestDate.getTime())
-      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+      const fortyDaysAgo = new Date(latestDate.getTime())
+      fortyDaysAgo.setDate(fortyDaysAgo.getDate() - 40)
 
       const points = []
       props.workouts.forEach(w => {
         const date = safeParseDate(w.workoutDate)
-        if (date < sixtyDaysAgo || date > latestDate) return
+        if (date < fortyDaysAgo || date > latestDate) return
 
         const dist = Number(w.distance || 0)
         if (dist < 3.0 || w.movingTimeSeconds <= 0) return
