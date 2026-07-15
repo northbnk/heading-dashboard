@@ -619,47 +619,86 @@ export default {
       return Math.min(estimatedVO2Max, 65)
     }
 
-    // 保存データ全体の最高 VDOT を推定 (直近30日間の心拍数ベースの走力推定を優先)
+    // アクティビティの推移（過去60日間の線形回帰トレンド）から現在の VDOT を算出
     const estimatedVDOT = computed(() => {
-      const thirtyDaysAgo = new Date('2026-07-05')
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+      const dates = props.workouts.map(w => safeParseDate(w.workoutDate)).filter(d => d.getTime() > 0)
+      const latestDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date('2026-07-05')
 
-      const validWorkouts = props.workouts.filter(w => {
-        const d = safeParseDate(w.workoutDate)
-        return d >= thirtyDaysAgo &&
-          Number(w.distance || 0) >= 5.0 && 
-          w.movingTimeSeconds > 0 && 
-          w.averageHeartrate && 
-          w.averageHeartrate >= 120
+      const sixtyDaysAgo = new Date(latestDate.getTime())
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60)
+
+      const points = []
+      props.workouts.forEach(w => {
+        const date = safeParseDate(w.workoutDate)
+        if (date < sixtyDaysAgo || date > latestDate) return
+
+        const dist = Number(w.distance || 0)
+        if (dist < 3.0 || w.movingTimeSeconds <= 0) return
+
+        let v = 0
+        if (w.averageHeartrate && w.averageHeartrate >= 110) {
+          v = calculateHeartrateBasedVDOT(dist, w.movingTimeSeconds, w.averageHeartrate, w.maxHeartrate)
+        } else {
+          v = calculateVDOT(dist, w.movingTimeSeconds || w.durationSeconds)
+        }
+
+        if (v >= 30 && v <= 65) {
+          points.push({
+            time: date.getTime(),
+            vdot: v
+          })
+        }
       })
-      
-      if (validWorkouts.length === 0) {
-        const longWorkouts = props.workouts.filter(w => {
-          const d = safeParseDate(w.workoutDate)
-          return d >= thirtyDaysAgo &&
-            Number(w.distance || 0) >= 5.0 && 
-            w.durationSeconds > 0
-        })
-        if (longWorkouts.length === 0) return 0
-        const vdots = longWorkouts.map(w => calculateVDOT(Number(w.distance), w.durationSeconds))
-        return Math.max(...vdots, 0)
+
+      if (points.length === 0) return 0
+      points.sort((a, b) => a.time - b.time)
+
+      if (points.length === 1) return Number(points[0].vdot.toFixed(1))
+      if (points.length === 2) return Number(((points[0].vdot + points[1].vdot) / 2).toFixed(1))
+
+      const t0 = points[0].time
+      const N = points.length
+
+      let sumX = 0
+      let sumY = 0
+      let sumXY = 0
+      let sumXX = 0
+
+      points.forEach(p => {
+        const x = (p.time - t0) / (24 * 60 * 60 * 1000) // 日数換算
+        const y = p.vdot
+        sumX += x
+        sumY += y
+        sumXY += x * y
+        sumXX += x * x
+      })
+
+      const denominator = (N * sumXX) - (sumX * sumX)
+      let slope = 0
+      let intercept = sumY / N
+
+      if (Math.abs(denominator) > 1e-5) {
+        slope = ((N * sumXY) - (sumX * sumY)) / denominator
+        intercept = (sumY - (slope * sumX)) / N
       }
-      
-      const vdots = validWorkouts.map(w => {
-        return calculateHeartrateBasedVDOT(
-          Number(w.distance),
-          w.movingTimeSeconds,
-          w.averageHeartrate,
-          w.maxHeartrate
-        )
-      }).filter(v => v >= 30 && v <= 65)
-      
-      if (vdots.length === 0) return 0
-      
-      vdots.sort((a, b) => b - a)
-      const topCount = Math.min(3, vdots.length)
-      const sum = vdots.slice(0, topCount).reduce((acc, v) => acc + v, 0)
-      return Number((sum / topCount).toFixed(1))
+
+      // 直近アクティビティ時点におけるトレンドライン上の VDOT を外挿/推算
+      const xLatest = (points[N - 1].time - t0) / (24 * 60 * 60 * 1000)
+      let trendVDOT = (slope * xLatest) + intercept
+
+      // 異常値対策のためのクランプ処理
+      const maxActual = Math.max(...points.map(p => p.vdot))
+      const minActual = Math.min(...points.map(p => p.vdot))
+      trendVDOT = Math.max(minActual, Math.min(maxActual, trendVDOT))
+
+      // 直近14日間の平均値の ±2.0 の範囲に収めることで、極端な推計値を補正
+      const recentPoints = points.filter(p => (points[N - 1].time - p.time) <= 14 * 24 * 60 * 60 * 1000)
+      if (recentPoints.length > 0) {
+        const recentAvg = recentPoints.reduce((acc, p) => acc + p.vdot, 0) / recentPoints.length
+        trendVDOT = Math.max(recentAvg - 2.0, Math.min(recentAvg + 2.0, trendVDOT))
+      }
+
+      return Number(trendVDOT.toFixed(1))
     })
 
     // VDOTからフルマラソン予測タイムを線形補間
