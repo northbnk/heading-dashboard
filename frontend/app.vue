@@ -7,25 +7,22 @@
 </template>
 
 <style>
-/* 洗練されたエディトリアル＆アスレチック・タイポグラフィ */
+/* Inter × IBM Plex Sans JP によるシャープで都会的なUIタイポグラフィ */
 html, body, #__nuxt, .v-application {
-  font-family: 'Plus Jakarta Sans', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif !important;
+  font-family: 'Inter', 'IBM Plex Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif !important;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   background-color: #F4F6F9 !important;
   color: #0F172A !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.012em;
 }
 
 .font-num {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: 'Inter', 'IBM Plex Sans JP', -apple-system, BlinkMacSystemFont, sans-serif !important;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.025em;
-}
-
-.font-mono-num {
-  font-family: 'JetBrains Mono', monospace !important;
-  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum', 'cv02', 'cv03', 'cv04', 'cv11';
+  letter-spacing: -0.03em;
 }
 
 /* スクロールバー (ライトテーマ仕様) */

@@ -375,7 +375,7 @@ export default {
           background: 'transparent',
           foreColor: '#64748B',
           zoom: { enabled: false },
-          fontFamily: "'Plus Jakarta Sans', 'Noto Sans JP', sans-serif"
+          fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif"
         },
         theme: { mode: 'light' },
         colors: xs.value
