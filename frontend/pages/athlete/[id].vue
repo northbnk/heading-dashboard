@@ -128,6 +128,8 @@
         <div class="mb-3">
           <workout-stats
             :workouts="workouts"
+            :rhr-logs="rhrLogs"
+            :is-owner="isOwner"
             :target-goal="targetGoal"
             :upcoming-race="upcomingRace"
             display-mode="stats-only"
@@ -234,14 +236,17 @@
               </div>
             </div>
 
-            <!-- Tile A2: AI マラソン診断 ＆ 心肺持久力 -->
+            <!-- Tile A2: スポーツ科学メトリクス解析 -->
             <div class="flex-grow-1 d-flex flex-column">
               <workout-stats
                 :workouts="workouts"
+                :rhr-logs="rhrLogs"
+                :is-owner="isOwner"
                 :target-goal="targetGoal"
                 :upcoming-race="upcomingRace"
                 display-mode="diagnosis-only"
                 class="flex-grow-1"
+                @save-rhr="handleSaveRhr"
               ></workout-stats>
             </div>
           </v-col>
@@ -345,10 +350,11 @@
               </div>
             </div>
 
-            <!-- Tile B2: 統合パフォーマンス推移チャート -->
+            <!-- Tile B2: 統合パフォーマンス推移チャート (PMC / Pace-HR比 / RHR) -->
             <div class="flex-grow-1 d-flex flex-column">
               <workout-chart
                 :workouts="workouts"
+                :rhr-logs="rhrLogs"
                 :target-goal="targetGoal"
                 :height="250"
                 class="flex-grow-1"
@@ -440,6 +446,7 @@ export default {
     const workouts = ref([])
     const races = ref([])
     const customPlans = ref({})
+    const rhrLogs = ref([])
     const loading = ref(true)
     const syncing = ref(false)
     const targetGoal = ref('sub3.5')
@@ -489,6 +496,7 @@ export default {
           workouts.value = data.workouts || []
           races.value = data.races || []
           customPlans.value = data.plans || {}
+          rhrLogs.value = data.rhrLogs || []
           athleteInfo.value = data.athlete || null
         } else {
           showNotification('指定されたアスリート情報が見つかりません。', 'error', 'mdi-alert-circle')
@@ -940,6 +948,26 @@ export default {
       }
     }
 
+    const handleSaveRhr = async (rhrPayload) => {
+      if (!isOwner.value) return
+      try {
+        const res = await fetch('/api/rhr', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(rhrPayload)
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (data.rhrLogs) rhrLogs.value = data.rhrLogs
+          showNotification(`${rhrPayload.date} の安静時心拍数 (${rhrPayload.rhr_bpm} bpm) を記録しました。`)
+        } else {
+          throw new Error('RHR save endpoint returned error status')
+        }
+      } catch (err) {
+        showNotification('RHRの保存に失敗しました: ' + err.message, 'error', 'mdi-alert-circle')
+      }
+    }
+
     const handleSyncWorkouts = async () => {
       if (!isOwner.value) return
       syncing.value = true
@@ -984,6 +1012,7 @@ export default {
     return {
       workouts,
       races,
+      rhrLogs,
       upcomingRacesList,
       upcomingRace,
       upcomingRaceDays,
@@ -1016,6 +1045,7 @@ export default {
       openAutoPlanDialog,
       closeAutoPlanDialog,
       handleSaveAutoPlan,
+      handleSaveRhr,
       handleSyncWorkouts,
       openRaceForm,
       closeRaceForm,

@@ -100,13 +100,20 @@ export default defineEventHandler(async (event) => {
           }
         }
 
-        const splits = (detailed.splits_metric || []).map((s, idx) => ({
-          split: s.split || (idx + 1),
-          elapsedTime: s.elapsed_time || s.moving_time,
-          movingTime: s.moving_time,
-          elevationDifference: s.elevation_difference || 0,
-          averageHeartrate: s.average_heartrate ? Math.round(s.average_heartrate) : null
-        }))
+        const laps = detailed.laps || []
+        const splits = (detailed.splits_metric || []).map((s, idx) => {
+          const matchingLap = laps[idx] || null
+          const rawCadence = s.average_cadence || matchingLap?.average_cadence || null
+          return {
+            split: s.split || (idx + 1),
+            distance: s.distance || 1000,
+            elapsedTime: s.elapsed_time || s.moving_time,
+            movingTime: s.moving_time,
+            elevationDifference: s.elevation_difference || 0,
+            averageHeartrate: s.average_heartrate ? Math.round(s.average_heartrate) : null,
+            cadence: rawCadence ? Math.round(rawCadence * 2) : null
+          }
+        })
 
         const summaryPolyline = detailed.map?.summary_polyline || detailed.map?.polyline || ''
         const mapUrl = summaryPolyline ? `polyline:${summaryPolyline}` : null

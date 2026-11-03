@@ -82,6 +82,8 @@ export default defineEventHandler(async (event) => {
             targetTime: r.target_time
           }))
 
+          const localRhr = readLocalJson('data/rhr.json', [])
+
           return {
             athlete: {
               firstname: tokenData.athlete_firstname,
@@ -90,7 +92,8 @@ export default defineEventHandler(async (event) => {
             },
             workouts: mappedWorkouts,
             races: mappedRaces,
-            plans: plansObj
+            plans: plansObj,
+            rhrLogs: localRhr
           }
         }
       }
@@ -104,6 +107,7 @@ export default defineEventHandler(async (event) => {
   const localWorkouts = readLocalJson('data/workouts.json', [])
   const localRaces = readLocalJson('data/races.json', [])
   const localPlans = readLocalJson('data/plans.json', {})
+  const localRhr = readLocalJson('data/rhr.json', [])
 
   const athlete = localConfig.athlete || {}
 
@@ -115,6 +119,7 @@ export default defineEventHandler(async (event) => {
     },
     workouts: localWorkouts,
     races: localRaces,
-    plans: localPlans
+    plans: localPlans,
+    rhrLogs: localRhr
   }
 })

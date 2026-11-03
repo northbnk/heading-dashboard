@@ -1,5 +1,5 @@
 <template>
-  <!-- 1. 上段5項目 スポーツ科学KPIリボン (CTL / ATL / TSB / Riegel予測 / 心肺ドリフト) -->
+  <!-- 1. 上段5項目 スポーツ科学KPIリボン (CTL / ATL / TSB / Riegel予測 / EF & 心肺ドリフト) -->
   <div v-if="displayMode === 'all' || displayMode === 'stats-only'" class="kpi-five-grid">
     <!-- KPI 1: CTL (Chronic Training Load / 現在の体力) -->
     <div class="bento-stat-tile">
@@ -106,8 +106,11 @@
 
       <div class="tile-gauge-wrap mt-auto pt-1">
         <div class="d-flex justify-space-between tile-gauge-meta tsb-meta mt-1.5 font-num">
-          <span>算出式: 前日CTL − 前日ATL</span>
-          <span class="tsb-meta-strong">{{ pmcResult.TSB >= 0 ? 'フレッシュ圏' : '鍛錬・負荷圏' }}</span>
+          <span>前日CTL − 前日ATL</span>
+          <span v-if="latestRhrEntry" class="tsb-meta-strong">
+            RHR {{ latestRhrEntry.rhr_bpm }}bpm {{ latestRhrEntry.fatigueWarning ? '⚠️要疲労注意' : '' }}
+          </span>
+          <span v-else class="tsb-meta-strong">{{ pmcResult.TSB >= 0 ? 'フレッシュ圏' : '鍛錬・負荷圏' }}</span>
         </div>
       </div>
     </div>
@@ -151,12 +154,12 @@
       </div>
     </div>
 
-    <!-- KPI 5: 心肺ドリフト (Aerobic Decoupling: 時間ベース前半0-50% vs 後半51-100%) -->
+    <!-- KPI 5: 心肺ドリフト & EF (時間ベース前半0-50% vs 後半51-100%) -->
     <div class="bento-stat-tile">
       <div class="d-flex justify-space-between align-start mb-2">
         <div>
-          <div class="tile-eyebrow">AEROBIC DECOUPLING (TIME 50/50)</div>
-          <div class="tile-label">心肺ドリフト率 (EF比)</div>
+          <div class="tile-eyebrow">EF & AEROBIC DECOUPLING</div>
+          <div class="tile-label">心肺ドリフト率 / EF</div>
         </div>
         <div class="tile-icon-badge">
           <v-icon color="#3653B3" icon="mdi-heart-pulse" size="18"></v-icon>
@@ -170,9 +173,9 @@
         </div>
         <div
           class="tile-subvalue font-num"
-          :class="decouplingReport.available ? (decouplingReport.decoupling < 5 ? 'badge-pill-green' : 'badge-pill-amber') : ''"
+          :class="latestEfResult ? 'badge-pill-green' : ''"
         >
-          {{ decouplingReport.available ? `EF ${decouplingReport.firstEF.toFixed(2)}→${decouplingReport.secondEF.toFixed(2)}` : '心拍データ要' }}
+          {{ latestEfResult ? `最新EF ${latestEfResult.ef.toFixed(2)}` : '心拍データ要' }}
         </div>
       </div>
 
@@ -185,125 +188,333 @@
           ></div>
         </div>
         <div class="d-flex justify-space-between tile-gauge-meta mt-1.5 font-num">
-          <span>基準 5.0%未満</span>
+          <span>{{ decouplingReport.available ? `EF ${decouplingReport.firstEF.toFixed(2)}→${decouplingReport.secondEF.toFixed(2)}` : '基準 5.0%未満' }}</span>
           <span class="meta-strong">{{ decouplingReport.available ? `${decouplingReport.distanceKm.toFixed(1)}km走` : '--' }}</span>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 2. 左カラム下部: スポーツ科学メトリクス定量パネル (旧「直前診断（文字）」を廃止し数値データを表示) -->
+  <!-- 2. 左カラム下部: スポーツ科学メトリクス定量パネル (全8指標の詳細数値・トレンド・RHR管理) -->
   <div v-if="displayMode === 'all' || displayMode === 'diagnosis-only'" class="bento-science-panel d-flex flex-column h-100">
-    <div class="d-flex align-center justify-space-between mb-3">
+    <div class="d-flex align-center justify-space-between mb-2.5 flex-wrap gap-1">
       <span class="panel-title">
-        スポーツ科学メトリクス内訳
+        スポーツ科学メトリクス解析
       </span>
       <span class="hr-config-pill font-num">
         HR定数: 安静 {{ hrConfig.restHr }} / 最大 {{ hrConfig.maxHr }} bpm
       </span>
     </div>
 
-    <!-- セクション1: Riegel 距離別予測タイム (直近42日・10km+ベストラン基準) -->
-    <div class="science-subcard pa-3 mb-2.5 rounded-xl">
-      <div class="d-flex align-center justify-space-between mb-2">
-        <span class="subcard-heading">
-          1. Riegel 距離別予測タイム
-        </span>
-        <span class="subcard-formula font-num">T2 = T1 × (D2/D1)^1.06</span>
+    <!-- 3タブ切替: [1. Riegel & EF/ドリフト] [2. Pace/HR & ピッチ安定度] [3. 安静時心拍(RHR)] -->
+    <div class="science-tabs d-flex gap-1 mb-3">
+      <button
+        type="button"
+        class="science-tab-btn flex-grow-1"
+        :class="{ active: activeScienceTab === 'riegel_ef' }"
+        @click="activeScienceTab = 'riegel_ef'"
+      >
+        Riegel・EF・ドリフト
+      </button>
+      <button
+        type="button"
+        class="science-tab-btn flex-grow-1"
+        :class="{ active: activeScienceTab === 'pace_pitch' }"
+        @click="activeScienceTab = 'pace_pitch'"
+      >
+        Pace/HR比・ピッチ安定
+      </button>
+      <button
+        type="button"
+        class="science-tab-btn flex-grow-1"
+        :class="{ active: activeScienceTab === 'rhr' }"
+        @click="activeScienceTab = 'rhr'"
+      >
+        RHRトレンド
+        <span v-if="latestRhrEntry?.fatigueWarning" class="warning-dot ml-1"></span>
+      </button>
+    </div>
+
+    <!-- タブ1: Riegel距離別予測 ＆ EF / 心肺ドリフト内訳 -->
+    <div v-if="activeScienceTab === 'riegel_ef'" class="d-flex flex-column gap-2.5 flex-grow-1">
+      <!-- Riegel 距離別予測タイム -->
+      <div class="science-subcard pa-3 rounded-xl">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <span class="subcard-heading">Riegel 距離別予測タイム</span>
+          <span class="subcard-formula font-num">T2 = T1 × (D2/D1)^1.06</span>
+        </div>
+
+        <div v-if="riegelBest">
+          <div class="riegel-grid font-num mb-1.5">
+            <div class="riegel-cell">
+              <span class="r-label">10km</span>
+              <span class="r-val">{{ formatHMS(riegelBest.pred10kSeconds) }}</span>
+            </div>
+            <div class="riegel-cell">
+              <span class="r-label">ハーフ</span>
+              <span class="r-val">{{ formatHMS(riegelBest.predHalfSeconds) }}</span>
+            </div>
+            <div class="riegel-cell">
+              <span class="r-label">30km</span>
+              <span class="r-val">{{ formatHMS(riegelBest.pred30kSeconds) }}</span>
+            </div>
+            <div class="riegel-cell riegel-cell-highlight">
+              <span class="r-label">フル</span>
+              <span class="r-val r-val-primary">{{ formatHMS(riegelBest.predFullSeconds) }}</span>
+            </div>
+          </div>
+          <div class="subcard-footnote font-num">
+            基準: {{ riegelBest.workoutDate }} ({{ riegelBest.distanceKm.toFixed(2) }}km / {{ formatHMS(riegelBest.timeS) }})
+          </div>
+        </div>
+        <div v-else class="subcard-empty py-2">
+          直近42日間に10km以上のワークアウトがないため算出不可
+        </div>
       </div>
 
-      <div v-if="riegelBest">
-        <div class="riegel-grid font-num mb-2">
-          <div class="riegel-cell">
-            <div class="r-label">10km</div>
-            <div class="r-val">{{ formatHMS(riegelBest.pred10kSeconds) }}</div>
+      <!-- EF (効率係数) & 時間ベース50/50 心肺ドリフト -->
+      <div class="science-subcard pa-3 rounded-xl flex-grow-1 d-flex flex-column justify-space-between">
+        <div>
+          <div class="d-flex align-center justify-space-between mb-1.5">
+            <span class="subcard-heading">EF (効率係数) ＆ 時間分割ドリフト</span>
+            <span class="subcard-formula font-num">EF = 速度(m/分) ÷ 心拍(bpm)</span>
           </div>
-          <div class="riegel-cell">
-            <div class="r-label">ハーフ</div>
-            <div class="r-val">{{ formatHMS(riegelBest.predHalfSeconds) }}</div>
+
+          <div v-if="decouplingReport.available" class="font-num">
+            <div class="ef-compare-row d-flex align-center justify-space-between py-1">
+              <span class="ef-half-label">全体平均 EF</span>
+              <span class="ef-half-metrics">
+                {{ decouplingReport.overallSpeed.toFixed(1) }} m/分 ÷ {{ decouplingReport.overallHr.toFixed(1) }} bpm = <strong>{{ decouplingReport.overallEF.toFixed(3) }}</strong>
+              </span>
+            </div>
+            <div class="ef-compare-row d-flex align-center justify-space-between py-1">
+              <span class="ef-half-label">前半 (0〜50%時間)</span>
+              <span class="ef-half-metrics">
+                {{ decouplingReport.firstSpeed.toFixed(1) }} m/分 ÷ {{ decouplingReport.firstHr.toFixed(1) }} bpm = <strong>{{ decouplingReport.firstEF.toFixed(3) }}</strong>
+              </span>
+            </div>
+            <div class="ef-compare-row d-flex align-center justify-space-between py-1">
+              <span class="ef-half-label">後半 (51〜100%時間)</span>
+              <span class="ef-half-metrics">
+                {{ decouplingReport.secondSpeed.toFixed(1) }} m/分 ÷ {{ decouplingReport.secondHr.toFixed(1) }} bpm = <strong>{{ decouplingReport.secondEF.toFixed(3) }}</strong>
+              </span>
+            </div>
           </div>
-          <div class="riegel-cell">
-            <div class="r-label">30km</div>
-            <div class="r-val">{{ formatHMS(riegelBest.pred30kSeconds) }}</div>
-          </div>
-          <div class="riegel-cell riegel-cell-highlight">
-            <div class="r-label">フル (42.195k)</div>
-            <div class="r-val r-val-primary">{{ formatHMS(riegelBest.predFullSeconds) }}</div>
+          <div v-else class="subcard-empty py-2">
+            心拍データ付きのスプリット記録がありません
           </div>
         </div>
-        <div class="subcard-footnote font-num">
-          基準ベスト: {{ riegelBest.workoutDate }} {{ riegelBest.activityName }} ({{ riegelBest.distanceKm.toFixed(2) }}km / {{ formatHMS(riegelBest.timeS) }})
+
+        <!-- ラップごとEF時系列ミニバー -->
+        <div v-if="decouplingReport.available && decouplingReport.efSeries.length > 0" class="mt-2 pt-1.5 border-top-subtle">
+          <div class="d-flex justify-space-between align-center mb-1">
+            <span class="subcard-footnote">ラップ別 EF 時系列推移 ({{ decouplingReport.efSeries.length }}ラップ)</span>
+            <span class="subcard-footnote font-num">ドリフト率: <strong>{{ decouplingReport.decoupling.toFixed(2) }}%</strong></span>
+          </div>
+          <div class="ef-spark-bars d-flex align-end gap-05">
+            <div
+              v-for="seg in decouplingReport.efSeries.slice(0, 25)"
+              :key="seg.segmentIndex"
+              class="ef-spark-col flex-grow-1"
+              :title="`Lap ${seg.segmentIndex}: EF ${seg.ef ? seg.ef.toFixed(2) : '--'} (${seg.speed_m_min.toFixed(0)}m/min, ${seg.heart_rate}bpm)`"
+            >
+              <div
+                class="ef-spark-bar"
+                :style="{ height: Math.max(20, Math.min(100, ((seg.ef || 0) / 1.8) * 100)) + '%' }"
+              ></div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div v-else class="subcard-empty py-2">
-        直近42日間に10km以上のワークアウトがないため算出不可
       </div>
     </div>
 
-    <!-- セクション2: 時間ベース50/50 心肺ドリフト (Aerobic Decoupling) 内訳 -->
-    <div class="science-subcard pa-3 mb-2.5 rounded-xl">
-      <div class="d-flex align-center justify-space-between mb-2">
-        <span class="subcard-heading">
-          2. 心肺ドリフト (時間分割 0-50% / 51-100%)
-        </span>
-        <span
-          v-if="decouplingReport.available"
-          class="drift-badge font-num"
-          :class="decouplingReport.decoupling < 5 ? 'badge-pill-green' : 'badge-pill-amber'"
-        >
-          {{ decouplingReport.decoupling.toFixed(2) }}%
-        </span>
+    <!-- タブ2: Pace/HR比トレンド ＆ ピッチ(SPM)安定度 -->
+    <div v-else-if="activeScienceTab === 'pace_pitch'" class="d-flex flex-column gap-2.5 flex-grow-1">
+      <!-- Pace / HR 比 (週次・月次推移) -->
+      <div class="science-subcard pa-3 rounded-xl">
+        <div class="d-flex align-center justify-space-between mb-1.5">
+          <span class="subcard-heading">Pace / HR 比 (速度 ÷ 平均心拍)</span>
+          <span
+            v-if="paceHrSummary.trendDelta !== null"
+            class="font-num"
+            :class="paceHrSummary.trendDelta >= 0 ? 'badge-pill-green' : 'badge-pill-amber'"
+            style="font-size: 0.68rem;"
+          >
+            {{ paceHrSummary.trendDelta >= 0 ? `+${paceHrSummary.trendDelta.toFixed(3)} 向上` : `${paceHrSummary.trendDelta.toFixed(3)}` }}
+          </span>
+        </div>
+
+        <div v-if="paceHrSummary.available" class="font-num">
+          <div class="ef-compare-row d-flex align-center justify-space-between py-1">
+            <span class="ef-half-label">最新週平均 ({{ paceHrSummary.latestWeekLabel }})</span>
+            <span class="ef-half-metrics">
+              <strong>{{ paceHrSummary.latestWeekRatio.toFixed(3) }}</strong> m/min/bpm
+              ({{ paceHrSummary.latestWeekKmhRatio.toFixed(4) }} km/h/bpm)
+            </span>
+          </div>
+          <div class="ef-compare-row d-flex align-center justify-space-between py-1">
+            <span class="ef-half-label">最新月平均 ({{ paceHrSummary.latestMonthLabel }})</span>
+            <span class="ef-half-metrics">
+              <strong>{{ paceHrSummary.latestMonthRatio.toFixed(3) }}</strong> m/min/bpm
+              <span v-if="paceHrSummary.prevMonthRatio" class="ml-1" style="color: #526071;">
+                (前月 {{ paceHrSummary.prevMonthRatio.toFixed(3) }})
+              </span>
+            </span>
+          </div>
+          <div class="subcard-footnote mt-1">
+            ※右側の推移チャートの「Pace/HR比」タブで週次・月次グラフを表示できます
+          </div>
+        </div>
+        <div v-else class="subcard-empty py-2">
+          ペース・心拍データ付きのワークアウトがありません
+        </div>
       </div>
 
-      <div v-if="decouplingReport.available" class="font-num">
-        <div class="ef-compare-row d-flex align-center justify-space-between py-1">
-          <span class="ef-half-label">前半 (0〜50%時間)</span>
-          <span class="ef-half-metrics">
-            {{ decouplingReport.firstSpeed.toFixed(1) }} m/分 ÷ {{ decouplingReport.firstHr.toFixed(1) }} bpm = <strong>EF {{ decouplingReport.firstEF.toFixed(3) }}</strong>
-          </span>
+      <!-- ピッチ (SPM) 安定度 -->
+      <div class="science-subcard pa-3 rounded-xl flex-grow-1 d-flex flex-column justify-space-between">
+        <div>
+          <div class="d-flex align-center justify-space-between mb-1.5">
+            <span class="subcard-heading">ピッチ (SPM) 安定度 (時間 50/50)</span>
+            <span class="subcard-formula font-num">(SPM後半 ÷ SPM前半) × 100</span>
+          </div>
+
+          <div v-if="pitchStabilityReport.available" class="font-num">
+            <div class="d-flex align-baseline justify-space-between my-1">
+              <div>
+                <span class="r-val" style="font-size: 1.25rem;">
+                  {{ pitchStabilityReport.ratio.toFixed(1) }}%
+                </span>
+                <span class="subcard-footnote ml-1.5">
+                  (前半 {{ pitchStabilityReport.spmFirst.toFixed(1) }} → 後半 {{ pitchStabilityReport.spmSecond.toFixed(1) }} spm)
+                </span>
+              </div>
+              <span
+                :class="pitchStabilityReport.status === 'stable' ? 'badge-pill-green' : 'badge-pill-amber'"
+                style="font-size: 0.68rem;"
+              >
+                {{ pitchStabilityReport.status === 'stable' ? 'フォーム安定' : 'ピッチ変動注意' }}
+              </span>
+            </div>
+            <div class="subcard-footnote mt-1">
+              {{ pitchStabilityReport.evaluation }}（対象: {{ pitchStabilityReport.workoutDate }} {{ pitchStabilityReport.activityName }}）
+            </div>
+          </div>
+          <div v-else class="py-1">
+            <div class="subcard-empty text-left mb-1">
+              既存ワークアウトのラップ内にピッチ(spm)配列が未収録です（次回Strava同期より自動取得）。
+            </div>
+            <div v-if="latestOverallCadence" class="ef-compare-row d-flex align-center justify-space-between py-1 font-num">
+              <span class="ef-half-label">直近ラン全体平均ピッチ</span>
+              <span class="ef-half-metrics">
+                <strong>{{ latestOverallCadence.cadence }} spm</strong>
+                <span v-if="latestOverallCadence.stride"> (ストライド {{ latestOverallCadence.stride }}m)</span>
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="ef-compare-row d-flex align-center justify-space-between py-1">
-          <span class="ef-half-label">後半 (51〜100%時間)</span>
-          <span class="ef-half-metrics">
-            {{ decouplingReport.secondSpeed.toFixed(1) }} m/分 ÷ {{ decouplingReport.secondHr.toFixed(1) }} bpm = <strong>EF {{ decouplingReport.secondEF.toFixed(3) }}</strong>
-          </span>
-        </div>
-        <div class="subcard-footnote mt-1">
-          対象: {{ decouplingReport.workoutDate }} {{ decouplingReport.activityName }} ({{ decouplingReport.distanceKm.toFixed(1) }}km)
-        </div>
-      </div>
-      <div v-else class="subcard-empty py-2">
-        心拍スプリット付きのワークアウトデータが不足しています
       </div>
     </div>
 
-    <!-- セクション3: Banister TRIMP (男性版) & 負荷サマリー -->
-    <div class="science-subcard pa-3 rounded-xl mt-auto">
-      <div class="d-flex align-center justify-space-between mb-1.5">
-        <span class="subcard-heading">
-          3. Banister TRIMP (男性係数)
-        </span>
-        <span class="subcard-formula font-num">min × HRR × 0.64 × e^(1.92×HRR)</span>
-      </div>
-      <div class="d-flex align-center justify-space-between font-num" style="font-size: 0.75rem; color: #334155;">
-        <span>直近ラン TRIMP: <strong>{{ latestWorkoutTrimp.toFixed(1) }}</strong> (HRR {{ (latestWorkoutHrr * 100).toFixed(1) }}%)</span>
-        <span>7日累積: <strong>{{ last7DaysTrimp.toFixed(1) }}</strong></span>
+    <!-- タブ3: 安静時心拍数 (RHR) トレンド ＆ 要疲労注意フラグ -->
+    <div v-else-if="activeScienceTab === 'rhr'" class="d-flex flex-column gap-2.5 flex-grow-1">
+      <div class="science-subcard pa-3 rounded-xl flex-grow-1 d-flex flex-column justify-space-between">
+        <div>
+          <div class="d-flex align-center justify-space-between mb-2">
+            <span class="subcard-heading">安静時心拍数 (RHR) ＆ 7日移動平均</span>
+            <span
+              v-if="latestRhrEntry"
+              :class="latestRhrEntry.fatigueWarning ? 'tsb-pill-neg' : 'badge-pill-green'"
+              style="font-size: 0.68rem;"
+            >
+              {{ latestRhrEntry.fatigueWarning ? '⚠️ 要疲労注意 (+3bpm超)' : '正常範囲' }}
+            </span>
+          </div>
+
+          <div v-if="latestRhrEntry" class="font-num mb-2">
+            <div class="ef-compare-row d-flex align-center justify-space-between py-1">
+              <span class="ef-half-label">最新 RHR ({{ latestRhrEntry.date }})</span>
+              <span class="ef-half-metrics">
+                <strong>{{ latestRhrEntry.rhr_bpm }} bpm</strong>
+                <span class="ml-1" :style="{ color: latestRhrEntry.delta_bpm >= 3 ? '#C2410C' : '#526071' }">
+                  (基準比 {{ latestRhrEntry.delta_bpm >= 0 ? '+' : '' }}{{ latestRhrEntry.delta_bpm }} bpm)
+                </span>
+              </span>
+            </div>
+            <div class="ef-compare-row d-flex align-center justify-space-between py-1">
+              <span class="ef-half-label">直近7日間 移動平均 (7d MA)</span>
+              <span class="ef-half-metrics">
+                <strong>{{ latestRhrEntry.moving_avg_7d.toFixed(1) }} bpm</strong>
+              </span>
+            </div>
+          </div>
+
+          <!-- 直近5件のRHRミニ履歴 -->
+          <div v-if="rhrTrendSeries.length > 0" class="rhr-mini-list font-num mb-2">
+            <div
+              v-for="item in rhrTrendSeries.slice(-4).reverse()"
+              :key="item.date"
+              class="d-flex align-center justify-space-between py-0.5"
+              style="font-size: 0.7rem; color: #475569;"
+            >
+              <span>{{ item.date.substring(5).replace('-', '/') }}</span>
+              <span>RHR <strong>{{ item.rhr_bpm }}</strong> bpm (7d平均 {{ item.moving_avg_7d.toFixed(1) }})</span>
+              <span :style="{ color: item.fatigueWarning ? '#C2410C' : '#1E7E5C', fontWeight: 700 }">
+                {{ item.fatigueWarning ? '要疲労注意' : 'OK' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RHR クイック記録 (オーナーログイン時) -->
+        <div v-if="isOwner" class="d-flex align-center gap-1.5 pt-2 border-top-subtle">
+          <input
+            v-model="rhrFormDate"
+            type="date"
+            class="rhr-input font-num"
+            style="width: 118px;"
+          />
+          <input
+            v-model.number="rhrFormBpm"
+            type="number"
+            min="35"
+            max="110"
+            placeholder="bpm"
+            class="rhr-input font-num"
+            style="width: 68px;"
+          />
+          <v-btn
+            color="primary"
+            size="x-small"
+            variant="flat"
+            rounded="lg"
+            class="font-weight-bold text-white px-2.5 flex-grow-1"
+            style="height: 28px;"
+            @click="submitRhr"
+          >
+            RHR記録
+          </v-btn>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { getAthleteHrConfig } from '~/config/athleteSettings'
 import {
   parseWorkoutLocalDate,
+  formatDateYMD,
   formatSecondsToHMS,
   findBestRiegelPrediction,
   workoutSplitsToTrackingData,
   calculateAerobicDecouplingDetails,
   calculateWorkoutTrimp,
-  buildDailyPmcSeries
+  buildDailyPmcSeries,
+  calculateWorkoutEF,
+  buildPaceHrTrendFromWorkouts,
+  calculateRhrTrend,
+  calculatePitchStability
 } from '~/utils/sportsScience'
 
 export default {
@@ -313,6 +524,14 @@ export default {
       type: Array,
       required: true,
       default: () => []
+    },
+    rhrLogs: {
+      type: Array,
+      default: () => []
+    },
+    isOwner: {
+      type: Boolean,
+      default: false
     },
     targetGoal: {
       type: String,
@@ -327,7 +546,12 @@ export default {
       default: null
     }
   },
-  setup(props) {
+  emits: ['save-rhr'],
+  setup(props, { emit }) {
+    const activeScienceTab = ref('riegel_ef')
+    const rhrFormDate = ref(formatDateYMD(new Date()))
+    const rhrFormBpm = ref(52)
+
     let runtimePublic = null
     try {
       const rc = useRuntimeConfig()
@@ -338,7 +562,6 @@ export default {
 
     const hrConfig = computed(() => getAthleteHrConfig(runtimePublic))
 
-    // 基準日（最新ワークアウトが45日以上前の場合は最新ワークアウト日、それ以外は現在日）
     const referenceLatestDate = computed(() => {
       const now = new Date()
       if (!props.workouts || props.workouts.length === 0) return now
@@ -351,7 +574,6 @@ export default {
       return diffDays > 45 ? maxWorkoutDate : now
     })
 
-    // 直近30日走行距離
     const last30DaysDistance = computed(() => {
       if (props.workouts.length === 0) return 0
       const thirtyDaysAgo = new Date(referenceLatestDate.value.getTime())
@@ -388,8 +610,20 @@ export default {
       return Math.max(0, Math.min(100, Math.round(ratio)))
     })
 
-    // 2. 心肺ドリフト (Aerobic Decoupling: 時間ベース 0-50% vs 51-100%)
-    // 10km以上（優先: 15km以上）の心拍スプリット付き最新ワークアウトを対象に算出
+    // 最新ワークアウトの EF (Efficiency Factor)
+    const latestEfResult = computed(() => {
+      if (!props.workouts || props.workouts.length === 0) return null
+      const sorted = [...props.workouts].sort(
+        (a, b) => parseWorkoutLocalDate(b.workoutDate) - parseWorkoutLocalDate(a.workoutDate)
+      )
+      for (const w of sorted) {
+        const res = calculateWorkoutEF(w)
+        if (res) return res
+      }
+      return null
+    })
+
+    // 2 & 5. 心肺ドリフト (Aerobic Decoupling: 時間ベース 0-50% vs 51-100%) ＆ ラップ別EF時系列
     const decouplingReport = computed(() => {
       if (!props.workouts || props.workouts.length === 0) {
         return { available: false }
@@ -399,7 +633,6 @@ export default {
         (a, b) => parseWorkoutLocalDate(b.workoutDate) - parseWorkoutLocalDate(a.workoutDate)
       )
 
-      // まず15km以上を探索し、なければスプリット心拍を持つ最長/最新のランを対象とする
       const candidates = [
         ...sorted.filter(w => Number(w.distance || 0) >= 15),
         ...sorted.filter(w => Number(w.distance || 0) >= 5 && Number(w.distance || 0) < 15)
@@ -409,13 +642,18 @@ export default {
         const trackingData = workoutSplitsToTrackingData(w)
         if (!trackingData) continue
         const details = calculateAerobicDecouplingDetails(trackingData)
-        if (details) {
+        const efDetails = calculateWorkoutEF(w)
+        if (details && efDetails) {
           return {
             available: true,
             workoutDate: w.workoutDate ? w.workoutDate.split(/[ T]/)[0] : '',
             activityName: w.activityName || 'ランニング',
             distanceKm: Number(w.distance || 0),
             decoupling: details.decoupling,
+            overallEF: efDetails.ef,
+            overallSpeed: efDetails.avgSpeedMPerMin,
+            overallHr: efDetails.avgHr,
+            efSeries: efDetails.series || [],
             firstEF: details.firstHalf.ef,
             secondEF: details.secondHalf.ef,
             firstSpeed: details.firstHalf.avgSpeedMPerMin,
@@ -468,11 +706,97 @@ export default {
       return 'オーバートレーニング注意'
     })
 
+    // 6. Pace / HR 比 (週単位・月単位トレンド)
+    const paceHrSummary = computed(() => {
+      const trend = buildPaceHrTrendFromWorkouts(props.workouts)
+      if (!trend.weekly.length || !trend.monthly.length) {
+        return { available: false, trendDelta: null }
+      }
+      const latestWeek = trend.weekly[trend.weekly.length - 1]
+      const latestMonth = trend.monthly[trend.monthly.length - 1]
+      const prevMonth = trend.monthly.length >= 2 ? trend.monthly[trend.monthly.length - 2] : null
+      const trendDelta = prevMonth ? (latestMonth.pace_hr_ratio - prevMonth.pace_hr_ratio) : null
+
+      return {
+        available: true,
+        latestWeekLabel: latestWeek.period.substring(5).replace('-', '/') + '週',
+        latestWeekRatio: latestWeek.pace_hr_ratio,
+        latestWeekKmhRatio: latestWeek.pace_hr_ratio_kmh,
+        latestMonthLabel: latestMonth.period,
+        latestMonthRatio: latestMonth.pace_hr_ratio,
+        prevMonthRatio: prevMonth ? prevMonth.pace_hr_ratio : null,
+        trendDelta
+      }
+    })
+
+    // 7. 安静時心拍数 (RHR) トレンド ＆ 要疲労注意フラグ
+    const rhrTrendSeries = computed(() => {
+      return calculateRhrTrend(props.rhrLogs, 3)
+    })
+
+    const latestRhrEntry = computed(() => {
+      if (rhrTrendSeries.value.length === 0) return null
+      return rhrTrendSeries.value[rhrTrendSeries.value.length - 1]
+    })
+
+    const submitRhr = () => {
+      if (!rhrFormDate.value || !rhrFormBpm.value) return
+      emit('save-rhr', {
+        date: rhrFormDate.value,
+        rhr_bpm: Number(rhrFormBpm.value)
+      })
+    }
+
+    // 8. ピッチ (SPM) 安定度 (時間ベース前半 0-50% vs 後半 51-100%)
+    const pitchStabilityReport = computed(() => {
+      if (!props.workouts || props.workouts.length === 0) {
+        return { available: false }
+      }
+      const sorted = [...props.workouts].sort(
+        (a, b) => parseWorkoutLocalDate(b.workoutDate) - parseWorkoutLocalDate(a.workoutDate)
+      )
+      for (const w of sorted) {
+        const tracking = workoutSplitsToTrackingData(w)
+        if (!tracking) continue
+        const res = calculatePitchStability(tracking)
+        if (res) {
+          return {
+            available: true,
+            workoutDate: w.workoutDate ? w.workoutDate.split(/[ T]/)[0] : '',
+            activityName: w.activityName || 'ランニング',
+            ratio: res.pitchStabilityRatio,
+            spmFirst: res.spmFirst,
+            spmSecond: res.spmSecond,
+            status: res.status,
+            evaluation: res.evaluation
+          }
+        }
+      }
+      return { available: false }
+    })
+
+    const latestOverallCadence = computed(() => {
+      if (!props.workouts || props.workouts.length === 0) return null
+      const sorted = [...props.workouts].sort(
+        (a, b) => parseWorkoutLocalDate(b.workoutDate) - parseWorkoutLocalDate(a.workoutDate)
+      )
+      const found = sorted.find(w => Number(w.cadence || 0) > 0)
+      if (!found) return null
+      return {
+        cadence: found.cadence,
+        stride: found.averageStride
+      }
+    })
+
     return {
+      activeScienceTab,
+      rhrFormDate,
+      rhrFormBpm,
       hrConfig,
       last30DaysDistance,
       riegelBest,
       riegelAchievementPct,
+      latestEfResult,
       decouplingReport,
       pmcResult,
       latestWorkoutTrimp,
@@ -480,6 +804,12 @@ export default {
       last7DaysTrimp,
       targetCtl,
       tsbStateLabel,
+      paceHrSummary,
+      rhrTrendSeries,
+      latestRhrEntry,
+      submitRhr,
+      pitchStabilityReport,
+      latestOverallCadence,
       formatHMS: formatSecondsToHMS
     }
   }
@@ -487,7 +817,6 @@ export default {
 </script>
 
 <style scoped>
-/* 5カラム均等グリッド */
 .kpi-five-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -732,12 +1061,12 @@ export default {
   font-weight: 700;
 }
 
-/* スポーツ科学メトリクス内訳パネル */
+/* スポーツ科学メトリクス解析パネル */
 .bento-science-panel {
   background: #F2F4F8;
   border: 1px solid #D5DBE3;
   border-radius: 16px;
-  padding: 20px 22px;
+  padding: 18px 20px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
@@ -749,7 +1078,7 @@ export default {
 }
 
 .hr-config-pill {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   font-weight: 600;
   color: #475569;
   background: #E2E7EE;
@@ -758,19 +1087,55 @@ export default {
   border-radius: 99px;
 }
 
+.science-tabs {
+  background: #E2E7EE;
+  padding: 3px;
+  border-radius: 10px;
+}
+
+.science-tab-btn {
+  border: none;
+  background: transparent;
+  color: #526071;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 5px 6px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.science-tab-btn.active {
+  background: #F8FAFC;
+  color: #1E293B;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.warning-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #EA580C;
+  display: inline-block;
+}
+
 .science-subcard {
   background: #E8ECF2;
   border: 1px solid #D5DBE3;
 }
 
 .subcard-heading {
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: #1E293B;
 }
 
 .subcard-formula {
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   font-weight: 600;
   color: #526071;
 }
@@ -785,7 +1150,7 @@ export default {
   background: #F2F4F8;
   border: 1px solid #D5DBE3;
   border-radius: 8px;
-  padding: 6px 10px;
+  padding: 5px 9px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -803,7 +1168,7 @@ export default {
 }
 
 .r-val {
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
   color: #1E293B;
 }
@@ -813,7 +1178,7 @@ export default {
 }
 
 .ef-compare-row {
-  font-size: 0.73rem;
+  font-size: 0.72rem;
   border-bottom: 1px dashed #D5DBE3;
 }
 
@@ -830,8 +1195,34 @@ export default {
   color: #1E293B;
 }
 
-.drift-badge {
-  font-size: 0.7rem;
+.border-top-subtle {
+  border-top: 1px solid #D5DBE3;
+}
+
+.ef-spark-bars {
+  height: 28px;
+}
+
+.ef-spark-col {
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+}
+
+.ef-spark-bar {
+  width: 100%;
+  background: #3653B3;
+  border-radius: 2px 2px 0 0;
+  opacity: 0.85;
+}
+
+.rhr-input {
+  background: #F2F4F8;
+  border: 1px solid #C4CDD9;
+  border-radius: 6px;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  color: #1E293B;
 }
 
 .subcard-footnote {
@@ -840,8 +1231,13 @@ export default {
 }
 
 .subcard-empty {
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: #526071;
   text-align: center;
 }
+
+.gap-05 { gap: 2px; }
+.gap-1 { gap: 4px; }
+.gap-1\.5 { gap: 6px; }
+.gap-2\.5 { gap: 10px; }
 </style>

@@ -1,19 +1,37 @@
 <template>
   <div class="bento-chart-panel d-flex flex-column h-100">
-    <!-- ヘッダーと期間選択 -->
+    <!-- ヘッダー: チャート種類切替 ＆ 期間・集計単位選択 -->
     <div class="d-flex justify-space-between align-center mb-3 flex-wrap gap-2">
-      <div class="d-flex align-center flex-wrap">
-        <span class="panel-title">
-          PMC（パフォーマンス・マネジメント・チャート）
-        </span>
-        <span v-if="latestDateLabel" class="chart-submeta ml-2 font-num">
-          (基準日 {{ latestDateLabel }} ｜ CTL青線・ATLピンク線・TSB棒グラフ)
+      <!-- 左側: チャートモード切替 -->
+      <div class="d-flex align-center flex-wrap gap-2">
+        <div class="period-pill-group d-flex">
+          <button
+            v-for="m in [
+              { val: 'pmc', label: 'PMC (CTL/ATL/TSB)' },
+              { val: 'pace_hr', label: 'Pace / HR比トレンド' },
+              { val: 'rhr', label: '安静時心拍 (RHR)' }
+            ]"
+            :key="m.val"
+            type="button"
+            class="period-pill-btn"
+            :class="{ active: chartMode === m.val }"
+            @click="chartMode = m.val"
+          >
+            {{ m.label }}
+          </button>
+        </div>
+
+        <span class="chart-submeta font-num d-none d-sm-inline">
+          <template v-if="chartMode === 'pmc'">CTL青線・ATLピンク線・TSB棒</template>
+          <template v-else-if="chartMode === 'pace_hr'">速度(m/分) ÷ 平均心拍(bpm) 推移</template>
+          <template v-else>日次RHR ＆ 7日間移動平均ライン</template>
         </span>
       </div>
-      <!-- 期間選択トグル -->
-      <div class="period-pill-group d-flex">
+
+      <!-- 右側: サブ期間・集計粒度トグル -->
+      <div v-if="chartMode === 'pmc'" class="period-pill-group d-flex">
         <button
-          v-for="p in [{ val: '14days', label: '14日間' }, { val: '42days', label: '42日間(6週)' }, { val: '90days', label: '90日間' }]"
+          v-for="p in [{ val: '14days', label: '14日' }, { val: '42days', label: '42日(6週)' }, { val: '90days', label: '90日' }]"
           :key="p.val"
           type="button"
           class="period-pill-btn"
@@ -23,28 +41,41 @@
           {{ p.label }}
         </button>
       </div>
+
+      <div v-else-if="chartMode === 'pace_hr'" class="period-pill-group d-flex">
+        <button
+          v-for="g in [{ val: 'weekly', label: '週単位' }, { val: 'monthly', label: '月単位' }, { val: 'daily', label: 'ラン別' }]"
+          :key="g.val"
+          type="button"
+          class="period-pill-btn"
+          :class="{ active: paceHrGranularity === g.val }"
+          @click="paceHrGranularity = g.val"
+        >
+          {{ g.label }}
+        </button>
+      </div>
     </div>
 
-    <!-- PMC 統合グラフ表示領域 -->
+    <!-- グラフ描画領域 -->
     <div class="chart-container flex-grow-1 d-flex flex-column justify-center">
       <ClientOnly>
         <apexchart
-          v-if="workouts.length > 0 && chartOptions && series"
+          v-if="hasChartData && activeOptions && activeSeries"
           :key="chartKey"
           :height="height"
-          :options="chartOptions"
-          :series="series"
+          :options="activeOptions"
+          :series="activeSeries"
         ></apexchart>
         <template #fallback>
           <div class="d-flex flex-column align-center justify-center py-10 text-slate-muted">
             <v-progress-circular indeterminate color="primary" size="28" class="mb-2"></v-progress-circular>
-            <div class="text-caption">PMCチャートを描画中...</div>
+            <div class="text-caption">チャートを描画中...</div>
           </div>
         </template>
       </ClientOnly>
-      <div v-if="workouts.length === 0" class="d-flex flex-column align-center justify-center py-10 text-slate-muted">
+      <div v-if="!hasChartData" class="d-flex flex-column align-center justify-center py-10 text-slate-muted">
         <v-icon icon="mdi-chart-line" size="36" class="mb-2" color="#94A3B8"></v-icon>
-        <div class="text-caption">データがありません。Stravaと同期してください。</div>
+        <div class="text-caption">表示可能な時系列データがありません。</div>
       </div>
     </div>
   </div>
@@ -55,7 +86,9 @@ import { ref, computed, watch } from 'vue'
 import { getAthleteHrConfig } from '~/config/athleteSettings'
 import {
   parseWorkoutLocalDate,
-  buildDailyPmcSeries
+  buildDailyPmcSeries,
+  buildPaceHrTrendFromWorkouts,
+  calculateRhrTrend
 } from '~/utils/sportsScience'
 
 export default {
@@ -64,6 +97,10 @@ export default {
     workouts: {
       type: Array,
       required: true,
+      default: () => []
+    },
+    rhrLogs: {
+      type: Array,
       default: () => []
     },
     targetGoal: {
@@ -76,7 +113,9 @@ export default {
     }
   },
   setup(props) {
+    const chartMode = ref('pmc')
     const selectedPeriod = ref('42days')
+    const paceHrGranularity = ref('weekly')
     const chartKey = ref(0)
 
     let runtimePublic = null
@@ -88,9 +127,13 @@ export default {
     }
     const hrConfig = computed(() => getAthleteHrConfig(runtimePublic))
 
-    watch([selectedPeriod, () => props.workouts, () => props.targetGoal], () => {
-      chartKey.value++
-    })
+    watch(
+      [chartMode, selectedPeriod, paceHrGranularity, () => props.workouts, () => props.rhrLogs, () => props.targetGoal],
+      () => {
+        chartKey.value++
+      },
+      { deep: true }
+    )
 
     const anchorDate = computed(() => {
       const now = new Date()
@@ -104,43 +147,21 @@ export default {
       return diffDays > 14 ? maxDate : now
     })
 
-    const latestDateLabel = computed(() => {
-      const d = anchorDate.value
-      return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
-    })
-
-    // 最低120日分以上の日次TRIMPからCTL(42d EMA)・ATL(7d EMA)・TSB(前日CTL-前日ATL)を算出
+    // -----------------------------------------------------------------------
+    // 1. PMC チャート (CTL / ATL / TSB)
+    // -----------------------------------------------------------------------
     const fullPmcSeries = computed(() => {
       const res = buildDailyPmcSeries(props.workouts, anchorDate.value, hrConfig.value, 130)
       return res.series || []
     })
 
-    const windowDaysCount = computed(() => {
-      if (selectedPeriod.value === '14days') return 14
-      if (selectedPeriod.value === '90days') return 90
-      return 42
-    })
-
     const visiblePmcSlice = computed(() => {
       const all = fullPmcSeries.value
-      const count = windowDaysCount.value
-      if (all.length <= count) return all
-      return all.slice(-count)
+      const count = selectedPeriod.value === '14days' ? 14 : selectedPeriod.value === '90days' ? 90 : 42
+      return all.length <= count ? all : all.slice(-count)
     })
 
-    const categories = computed(() => {
-      return visiblePmcSlice.value.map(item => {
-        if (!item.dateStr) return ''
-        const parts = item.dateStr.split('-')
-        if (parts.length >= 3) {
-          return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`
-        }
-        return item.dateStr
-      })
-    })
-
-    // PMC 3系列: TSB (ヒストグラム棒グラフ), CTL (青い折れ線), ATL (ピンクの折れ線)
-    const series = computed(() => {
+    const pmcSeries = computed(() => {
       const slice = visiblePmcSlice.value
       return [
         {
@@ -161,9 +182,14 @@ export default {
       ]
     })
 
-    const chartOptions = computed(() => {
+    const pmcOptions = computed(() => {
       const slice = visiblePmcSlice.value
       const step = selectedPeriod.value === '90days' ? 7 : selectedPeriod.value === '42days' ? 4 : 1
+      const categories = slice.map(item => {
+        if (!item.dateStr) return ''
+        const parts = item.dateStr.split('-')
+        return parts.length >= 3 ? `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}` : item.dateStr
+      })
 
       return {
         chart: {
@@ -172,10 +198,9 @@ export default {
           foreColor: '#526071',
           zoom: { enabled: false },
           fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif",
-          animations: { enabled: true, speed: 350 }
+          animations: { enabled: true, speed: 300 }
         },
         theme: { mode: 'light' },
-        // Series 0: TSB (棒グラフ), Series 1: CTL (青折れ線), Series 2: ATL (ピンク折れ線)
         colors: ['#60A5FA', '#2563EB', '#EC4899'],
         stroke: {
           width: [0, 3, 2.5],
@@ -187,25 +212,15 @@ export default {
             borderRadius: 3,
             colors: {
               ranges: [
-                {
-                  from: 0,
-                  to: 1000,
-                  color: '#3B82F6' // TSB プラス: 青
-                },
-                {
-                  from: -1000,
-                  to: -0.01,
-                  color: '#F97316' // TSB マイナス: オレンジ/赤系
-                }
+                { from: 0, to: 1000, color: '#3B82F6' },
+                { from: -1000, to: -0.01, color: '#F97316' }
               ]
             }
           }
         },
-        fill: {
-          opacity: [0.42, 1, 1]
-        },
+        fill: { opacity: [0.42, 1, 1] },
         xaxis: {
-          categories: categories.value,
+          categories,
           tickAmount: Math.ceil(slice.length / step),
           labels: {
             rotate: 0,
@@ -299,12 +314,281 @@ export default {
       }
     })
 
+    // -----------------------------------------------------------------------
+    // 2. Pace / HR 比トレンド (週単位・月単位・ラン別)
+    // -----------------------------------------------------------------------
+    const paceHrData = computed(() => {
+      return buildPaceHrTrendFromWorkouts(props.workouts)
+    })
+
+    const activePaceHrPoints = computed(() => {
+      if (paceHrGranularity.value === 'monthly') {
+        return paceHrData.value.monthly.slice(-12).map(m => ({
+          label: m.period,
+          ratio: Number(m.pace_hr_ratio.toFixed(3)),
+          ratioKmh: Number(m.pace_hr_ratio_kmh.toFixed(4)),
+          speed: Number(m.avg_speed_m_min.toFixed(1)),
+          hr: Number(m.avg_hr.toFixed(0))
+        }))
+      }
+      if (paceHrGranularity.value === 'daily') {
+        return paceHrData.value.workouts.slice(-24).map(w => ({
+          label: w.date.substring(5).replace('-', '/'),
+          ratio: Number(w.pace_hr_ratio.toFixed(3)),
+          ratioKmh: Number(w.pace_hr_ratio_kmh.toFixed(4)),
+          speed: Number(w.speed_m_min.toFixed(1)),
+          hr: Number(w.avg_hr.toFixed(0))
+        }))
+      }
+      return paceHrData.value.weekly.slice(-16).map(w => ({
+        label: w.period.substring(5).replace('-', '/') + '週',
+        ratio: Number(w.pace_hr_ratio.toFixed(3)),
+        ratioKmh: Number(w.pace_hr_ratio_kmh.toFixed(4)),
+        speed: Number(w.avg_speed_m_min.toFixed(1)),
+        hr: Number(w.avg_hr.toFixed(0))
+      }))
+    })
+
+    const paceHrSeries = computed(() => {
+      const pts = activePaceHrPoints.value
+      return [
+        {
+          name: '平均速度 (m/分)',
+          type: 'column',
+          data: pts.map(p => p.speed)
+        },
+        {
+          name: 'Pace/HR比 (m/分/bpm)',
+          type: 'line',
+          data: pts.map(p => p.ratio)
+        }
+      ]
+    })
+
+    const paceHrOptions = computed(() => {
+      const pts = activePaceHrPoints.value
+      return {
+        chart: {
+          toolbar: { show: false },
+          background: 'transparent',
+          foreColor: '#526071',
+          zoom: { enabled: false },
+          fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif"
+        },
+        theme: { mode: 'light' },
+        colors: ['#94A3B8', '#1E7E5C'],
+        stroke: {
+          width: [0, 3],
+          curve: 'smooth'
+        },
+        markers: {
+          size: [0, 4],
+          hover: { size: 6 }
+        },
+        plotOptions: {
+          bar: { columnWidth: '48%', borderRadius: 4 }
+        },
+        fill: { opacity: [0.3, 1] },
+        xaxis: {
+          categories: pts.map(p => p.label),
+          labels: {
+            style: { colors: '#526071', fontSize: '10px', fontWeight: 500 }
+          },
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: [
+          {
+            seriesName: '平均速度 (m/分)',
+            opposite: true,
+            title: {
+              text: '速度 (m/min)',
+              style: { color: '#64748B', fontSize: '10px', fontWeight: 600 }
+            },
+            labels: {
+              style: { colors: '#64748B', fontSize: '10px', fontWeight: 600 },
+              formatter: val => (val !== undefined && val !== null ? `${val.toFixed(0)}` : '')
+            }
+          },
+          {
+            seriesName: 'Pace/HR比 (m/分/bpm)',
+            show: true,
+            title: {
+              text: 'Pace / HR比 (m/min/bpm)',
+              style: { color: '#1E7E5C', fontSize: '10px', fontWeight: 600 }
+            },
+            labels: {
+              style: { colors: '#1E7E5C', fontSize: '10px', fontWeight: 600 },
+              formatter: val => (val !== undefined && val !== null ? val.toFixed(2) : '')
+            }
+          }
+        ],
+        tooltip: {
+          shared: true,
+          intersect: false,
+          theme: 'light',
+          y: {
+            formatter: (value, { seriesIndex, dataPointIndex }) => {
+              if (value === undefined || value === null) return '--'
+              const pt = pts[dataPointIndex]
+              if (seriesIndex === 0) {
+                return `${value.toFixed(1)} m/min (平均心拍 ${pt?.hr || '--'} bpm)`
+              }
+              return `${value.toFixed(3)} m/min/bpm (${pt?.ratioKmh || '--'} km/h/bpm)`
+            }
+          }
+        },
+        grid: {
+          borderColor: '#DCE2EC',
+          padding: { left: 6, right: 6, top: 4, bottom: 0 }
+        },
+        legend: {
+          position: 'bottom',
+          horizontalAlign: 'left',
+          fontSize: '11px',
+          fontWeight: 600,
+          labels: { colors: '#334155' }
+        }
+      }
+    })
+
+    // -----------------------------------------------------------------------
+    // 3. 安静時心拍数 (RHR) ＆ 7日移動平均トレンド
+    // -----------------------------------------------------------------------
+    const rhrTrendPoints = computed(() => {
+      return calculateRhrTrend(props.rhrLogs, 3)
+    })
+
+    const rhrSeries = computed(() => {
+      const pts = rhrTrendPoints.value
+      return [
+        {
+          name: '日次 RHR (bpm)',
+          type: 'column',
+          data: pts.map(p => p.rhr_bpm)
+        },
+        {
+          name: '7日間移動平均 (短期トレンド)',
+          type: 'line',
+          data: pts.map(p => p.moving_avg_7d)
+        }
+      ]
+    })
+
+    const rhrOptions = computed(() => {
+      const pts = rhrTrendPoints.value
+      const minBpm = pts.length > 0 ? Math.max(35, Math.min(...pts.map(p => p.rhr_bpm)) - 4) : 45
+      const maxBpm = pts.length > 0 ? Math.max(...pts.map(p => p.rhr_bpm)) + 4 : 65
+
+      // +3bpm 疲労注意の日の棒をオレンジ・赤でハイライト
+      const discreteColors = pts
+        .map((p, idx) => (p.fatigueWarning ? { seriesIndex: 0, dataPointIndex: idx, fillColor: '#EA580C' } : null))
+        .filter(Boolean)
+
+      return {
+        chart: {
+          toolbar: { show: false },
+          background: 'transparent',
+          foreColor: '#526071',
+          zoom: { enabled: false },
+          fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif"
+        },
+        theme: { mode: 'light' },
+        colors: ['#93C5FD', '#2563EB'],
+        stroke: {
+          width: [0, 3],
+          curve: 'smooth'
+        },
+        markers: {
+          size: [0, 4]
+        },
+        plotOptions: {
+          bar: {
+            columnWidth: '48%',
+            borderRadius: 4,
+            colors: {
+              ranges: []
+            }
+          }
+        },
+        discrete: discreteColors,
+        fill: { opacity: [0.65, 1] },
+        xaxis: {
+          categories: pts.map(p => p.date.substring(5).replace('-', '/')),
+          labels: {
+            style: { colors: '#526071', fontSize: '10px', fontWeight: 500 }
+          },
+          axisBorder: { show: false },
+          axisTicks: { show: false }
+        },
+        yaxis: {
+          min: minBpm,
+          max: maxBpm,
+          title: {
+            text: 'RHR (bpm)',
+            style: { color: '#2563EB', fontSize: '10px', fontWeight: 600 }
+          },
+          labels: {
+            style: { colors: '#526071', fontSize: '10px', fontWeight: 600 },
+            formatter: val => (val !== undefined && val !== null ? `${val.toFixed(0)}` : '')
+          }
+        },
+        tooltip: {
+          shared: true,
+          intersect: false,
+          theme: 'light',
+          y: {
+            formatter: (value, { seriesIndex, dataPointIndex }) => {
+              if (value === undefined || value === null) return '--'
+              const pt = pts[dataPointIndex]
+              if (seriesIndex === 0) {
+                const warn = pt?.fatigueWarning ? ' ⚠️要疲労注意 (+3bpm超)' : ''
+                return `${value} bpm${warn}`
+              }
+              return `${value.toFixed(1)} bpm`
+            }
+          }
+        },
+        grid: {
+          borderColor: '#DCE2EC',
+          padding: { left: 6, right: 6, top: 4, bottom: 0 }
+        },
+        legend: {
+          position: 'bottom',
+          horizontalAlign: 'left',
+          fontSize: '11px',
+          fontWeight: 600,
+          labels: { colors: '#334155' }
+        }
+      }
+    })
+
+    const hasChartData = computed(() => {
+      if (chartMode.value === 'rhr') return rhrTrendPoints.value.length > 0
+      if (chartMode.value === 'pace_hr') return activePaceHrPoints.value.length > 0
+      return props.workouts.length > 0
+    })
+
+    const activeSeries = computed(() => {
+      if (chartMode.value === 'pace_hr') return paceHrSeries.value
+      if (chartMode.value === 'rhr') return rhrSeries.value
+      return pmcSeries.value
+    })
+
+    const activeOptions = computed(() => {
+      if (chartMode.value === 'pace_hr') return paceHrOptions.value
+      if (chartMode.value === 'rhr') return rhrOptions.value
+      return pmcOptions.value
+    })
+
     return {
+      chartMode,
       selectedPeriod,
+      paceHrGranularity,
       chartKey,
-      series,
-      chartOptions,
-      latestDateLabel
+      hasChartData,
+      activeSeries,
+      activeOptions
     }
   }
 }
@@ -317,13 +601,6 @@ export default {
   border-radius: 16px;
   padding: 20px 24px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
-.panel-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #1E293B;
-  letter-spacing: -0.01em;
 }
 
 .chart-submeta {
@@ -350,7 +627,7 @@ export default {
   color: #526071;
   font-size: 0.72rem;
   font-weight: 600;
-  padding: 5px 12px;
+  padding: 5px 10px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;

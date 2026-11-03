@@ -53,6 +53,8 @@
               <span>{{ formatDuration(item.durationSeconds) }}</span>
               <span v-if="item.averageHeartrate" class="meta-dot">•</span>
               <span v-if="item.averageHeartrate">{{ Math.round(item.averageHeartrate) }} bpm</span>
+              <span v-if="getWorkoutEfScore(item)" class="meta-dot">•</span>
+              <span v-if="getWorkoutEfScore(item)" class="ef-inline-tag">EF {{ getWorkoutEfScore(item).toFixed(2) }}</span>
               <span v-if="getWorkoutTrimpScore(item) > 0" class="meta-dot">•</span>
               <span v-if="getWorkoutTrimpScore(item) > 0" class="trimp-inline-tag">TRIMP {{ getWorkoutTrimpScore(item).toFixed(0) }}</span>
             </div>
@@ -181,20 +183,22 @@
 
         <div v-if="getWorkoutScienceDetails(mapDialog.workout)" class="mb-4">
           <div class="section-heading mb-2">
-            スポーツ科学解析 (Banister TRIMP / 時間分割ドリフト / Riegel換算)
+            スポーツ科学解析 (EF / 時間分割ドリフト / ピッチ安定度 / TRIMP / Riegel換算)
           </div>
           
           <div class="analysis-box pa-3.5 rounded-xl font-num">
             <div class="d-flex align-center justify-space-between py-1 border-b-dashed">
-              <span class="metric-label">Banister TRIMP (男性係数)</span>
+              <span class="metric-label">1. EF (効率係数: 平均速度 ÷ 平均心拍)</span>
               <span class="metric-val" style="font-size: 0.8rem;">
-                {{ getWorkoutScienceDetails(mapDialog.workout).trimp > 0
-                  ? `${getWorkoutScienceDetails(mapDialog.workout).trimp.toFixed(1)} (HRR ${(getWorkoutScienceDetails(mapDialog.workout).hrrRatio * 100).toFixed(1)}%)`
-                  : '心拍データなし' }}
+                <template v-if="getWorkoutScienceDetails(mapDialog.workout).efDetails">
+                  {{ getWorkoutScienceDetails(mapDialog.workout).efDetails.ef.toFixed(3) }}
+                  ({{ getWorkoutScienceDetails(mapDialog.workout).efDetails.avgSpeedMPerMin.toFixed(1) }} m/分 ÷ {{ getWorkoutScienceDetails(mapDialog.workout).efDetails.avgHr.toFixed(1) }} bpm)
+                </template>
+                <template v-else>--</template>
               </span>
             </div>
             <div class="d-flex align-center justify-space-between py-1 border-b-dashed">
-              <span class="metric-label">心肺ドリフト (時間 0-50% / 51-100%)</span>
+              <span class="metric-label">2. 心肺ドリフト (時間 0-50% / 51-100%)</span>
               <span class="metric-val" style="font-size: 0.8rem;">
                 <template v-if="getWorkoutScienceDetails(mapDialog.workout).decouplingDetails">
                   {{ getWorkoutScienceDetails(mapDialog.workout).decouplingDetails.decoupling.toFixed(2) }}%
@@ -203,8 +207,26 @@
                 <template v-else>--</template>
               </span>
             </div>
+            <div class="d-flex align-center justify-space-between py-1 border-b-dashed">
+              <span class="metric-label">3. ピッチ安定度 ((後半SPM ÷ 前半SPM) × 100)</span>
+              <span class="metric-val" style="font-size: 0.8rem;">
+                <template v-if="getWorkoutScienceDetails(mapDialog.workout).pitchDetails">
+                  {{ getWorkoutScienceDetails(mapDialog.workout).pitchDetails.pitchStabilityRatio.toFixed(1) }}%
+                  ({{ getWorkoutScienceDetails(mapDialog.workout).pitchDetails.spmFirst.toFixed(1) }} → {{ getWorkoutScienceDetails(mapDialog.workout).pitchDetails.spmSecond.toFixed(1) }} spm)
+                </template>
+                <template v-else>ラップ内ピッチデータ未収録</template>
+              </span>
+            </div>
+            <div class="d-flex align-center justify-space-between py-1 border-b-dashed">
+              <span class="metric-label">4. Banister TRIMP (男性係数)</span>
+              <span class="metric-val" style="font-size: 0.8rem;">
+                {{ getWorkoutScienceDetails(mapDialog.workout).trimp > 0
+                  ? `${getWorkoutScienceDetails(mapDialog.workout).trimp.toFixed(1)} (HRR ${(getWorkoutScienceDetails(mapDialog.workout).hrrRatio * 100).toFixed(1)}%)`
+                  : '心拍データなし' }}
+              </span>
+            </div>
             <div class="d-flex align-center justify-space-between py-1">
-              <span class="metric-label">Riegel フルマラソン換算 (T1×(D2/D1)^1.06)</span>
+              <span class="metric-label">5. Riegel フルマラソン換算 (T1×(D2/D1)^1.06)</span>
               <span class="metric-val" style="font-size: 0.8rem; color: #3653B3;">
                 {{ getWorkoutScienceDetails(mapDialog.workout).riegelFullFormatted }}
               </span>
@@ -214,7 +236,7 @@
 
         <div v-if="mapDialog.workout.splits && mapDialog.workout.splits.length > 0">
           <div class="section-heading mb-2">
-            1km毎スプリットラップ
+            1km毎スプリットラップ ＆ 時系列EF推移
           </div>
           <div class="splits-table-wrapper rounded-xl overflow-hidden">
             <v-table density="compact" class="splits-table">
@@ -223,6 +245,7 @@
                   <th class="font-weight-bold py-2">km</th>
                   <th class="font-weight-bold py-2">ラップ</th>
                   <th class="font-weight-bold py-2">心拍</th>
+                  <th class="font-weight-bold py-2">EF (m/分/bpm)</th>
                   <th class="font-weight-bold py-2">標高差</th>
                 </tr>
               </thead>
@@ -234,6 +257,9 @@
                   </td>
                   <td class="py-1.5 font-num">
                     {{ split.averageHeartrate ? Math.round(split.averageHeartrate) + ' bpm' : '--' }}
+                  </td>
+                  <td class="py-1.5 font-weight-bold font-num" style="color: #1E7E5C;">
+                    {{ getSplitEfFormatted(mapDialog.workout, idx) }}
                   </td>
                   <td class="py-1.5 font-num">
                     <span :class="split.elevationDifference >= 0 ? 'elev-up' : 'elev-down'">
@@ -258,7 +284,9 @@ import {
   formatSecondsToHMS,
   workoutSplitsToTrackingData,
   calculateAerobicDecouplingDetails,
-  calculateWorkoutTrimp
+  calculateWorkoutTrimp,
+  calculateWorkoutEF,
+  calculatePitchStability
 } from '~/utils/sportsScience'
 
 export default {
@@ -439,11 +467,19 @@ export default {
       return calculateWorkoutTrimp(w, hrConfig.value).trimp
     }
 
+    const getWorkoutEfScore = (w) => {
+      if (!w) return null
+      const res = calculateWorkoutEF(w)
+      return res ? res.ef : null
+    }
+
     const getWorkoutScienceDetails = (w) => {
       if (!w || !w.distance) return null
       const { trimp, hrrRatio } = calculateWorkoutTrimp(w, hrConfig.value)
       const tracking = workoutSplitsToTrackingData(w)
       const decouplingDetails = tracking ? calculateAerobicDecouplingDetails(tracking) : null
+      const efDetails = calculateWorkoutEF(w)
+      const pitchDetails = tracking ? calculatePitchStability(tracking) : null
 
       const distM = Number(w.distance || 0) * 1000
       const timeS = Number(w.movingTimeSeconds || w.durationSeconds || 0)
@@ -452,9 +488,18 @@ export default {
       return {
         trimp,
         hrrRatio,
+        efDetails,
         decouplingDetails,
+        pitchDetails,
         riegelFullFormatted: riegelFullSec ? formatSecondsToHMS(riegelFullSec) : '10km以上のランで算出'
       }
+    }
+
+    const getSplitEfFormatted = (w, idx) => {
+      const efDetails = calculateWorkoutEF(w)
+      if (!efDetails || !efDetails.series || !efDetails.series[idx]) return '--'
+      const val = efDetails.series[idx].ef
+      return val ? val.toFixed(2) : '--'
     }
 
     return {
@@ -474,7 +519,9 @@ export default {
       showMapDetail,
       getSvgPoints,
       getWorkoutTrimpScore,
-      getWorkoutScienceDetails
+      getWorkoutEfScore,
+      getWorkoutScienceDetails,
+      getSplitEfFormatted
     }
   }
 }
@@ -587,6 +634,11 @@ export default {
 
 .trimp-inline-tag {
   color: #2B4494;
+  font-weight: 700;
+}
+
+.ef-inline-tag {
+  color: #1E7E5C;
   font-weight: 700;
 }
 
