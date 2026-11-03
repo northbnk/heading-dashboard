@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '../../../utils/auth'
+import { getSupabaseClient, readLocalJson, writeLocalJson } from '../../../utils/auth'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -26,13 +26,12 @@ export default defineEventHandler(async (event) => {
   const supabase = getSupabaseClient()
 
   try {
-    console.log(`Exchanging authorization code for token...`)
     const tokenResponse = await $fetch('https://www.strava.com/oauth/token', {
       method: 'POST',
       body: {
         client_id: config.public.stravaClientId,
         client_secret: config.stravaClientSecret,
-        code: code,
+        code,
         grant_type: 'authorization_code'
       }
     })
@@ -44,44 +43,47 @@ export default defineEventHandler(async (event) => {
       throw new Error('Failed to retrieve athlete ID from Strava response.')
     }
 
-    // Generate a secure session token
     const sessionToken = crypto.randomUUID()
 
-    // Store tokens and athlete info in Supabase strava_tokens table
-    const { error: upsertError } = await supabase
-      .from('strava_tokens')
-      .upsert({
-        athlete_id: athleteId,
-        access_token: tokenResponse.access_token,
-        refresh_token: tokenResponse.refresh_token,
-        expires_at: tokenResponse.expires_at,
-        athlete_firstname: athlete.firstname || '',
-        athlete_lastname: athlete.lastname || '',
-        session_token: sessionToken,
-        updated_at: new Date().toISOString()
-      })
+    if (supabase) {
+      const { error: upsertError } = await supabase
+        .from('strava_tokens')
+        .upsert({
+          athlete_id: athleteId,
+          access_token: tokenResponse.access_token,
+          refresh_token: tokenResponse.refresh_token,
+          expires_at: tokenResponse.expires_at,
+          athlete_firstname: athlete.firstname || '',
+          athlete_lastname: athlete.lastname || '',
+          session_token: sessionToken,
+          updated_at: new Date().toISOString()
+        })
 
-    if (upsertError) {
-      console.error('Failed to save tokens to Supabase:', JSON.stringify(upsertError), upsertError)
-      const errMsg = upsertError.message || (typeof upsertError === 'object' ? JSON.stringify(upsertError) : String(upsertError))
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Failed to save Strava credentials to database: ' + errMsg
-      })
+      if (upsertError) {
+        console.warn('Supabase token save failed, saving locally instead:', upsertError.message)
+      }
     }
 
-    console.log(`Successfully linked Strava account. Athlete ID: ${athleteId}`)
+    // ローカル設定ファイルにもバックアップ保存
+    const existingLocal = readLocalJson('strava_api_config.json', {})
+    writeLocalJson('strava_api_config.json', {
+      ...existingLocal,
+      client_id: config.public.stravaClientId,
+      client_secret: config.stravaClientSecret,
+      access_token: tokenResponse.access_token,
+      refresh_token: tokenResponse.refresh_token,
+      expires_at: tokenResponse.expires_at,
+      athlete
+    })
 
-    // Set secure HTTPOnly session cookie (holds athleteId:sessionToken)
-    const host = event.node.req.headers.host || 'localhost:3000'
+    const host = event.node.req.headers.host || 'localhost:3001'
     setCookie(event, 'athlete_session', `${athleteId}:${sessionToken}`, {
       httpOnly: true,
       secure: !host.includes('localhost'),
       sameSite: 'lax',
-      maxAge: 30 * 24 * 3600 // 30 days
+      maxAge: 30 * 24 * 3600
     })
 
-    // Redirect user back to their dashboard!
     return sendRedirect(event, `/athlete/${athleteId}`)
   } catch (err) {
     console.error('Failed to exchange Strava token:', err)
