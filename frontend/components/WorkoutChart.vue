@@ -1,20 +1,19 @@
 <template>
   <div class="bento-chart-panel d-flex flex-column h-100">
     <!-- ヘッダーと期間選択 -->
-    <div class="d-flex justify-space-between align-center mb-1 flex-wrap gap-1">
+    <div class="d-flex justify-space-between align-center mb-3 flex-wrap gap-2">
       <div class="d-flex align-center">
-        <div class="cockpit-dot bg-primary mr-2"></div>
-        <span class="text-subtitle-2 font-weight-black text-white tracking-wide">
-          統合テレメトリ推移
+        <span class="panel-title">
+          パフォーマンス推移
         </span>
-        <span v-if="latestDateLabel" class="text-caption text-grey ml-2" style="font-size: 0.68rem;">
-          (基準: {{ latestDateLabel }})
+        <span v-if="latestDateLabel" class="chart-submeta ml-2 font-num">
+          (基準日 {{ latestDateLabel }})
         </span>
       </div>
       <!-- 期間選択トグル -->
       <div class="period-pill-group d-flex">
         <button
-          v-for="p in [{ val: '7days', label: '7日間' }, { val: 'month', label: '30日' }, { val: 'year', label: '12ヶ月' }]"
+          v-for="p in [{ val: '7days', label: '7日間' }, { val: 'month', label: '30日間' }, { val: 'year', label: '12ヶ月' }]"
           :key="p.val"
           type="button"
           class="period-pill-btn"
@@ -37,14 +36,14 @@
           :series="series"
         ></apexchart>
         <template #fallback>
-          <div class="d-flex flex-column align-center justify-center py-8 text-grey">
-            <v-progress-circular indeterminate color="secondary" size="28" class="mb-2"></v-progress-circular>
-            <div class="text-caption">テレメトリ描画中...</div>
+          <div class="d-flex flex-column align-center justify-center py-10 text-slate-muted">
+            <v-progress-circular indeterminate color="primary" size="28" class="mb-2"></v-progress-circular>
+            <div class="text-caption">グラフを描画中...</div>
           </div>
         </template>
       </ClientOnly>
-      <div v-if="workouts.length === 0" class="d-flex flex-column align-center justify-center py-8 text-grey">
-        <v-icon icon="mdi-chart-bell-curve-cumulative" size="40" class="mb-1 text-grey-darken-2"></v-icon>
+      <div v-if="workouts.length === 0" class="d-flex flex-column align-center justify-center py-10 text-slate-muted">
+        <v-icon icon="mdi-chart-line" size="36" class="mb-2" color="#94A3B8"></v-icon>
         <div class="text-caption">データがありません。Stravaと同期してください。</div>
       </div>
     </div>
@@ -95,7 +94,7 @@ export default {
     },
     height: {
       type: [Number, String],
-      default: 245
+      default: 250
     }
   },
   setup(props) {
@@ -114,7 +113,6 @@ export default {
       return `${yyyy}-${mm}-${dd}`
     }
 
-    // 最新ワークアウトが14日以上前の場合は最新ワークアウト日を基準日にする
     const anchorDate = computed(() => {
       const now = new Date()
       if (!props.workouts || props.workouts.length === 0) return now
@@ -245,7 +243,7 @@ export default {
       const data = mappedIntervalWorkouts.value
       
       const distanceSeries = {
-        name: '距離(km)',
+        name: '距離 (km)',
         type: 'column',
         data: data.map(w => Number(w.distance || 0))
       }
@@ -263,7 +261,7 @@ export default {
       return [
         distanceSeries,
         {
-          name: 'ペース(分/km)',
+          name: 'ペース (分/km)',
           type: 'line',
           data: data.map(w => {
             const seconds = w.averagePaceSeconds
@@ -272,12 +270,12 @@ export default {
           })
         },
         {
-          name: 'ストライド(m)',
+          name: 'ストライド (m)',
           type: 'line',
           data: data.map(w => w.averageStride ? Number(Number(w.averageStride).toFixed(2)) : null)
         },
         {
-          name: 'ピッチ(spm)',
+          name: 'ピッチ (spm)',
           type: 'line',
           data: data.map(w => w.cadence ? Number(Math.round(w.cadence)) : null)
         },
@@ -300,10 +298,10 @@ export default {
       const yaxisConfig = xs.value
         ? [
             {
-              seriesName: '距離(km)',
+              seriesName: '距離 (km)',
               show: true,
               labels: {
-                style: { colors: '#818cf8', fontSize: '10px' },
+                style: { colors: '#64748B', fontSize: '10px', fontWeight: 600 },
                 formatter: val => val !== undefined && val !== null ? `${val.toFixed(0)}k` : ''
               }
             },
@@ -312,36 +310,36 @@ export default {
               show: true,
               opposite: true,
               labels: {
-                style: { colors: '#f87171', fontSize: '10px' },
+                style: { colors: '#0F172A', fontSize: '10px', fontWeight: 600 },
                 formatter: val => val !== undefined && val !== null ? `${val.toFixed(1)}` : ''
               }
             }
           ]
         : [
             {
-              seriesName: '距離(km)',
+              seriesName: '距離 (km)',
               show: true,
               labels: {
-                style: { colors: '#818cf8', fontSize: '10px' },
+                style: { colors: '#64748B', fontSize: '10px', fontWeight: 600 },
                 formatter: val => val !== undefined && val !== null ? `${val.toFixed(0)}k` : ''
               }
             },
             {
-              seriesName: 'ペース(分/km)',
+              seriesName: 'ペース (分/km)',
               show: false,
               labels: { show: false }
             },
             {
-              seriesName: 'ストライド(m)',
+              seriesName: 'ストライド (m)',
               show: true,
               opposite: true,
               labels: {
-                style: { colors: '#a78bfa', fontSize: '10px' },
+                style: { colors: '#64748B', fontSize: '10px', fontWeight: 600 },
                 formatter: val => val !== undefined && val !== null ? `${val.toFixed(2)}m` : ''
               }
             },
             {
-              seriesName: 'ピッチ(spm)',
+              seriesName: 'ピッチ (spm)',
               show: false,
               labels: { show: false }
             },
@@ -375,14 +373,14 @@ export default {
         chart: {
           toolbar: { show: false },
           background: 'transparent',
-          foreColor: '#9CA3AF',
+          foreColor: '#64748B',
           zoom: { enabled: false },
-          fontFamily: 'Inter, sans-serif'
+          fontFamily: "'Plus Jakarta Sans', 'Noto Sans JP', sans-serif"
         },
-        theme: { mode: 'dark' },
+        theme: { mode: 'light' },
         colors: xs.value
-          ? ['#6366F1', '#F43F5E']
-          : ['#6366F1', '#10B981', '#8B5CF6', '#F59E0B', '#F43F5E'],
+          ? ['#2563EB', '#0F172A']
+          : ['#2563EB', '#059669', '#64748B', '#D97706', '#0F172A'],
         stroke: {
           width: xs.value ? [0, 2.5] : [0, 2.5, 2, 2, 2.5],
           curve: 'smooth',
@@ -391,16 +389,16 @@ export default {
         plotOptions: {
           bar: {
             columnWidth: '42%',
-            borderRadius: 4
+            borderRadius: 5
           }
         },
         fill: {
-          opacity: xs.value ? [0.45, 1] : [0.45, 1, 1, 1, 1]
+          opacity: xs.value ? [0.22, 1] : [0.22, 1, 1, 1, 1]
         },
         xaxis: {
           categories: categories.value,
           labels: {
-            style: { colors: '#9CA3AF', fontSize: '10px' }
+            style: { colors: '#64748B', fontSize: '10px', fontWeight: 500 }
           },
           axisBorder: { show: false },
           axisTicks: { show: false }
@@ -413,14 +411,14 @@ export default {
                 {
                   y: paceAnnot.y,
                   yAxisIndex: 1,
-                  borderColor: '#10B981',
+                  borderColor: '#059669',
                   borderWidth: 1.5,
                   strokeDashArray: 4,
                   label: {
-                    borderColor: '#10B981',
+                    borderColor: '#059669',
                     style: {
-                      color: '#052e16',
-                      background: '#34d399',
+                      color: '#FFFFFF',
+                      background: '#059669',
                       fontWeight: 700,
                       fontSize: '10px'
                     },
@@ -432,19 +430,20 @@ export default {
         tooltip: {
           shared: true,
           intersect: false,
-          theme: 'dark',
+          theme: 'light',
           y: { formatter: tooltipFormatter }
         },
         grid: {
-          borderColor: 'rgba(255, 255, 255, 0.05)',
+          borderColor: '#F1F5F9',
           padding: { left: 6, right: 6, top: 4, bottom: 0 }
         },
         legend: {
           position: 'bottom',
           horizontalAlign: 'left',
           fontSize: '11px',
-          itemMargin: { horizontal: 8, vertical: 2 },
-          labels: { colors: '#9CA3AF' }
+          fontWeight: 600,
+          itemMargin: { horizontal: 10, vertical: 4 },
+          labels: { colors: '#475569' }
         }
       }
     })
@@ -462,44 +461,57 @@ export default {
 
 <style scoped>
 .bento-chart-panel {
-  background: linear-gradient(165deg, rgba(20, 23, 36, 0.92) 0%, rgba(13, 15, 24, 0.96) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
   border-radius: 16px;
-  padding: 12px 14px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
 }
 
-.cockpit-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
+.panel-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: -0.01em;
+}
+
+.chart-submeta {
+  font-size: 0.72rem;
+  color: #64748B;
+  font-weight: 500;
+}
+
+.text-slate-muted {
+  color: #64748B;
 }
 
 .period-pill-group {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 2px;
+  background: #F1F5F9;
+  border-radius: 9px;
+  padding: 3px;
   gap: 2px;
 }
 
 .period-pill-btn {
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 3px 9px;
+  color: #64748B;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 5px 12px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .period-pill-btn.active {
-  background: #06b6d4;
-  color: #08101d;
+  background: #FFFFFF;
+  color: #0F172A;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .chart-container {
-  min-height: 210px;
+  min-height: 225px;
 }
 </style>

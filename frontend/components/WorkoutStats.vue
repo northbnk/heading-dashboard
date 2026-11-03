@@ -1,299 +1,244 @@
 <template>
-  <!-- 1. 6項目テレメトリ・リボン (Bento KPI Strip) -->
-  <v-row v-if="displayMode === 'all' || displayMode === 'stats-only'" dense class="bento-kpi-row">
-    <!-- Tile 1: 直近30日間の走行距離 -->
-    <v-col cols="6" sm="4" lg="2" class="d-flex">
-      <div class="bento-stat-tile w-100 accent-indigo">
-        <div class="d-flex justify-space-between align-start mb-1">
-          <div>
-            <div class="tile-eyebrow text-indigo-lighten-2">30D VOLUME</div>
-            <div class="tile-label">直近30日走行距離</div>
-          </div>
-          <div class="tile-icon-badge bg-indigo-subtle">
-            <v-icon color="primary" icon="mdi-calendar-range" size="16"></v-icon>
-          </div>
+  <!-- 1. 5項目コア・指標リボン (シューズ除外・白ベース洗練デザイン) -->
+  <div v-if="displayMode === 'all' || displayMode === 'stats-only'" class="kpi-five-grid">
+    <!-- KPI 1: 直近30日間の走行距離 -->
+    <div class="bento-stat-tile">
+      <div class="d-flex justify-space-between align-start mb-2">
+        <div>
+          <div class="tile-eyebrow">30D VOLUME</div>
+          <div class="tile-label">直近30日走行距離</div>
         </div>
-
-        <div class="d-flex align-baseline justify-space-between my-1">
-          <div class="tile-value text-white font-outfit">
-            {{ last30DaysDistance.toFixed(1) }}
-            <span class="tile-unit">km</span>
-          </div>
-          <div class="tile-subvalue text-indigo-lighten-2">
-            目標 {{ monthlyGoalDistance }}km
-          </div>
-        </div>
-
-        <div class="tile-gauge-wrap mt-auto">
-          <v-progress-linear
-            :model-value="Math.min((last30DaysDistance / monthlyGoalDistance) * 100, 100)"
-            color="primary"
-            height="6"
-            rounded
-          ></v-progress-linear>
-          <div class="d-flex justify-space-between tile-gauge-meta mt-1">
-            <span>達成率</span>
-            <span class="text-white font-weight-bold">{{ Math.round(Math.min((last30DaysDistance / monthlyGoalDistance) * 100, 100)) }}%</span>
-          </div>
+        <div class="tile-icon-badge">
+          <v-icon color="#2563EB" icon="mdi-calendar-range" size="18"></v-icon>
         </div>
       </div>
-    </v-col>
 
-    <!-- Tile 2: 推定VDOT & 予測タイム -->
-    <v-col cols="6" sm="4" lg="2" class="d-flex">
-      <div class="bento-stat-tile w-100 accent-emerald">
-        <div class="d-flex justify-space-between align-start mb-1">
-          <div>
-            <div class="tile-eyebrow text-emerald">EST. VDOT</div>
-            <div class="tile-label">推定VDOT・予測</div>
-          </div>
-          <div class="tile-icon-badge bg-emerald-subtle">
-            <v-icon color="success" icon="mdi-chart-bell-curve-cumulative" size="16"></v-icon>
-          </div>
+      <div class="d-flex align-baseline justify-space-between my-2">
+        <div class="tile-value font-num">
+          {{ last30DaysDistance.toFixed(1) }}
+          <span class="tile-unit">km</span>
         </div>
-
-        <div class="d-flex align-baseline justify-space-between my-1">
-          <div class="tile-value text-success font-outfit">
-            {{ estimatedVDOT > 0 ? estimatedVDOT.toFixed(1) : '--' }}
-          </div>
-          <div class="tile-subvalue text-emerald" v-if="estimatedVDOT > 0">
-            {{ formattedPredictedTime }}
-          </div>
-        </div>
-
-        <div class="tile-gauge-wrap mt-auto">
-          <v-progress-linear
-            :model-value="Math.min((estimatedVDOT / requiredVDOT) * 100, 100)"
-            color="success"
-            height="6"
-            rounded
-          ></v-progress-linear>
-          <div class="d-flex justify-space-between tile-gauge-meta mt-1">
-            <span>要求 {{ requiredVDOT.toFixed(1) }}</span>
-            <span class="text-white font-weight-bold">{{ estimatedVDOT > 0 ? Math.round(Math.min((estimatedVDOT / requiredVDOT) * 100, 100)) : 0 }}%</span>
-          </div>
+        <div class="tile-subvalue">
+          目標 {{ monthlyGoalDistance }}km
         </div>
       </div>
-    </v-col>
 
-    <!-- Tile 3: 目標ペース最長距離 -->
-    <v-col cols="6" sm="4" lg="2" class="d-flex">
-      <div class="bento-stat-tile w-100 accent-cyan">
-        <div class="d-flex justify-space-between align-start mb-1">
-          <div>
-            <div class="tile-eyebrow text-cyan">M-PACE MAX</div>
-            <div class="tile-label">{{ goalLabel }}ペース最長 {{ goalPaceLimitLabel }}</div>
-          </div>
-          <div class="tile-icon-badge bg-cyan-subtle">
-            <v-icon color="secondary" icon="mdi-run-fast" size="16"></v-icon>
-          </div>
+      <div class="tile-gauge-wrap mt-auto pt-1">
+        <div class="gauge-track">
+          <div
+            class="gauge-fill fill-primary"
+            :style="{ width: Math.min((last30DaysDistance / monthlyGoalDistance) * 100, 100) + '%' }"
+          ></div>
         </div>
-
-        <div class="d-flex align-baseline justify-space-between my-1">
-          <div class="tile-value text-secondary font-outfit">
-            {{ targetPaceMaxDistance.distance > 0 ? targetPaceMaxDistance.distance.toFixed(1) : '--' }}
-            <span class="tile-unit">km</span>
-          </div>
-          <div class="tile-subvalue text-grey-lighten-1" v-if="targetPaceMaxDistance.date">
-            {{ targetPaceMaxDistance.date.substring(5).replace('-', '/') }}
-          </div>
-        </div>
-
-        <div class="tile-gauge-wrap mt-auto">
-          <v-progress-linear
-            :model-value="Math.min((targetPaceMaxDistance.distance / goalLongRunLimit) * 100, 100)"
-            color="secondary"
-            height="6"
-            rounded
-          ></v-progress-linear>
-          <div class="d-flex justify-space-between tile-gauge-meta mt-1">
-            <span>目標 {{ goalLongRunLimit }}km</span>
-            <span class="text-white font-weight-bold">{{ targetPaceMaxDistance.distance > 0 ? Math.round(Math.min((targetPaceMaxDistance.distance / goalLongRunLimit) * 100, 100)) : 0 }}%</span>
-          </div>
+        <div class="d-flex justify-space-between tile-gauge-meta mt-1.5">
+          <span>月間達成率</span>
+          <span class="meta-strong font-num">{{ Math.round(Math.min((last30DaysDistance / monthlyGoalDistance) * 100, 100)) }}%</span>
         </div>
       </div>
-    </v-col>
+    </div>
 
-    <!-- Tile 4: ランニング心拍効率 -->
-    <v-col cols="6" sm="4" lg="2" class="d-flex">
-      <div class="bento-stat-tile w-100 accent-violet">
-        <div class="d-flex justify-space-between align-start mb-1">
-          <div>
-            <div class="tile-eyebrow text-violet">EFFICIENCY</div>
-            <div class="tile-label">心拍効率 (EI)</div>
-          </div>
-          <div class="tile-icon-badge bg-violet-subtle">
-            <v-icon color="accent" icon="mdi-heart-flash" size="16"></v-icon>
-          </div>
+    <!-- KPI 2: 推定VDOT & フル予測タイム -->
+    <div class="bento-stat-tile">
+      <div class="d-flex justify-space-between align-start mb-2">
+        <div>
+          <div class="tile-eyebrow">ESTIMATED VDOT</div>
+          <div class="tile-label">推定VDOT・フル予測</div>
         </div>
-
-        <div class="d-flex align-baseline justify-space-between my-1">
-          <div class="tile-value text-white font-outfit">
-            {{ heartEfficiency > 0 ? heartEfficiency.toFixed(2) : '--' }}
-            <span class="tile-unit">m/b</span>
-          </div>
-          <div class="tile-subvalue text-violet" v-if="averageHeartRate > 0">
-            平均 {{ Math.round(averageHeartRate) }}bpm
-          </div>
-        </div>
-
-        <div class="tile-gauge-wrap mt-auto">
-          <v-progress-linear
-            :model-value="Math.min((heartEfficiency / targetEI) * 100, 100)"
-            color="accent"
-            height="6"
-            rounded
-          ></v-progress-linear>
-          <div class="d-flex justify-space-between tile-gauge-meta mt-1">
-            <span>目標 {{ targetEI.toFixed(2) }}</span>
-            <span class="text-white font-weight-bold">{{ heartEfficiency > 0 ? Math.round(Math.min((heartEfficiency / targetEI) * 100, 100)) : 0 }}%</span>
-          </div>
+        <div class="tile-icon-badge">
+          <v-icon color="#2563EB" icon="mdi-chart-line-variant" size="18"></v-icon>
         </div>
       </div>
-    </v-col>
 
-    <!-- Tile 5: 心肺デカップリング値 -->
-    <v-col cols="6" sm="4" lg="2" class="d-flex">
-      <div class="bento-stat-tile w-100 accent-purple">
-        <div class="d-flex justify-space-between align-start mb-1">
-          <div>
-            <div class="tile-eyebrow text-purple">AEROBIC DRIFT</div>
-            <div class="tile-label">心肺デカップリング</div>
-          </div>
-          <div class="tile-icon-badge bg-purple-subtle">
-            <v-icon color="deep-purple-accent-2" icon="mdi-heart-pulse" size="16"></v-icon>
-          </div>
+      <div class="d-flex align-baseline justify-space-between my-2">
+        <div class="tile-value font-num">
+          {{ estimatedVDOT > 0 ? estimatedVDOT.toFixed(1) : '--' }}
         </div>
-
-        <div class="d-flex align-baseline justify-space-between my-1">
-          <div class="tile-value text-white font-outfit">
-            {{ staminaDecouplingAnalysis.available ? staminaDecouplingAnalysis.decoupling.toFixed(1) : '--' }}
-            <span class="tile-unit">%</span>
-          </div>
-          <div class="tile-subvalue" :class="staminaDecouplingAnalysis.available ? `text-${staminaDecouplingAnalysis.color}` : 'text-grey'">
-            {{ staminaDecouplingAnalysis.available ? staminaDecouplingAnalysis.rating.split(' ')[0] : '15km+走で算出' }}
-          </div>
-        </div>
-
-        <div class="tile-gauge-wrap mt-auto">
-          <v-progress-linear
-            :model-value="staminaDecouplingAnalysis.available ? Math.max(0, 100 - (staminaDecouplingAnalysis.decoupling * 8)) : 0"
-            color="deep-purple-accent-2"
-            height="6"
-            rounded
-          ></v-progress-linear>
-          <div class="d-flex justify-space-between tile-gauge-meta mt-1">
-            <span>基準 &lt;5.0%</span>
-            <span class="text-white font-weight-bold">{{ staminaDecouplingAnalysis.available ? Math.round(Math.max(0, 100 - (staminaDecouplingAnalysis.decoupling * 8))) : 0 }}%</span>
-          </div>
+        <div class="tile-subvalue badge-pill-blue font-num" v-if="estimatedVDOT > 0">
+          {{ formattedPredictedTime }}
         </div>
       </div>
-    </v-col>
 
-    <!-- Tile 6: メインシューズ走行距離 -->
-    <v-col cols="6" sm="4" lg="2" class="d-flex">
-      <div class="bento-stat-tile w-100 accent-amber">
-        <div class="d-flex justify-space-between align-start mb-1">
-          <div class="overflow-hidden pr-1">
-            <div class="tile-eyebrow text-amber">MAIN GEAR</div>
-            <div class="tile-label text-truncate">{{ mainShoe.name || 'メインシューズ' }}</div>
-          </div>
-          <div class="flex-shrink-0">
-            <ShoeIcon :name="mainShoe.name" :size="32" v-if="mainShoe.name"></ShoeIcon>
-            <div class="tile-icon-badge bg-amber-subtle" v-else>
-              <v-icon color="warning" icon="mdi-shoe-run" size="16"></v-icon>
-            </div>
-          </div>
+      <div class="tile-gauge-wrap mt-auto pt-1">
+        <div class="gauge-track">
+          <div
+            class="gauge-fill fill-primary"
+            :style="{ width: Math.min((estimatedVDOT / requiredVDOT) * 100, 100) + '%' }"
+          ></div>
         </div>
-
-        <div class="d-flex align-baseline justify-space-between my-1">
-          <div class="tile-value text-warning font-outfit">
-            {{ mainShoe.distance > 0 ? mainShoe.distance.toFixed(0) : '--' }}
-            <span class="tile-unit">km</span>
-          </div>
-          <div class="tile-subvalue text-grey-lighten-1">
-            寿命 600km
-          </div>
-        </div>
-
-        <div class="tile-gauge-wrap mt-auto">
-          <v-progress-linear
-            :model-value="mainShoe.lifePercent"
-            :color="mainShoe.color"
-            height="6"
-            rounded
-          ></v-progress-linear>
-          <div class="d-flex justify-space-between tile-gauge-meta mt-1">
-            <span>摩耗度</span>
-            <span class="text-white font-weight-bold">{{ mainShoe.distance > 0 ? Math.round(mainShoe.lifePercent) : 0 }}%</span>
-          </div>
+        <div class="d-flex justify-space-between tile-gauge-meta mt-1.5">
+          <span>目標基準 {{ requiredVDOT.toFixed(1) }}</span>
+          <span class="meta-strong font-num">{{ estimatedVDOT > 0 ? Math.round(Math.min((estimatedVDOT / requiredVDOT) * 100, 100)) : 0 }}%</span>
         </div>
       </div>
-    </v-col>
-  </v-row>
+    </div>
 
-  <!-- 2. コンパクトAI診断コックピットカード (displayMode が all または diagnosis-only) -->
+    <!-- KPI 3: 目標ペース最長距離 -->
+    <div class="bento-stat-tile">
+      <div class="d-flex justify-space-between align-start mb-2">
+        <div>
+          <div class="tile-eyebrow">MARATHON PACE MAX</div>
+          <div class="tile-label">{{ goalLabel }}ペース最長 {{ goalPaceLimitLabel }}</div>
+        </div>
+        <div class="tile-icon-badge">
+          <v-icon color="#2563EB" icon="mdi-run-fast" size="18"></v-icon>
+        </div>
+      </div>
+
+      <div class="d-flex align-baseline justify-space-between my-2">
+        <div class="tile-value font-num">
+          {{ targetPaceMaxDistance.distance > 0 ? targetPaceMaxDistance.distance.toFixed(1) : '--' }}
+          <span class="tile-unit">km</span>
+        </div>
+        <div class="tile-subvalue font-num" v-if="targetPaceMaxDistance.date">
+          {{ targetPaceMaxDistance.date.substring(5).replace('-', '/') }}
+        </div>
+      </div>
+
+      <div class="tile-gauge-wrap mt-auto pt-1">
+        <div class="gauge-track">
+          <div
+            class="gauge-fill fill-primary"
+            :style="{ width: Math.min((targetPaceMaxDistance.distance / goalLongRunLimit) * 100, 100) + '%' }"
+          ></div>
+        </div>
+        <div class="d-flex justify-space-between tile-gauge-meta mt-1.5">
+          <span>目標 {{ goalLongRunLimit }}km</span>
+          <span class="meta-strong font-num">{{ targetPaceMaxDistance.distance > 0 ? Math.round(Math.min((targetPaceMaxDistance.distance / goalLongRunLimit) * 100, 100)) : 0 }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 4: ランニング心拍効率 -->
+    <div class="bento-stat-tile">
+      <div class="d-flex justify-space-between align-start mb-2">
+        <div>
+          <div class="tile-eyebrow">CARDIAC EFFICIENCY</div>
+          <div class="tile-label">心拍効率 (EI)</div>
+        </div>
+        <div class="tile-icon-badge">
+          <v-icon color="#2563EB" icon="mdi-heart-flash" size="18"></v-icon>
+        </div>
+      </div>
+
+      <div class="d-flex align-baseline justify-space-between my-2">
+        <div class="tile-value font-num">
+          {{ heartEfficiency > 0 ? heartEfficiency.toFixed(2) : '--' }}
+          <span class="tile-unit">m/b</span>
+        </div>
+        <div class="tile-subvalue font-num" v-if="averageHeartRate > 0">
+          平均 {{ Math.round(averageHeartRate) }} bpm
+        </div>
+      </div>
+
+      <div class="tile-gauge-wrap mt-auto pt-1">
+        <div class="gauge-track">
+          <div
+            class="gauge-fill fill-primary"
+            :style="{ width: Math.min((heartEfficiency / targetEI) * 100, 100) + '%' }"
+          ></div>
+        </div>
+        <div class="d-flex justify-space-between tile-gauge-meta mt-1.5">
+          <span>目標 {{ targetEI.toFixed(2) }} m/b</span>
+          <span class="meta-strong font-num">{{ heartEfficiency > 0 ? Math.round(Math.min((heartEfficiency / targetEI) * 100, 100)) : 0 }}%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 5: 心肺デカップリング値 -->
+    <div class="bento-stat-tile">
+      <div class="d-flex justify-space-between align-start mb-2">
+        <div>
+          <div class="tile-eyebrow">AEROBIC DECOUPLING</div>
+          <div class="tile-label">心肺ドリフト維持率</div>
+        </div>
+        <div class="tile-icon-badge">
+          <v-icon color="#2563EB" icon="mdi-heart-pulse" size="18"></v-icon>
+        </div>
+      </div>
+
+      <div class="d-flex align-baseline justify-space-between my-2">
+        <div class="tile-value font-num">
+          {{ staminaDecouplingAnalysis.available ? staminaDecouplingAnalysis.decoupling.toFixed(1) : '--' }}
+          <span class="tile-unit">%</span>
+        </div>
+        <div
+          class="tile-subvalue"
+          :class="staminaDecouplingAnalysis.available ? (staminaDecouplingAnalysis.decoupling < 5 ? 'badge-pill-green' : 'badge-pill-amber') : ''"
+        >
+          {{ staminaDecouplingAnalysis.available ? staminaDecouplingAnalysis.rating.split(' ')[0] : '15km+走で算出' }}
+        </div>
+      </div>
+
+      <div class="tile-gauge-wrap mt-auto pt-1">
+        <div class="gauge-track">
+          <div
+            class="gauge-fill"
+            :class="staminaDecouplingAnalysis.available && staminaDecouplingAnalysis.decoupling < 5 ? 'fill-emerald' : 'fill-primary'"
+            :style="{ width: (staminaDecouplingAnalysis.available ? Math.max(0, 100 - (staminaDecouplingAnalysis.decoupling * 8)) : 0) + '%' }"
+          ></div>
+        </div>
+        <div class="d-flex justify-space-between tile-gauge-meta mt-1.5">
+          <span>基準 5.0%未満</span>
+          <span class="meta-strong font-num">{{ staminaDecouplingAnalysis.available ? Math.round(Math.max(0, 100 - (staminaDecouplingAnalysis.decoupling * 8))) : 0 }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. AI パフォーマンス診断パネル (displayMode が all または diagnosis-only) -->
   <div v-if="displayMode === 'all' || displayMode === 'diagnosis-only'" class="bento-diagnosis-panel d-flex flex-column h-100">
     <!-- ヘッダー -->
-    <div class="d-flex align-center justify-space-between mb-2 flex-wrap gap-1">
+    <div class="d-flex align-center justify-space-between mb-3 flex-wrap gap-2">
       <div class="d-flex align-center">
-        <div class="cockpit-dot bg-secondary mr-2"></div>
-        <span class="text-subtitle-2 font-weight-black text-white tracking-wide">
-          {{ goalLabel }} AI パフォーマンス診断
+        <span class="panel-title">
+          {{ goalLabel }} トレーニング診断
         </span>
       </div>
-      <v-chip
-        :color="marathonDiagnosis.color"
-        variant="flat"
-        size="x-small"
-        class="font-weight-black px-2 text-black"
+      <span
+        class="status-badge"
+        :class="marathonDiagnosis.color === 'success' ? 'status-badge-green' : marathonDiagnosis.color === 'warning' ? 'status-badge-amber' : 'status-badge-slate'"
       >
         {{ marathonDiagnosis.rating }}
-      </v-chip>
+      </span>
     </div>
 
     <!-- 期分けフェーズバナー -->
-    <div v-if="raceDiagnosis?.heading" class="phase-banner px-2.5 py-1.5 mb-2 rounded-lg d-flex align-center justify-space-between">
-      <div class="d-flex align-center overflow-hidden">
-        <v-icon color="secondary" icon="mdi-compass-rose" size="14" class="mr-1.5 flex-shrink-0"></v-icon>
-        <span class="text-caption font-weight-bold text-white text-truncate" style="font-size: 0.72rem;">
-          {{ raceDiagnosis.heading }}
-        </span>
-      </div>
+    <div v-if="raceDiagnosis?.heading" class="phase-banner px-3 py-2 mb-3 rounded-lg d-flex align-center">
+      <v-icon color="#2563EB" icon="mdi-compass-outline" size="16" class="mr-2 flex-shrink-0"></v-icon>
+      <span class="phase-banner-text text-truncate">
+        {{ raceDiagnosis.heading }}
+      </span>
     </div>
 
     <!-- 診断マイクロタブ -->
-    <div class="cockpit-tabs d-flex gap-1 mb-2 p-1 rounded-lg">
+    <div class="diag-tabs d-flex gap-1 mb-3">
       <button
         type="button"
-        class="cockpit-tab-btn flex-grow-1"
+        class="diag-tab-btn flex-grow-1"
         :class="{ active: activeDiagTab === 'issues' }"
         @click="activeDiagTab = 'issues'"
       >
-        <v-icon icon="mdi-target-Account" size="12" class="mr-1"></v-icon>
-        課題・指示 ({{ marathonDiagnosis.issues.length }})
+        課題・アドバイス ({{ marathonDiagnosis.issues.length }})
       </button>
       <button
         type="button"
-        class="cockpit-tab-btn flex-grow-1"
+        class="diag-tab-btn flex-grow-1"
         :class="{ active: activeDiagTab === 'strengths' }"
         @click="activeDiagTab = 'strengths'"
       >
-        <v-icon icon="mdi-check-decagram" size="12" class="mr-1"></v-icon>
         強み ({{ marathonDiagnosis.strengths.length }})
       </button>
       <button
         type="button"
-        class="cockpit-tab-btn flex-grow-1"
+        class="diag-tab-btn flex-grow-1"
         :class="{ active: activeDiagTab === 'stamina' }"
         @click="activeDiagTab = 'stamina'"
       >
-        <v-icon icon="mdi-heart-pulse" size="12" class="mr-1"></v-icon>
         心肺持久力
       </button>
     </div>
 
-    <!-- タブコンテンツ領域 (スクロール可能なコンパクトビュー) -->
+    <!-- タブコンテンツ領域 -->
     <div class="diagnosis-scroll-area flex-grow-1 pr-1">
       <!-- Tab 1: 課題・アクション -->
       <div v-if="activeDiagTab === 'issues'">
@@ -301,13 +246,13 @@
           <li
             v-for="(item, idx) in marathonDiagnosis.issues"
             :key="'i-' + idx"
-            class="diag-item diag-item-warning"
+            class="diag-item diag-item-issue"
           >
-            <v-icon color="warning" icon="mdi-chevron-right-circle" size="14" class="mr-1.5 mt-0.5 flex-shrink-0"></v-icon>
+            <v-icon color="#2563EB" icon="mdi-arrow-right-circle-outline" size="16" class="mr-2 mt-0.5 flex-shrink-0"></v-icon>
             <span>{{ item }}</span>
           </li>
-          <li v-if="marathonDiagnosis.issues.length === 0" class="diag-item diag-item-success">
-            <v-icon color="success" icon="mdi-check-all" size="15" class="mr-1.5 flex-shrink-0"></v-icon>
+          <li v-if="marathonDiagnosis.issues.length === 0" class="diag-item diag-item-good">
+            <v-icon color="#059669" icon="mdi-check-circle-outline" size="16" class="mr-2 flex-shrink-0"></v-icon>
             <span>目標基準のトレーニング項目をすべてクリアしています！</span>
           </li>
         </ul>
@@ -319,12 +264,12 @@
           <li
             v-for="(item, idx) in marathonDiagnosis.strengths"
             :key="'s-' + idx"
-            class="diag-item diag-item-success"
+            class="diag-item diag-item-good"
           >
-            <v-icon color="success" icon="mdi-check-circle" size="14" class="mr-1.5 mt-0.5 flex-shrink-0"></v-icon>
+            <v-icon color="#059669" icon="mdi-check-circle-outline" size="16" class="mr-2 mt-0.5 flex-shrink-0"></v-icon>
             <span>{{ item }}</span>
           </li>
-          <li v-if="marathonDiagnosis.strengths.length === 0" class="text-grey text-caption py-4 text-center">
+          <li v-if="marathonDiagnosis.strengths.length === 0" class="empty-note py-6 text-center">
             現在クリア済みの項目はありません。課題タブのメニューから始めましょう。
           </li>
         </ul>
@@ -332,23 +277,23 @@
 
       <!-- Tab 3: 心肺デカップリング詳細 -->
       <div v-else-if="activeDiagTab === 'stamina'" class="pa-1">
-        <div v-if="!staminaDecouplingAnalysis.available" class="text-grey text-caption py-4 text-center">
+        <div v-if="!staminaDecouplingAnalysis.available" class="empty-note py-6 text-center">
           {{ staminaDecouplingAnalysis.message }}
         </div>
         <div v-else>
-          <div class="d-flex align-center justify-space-between mb-1.5">
-            <span class="text-caption text-grey-lighten-1 text-truncate">
-              対象: <strong class="text-white">{{ staminaDecouplingAnalysis.activityName }}</strong> ({{ staminaDecouplingAnalysis.distance.toFixed(1) }}km)
+          <div class="d-flex align-center justify-space-between mb-2">
+            <span class="stamina-meta text-truncate">
+              対象: <strong>{{ staminaDecouplingAnalysis.activityName }}</strong> ({{ staminaDecouplingAnalysis.distance.toFixed(1) }}km)
             </span>
-            <v-chip :color="staminaDecouplingAnalysis.color" size="x-small" variant="flat" class="font-weight-bold text-black">
+            <span class="status-badge" :class="staminaDecouplingAnalysis.decoupling < 5 ? 'status-badge-green' : 'status-badge-amber'">
               {{ staminaDecouplingAnalysis.rating }}
-            </v-chip>
+            </span>
           </div>
-          <div class="d-flex align-baseline mb-2">
-            <span class="text-h5 font-weight-black text-white font-outfit mr-2">{{ staminaDecouplingAnalysis.decoupling }}%</span>
-            <span class="text-caption text-grey">後半の心肺出力低下度 (ドリフト)</span>
+          <div class="d-flex align-baseline mb-2.5">
+            <span class="stamina-big-num font-num mr-2">{{ staminaDecouplingAnalysis.decoupling }}%</span>
+            <span class="stamina-meta">後半の心肺出力低下度 (ドリフト)</span>
           </div>
-          <div class="diag-item diag-item-info">
+          <div class="diag-item diag-item-issue">
             <span>{{ staminaDecouplingAnalysis.advice }}</span>
           </div>
         </div>
@@ -359,13 +304,9 @@
 
 <script>
 import { ref, computed } from 'vue'
-import ShoeIcon from './ShoeIcon.vue'
 
 export default {
   name: 'WorkoutStats',
-  components: {
-    ShoeIcon
-  },
   props: {
     workouts: {
       type: Array,
@@ -378,7 +319,7 @@ export default {
     },
     displayMode: {
       type: String,
-      default: 'all' // 'all', 'stats-only', 'diagnosis-only'
+      default: 'all'
     },
     upcomingRace: {
       type: Object,
@@ -444,7 +385,6 @@ export default {
       return '(≦4:20)'
     })
 
-    // 最新のワークアウト日を基準に直近30日を計算（古いデモデータでも0にならないよう配慮）
     const referenceLatestDate = computed(() => {
       const now = new Date()
       if (props.workouts.length === 0) return now
@@ -496,7 +436,7 @@ export default {
 
     const estimatedVDOT = computed(() => {
       const dates = props.workouts.map(w => safeParseDate(w.workoutDate)).filter(d => d.getTime() > 0)
-      const latestDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date('2026-07-05')
+      const latestDate = dates.length > 0 ? new Date(Math.max(...dates)) : new Date()
 
       const fortyDaysAgo = new Date(latestDate.getTime())
       fortyDaysAgo.setDate(fortyDaysAgo.getDate() - 40)
@@ -685,9 +625,11 @@ export default {
       return { avgHeartrate, maxDist, count: mPaceRuns.length }
     })
 
+    // 実際の現在日付を基準に大会までの残り日数を計算
     const raceDiagnosis = computed(() => {
       const race = props.upcomingRace
-      const BASE_DATE = new Date('2026-07-05')
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
       
       if (!race) {
         const G = monthlyGoalDistance.value
@@ -704,9 +646,10 @@ export default {
         }
       }
       
-      const raceTime = new Date(race.date).getTime()
-      const diffTime = raceTime - BASE_DATE.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      const parts = race.date.split('-')
+      const raceDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10))
+      const diffTime = raceDate.getTime() - now.getTime()
+      const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)))
       
       if (diffDays >= 91) {
         const G = monthlyGoalDistance.value
@@ -742,7 +685,7 @@ export default {
         
         return {
           mode: 'PERIODIZATION',
-          heading: `${race.name} あと${weeksRemaining}週 ｜ ${phaseName}`,
+          heading: `${race.name} あと${diffDays}日（${weeksRemaining}週）｜ ${phaseName}`,
           advice
         }
       }
@@ -915,76 +858,6 @@ export default {
       }
     })
 
-    const shoeAnalytics = computed(() => {
-      const shoesMap = new Map()
-      props.workouts.forEach(w => {
-        if (w.gearName) {
-          const name = w.gearName
-          if (!shoesMap.has(name)) {
-            shoesMap.set(name, {
-              name,
-              totalDistance: 0,
-              totalRuns: 0,
-              totalPaceSum: 0,
-              totalHRSum: 0,
-              hrCount: 0
-            })
-          }
-          const s = shoesMap.get(name)
-          s.totalDistance += Number(w.distance || 0)
-          s.totalRuns += 1
-          if (w.averagePaceSeconds > 0) s.totalPaceSum += w.averagePaceSeconds
-          if (w.averageHeartrate > 0) {
-            s.totalHRSum += w.averageHeartrate
-            s.hrCount += 1
-          }
-        }
-      })
-
-      if (shoesMap.size === 0) return { available: false, shoes: [] }
-
-      const shoes = Array.from(shoesMap.values()).map(s => {
-        const avgPaceSec = Math.round(s.totalPaceSum / s.totalRuns)
-        const avgHR = s.hrCount > 0 ? Math.round(s.totalHRSum / s.hrCount) : null
-        const mins = Math.floor(avgPaceSec / 60)
-        const secs = avgPaceSec % 60
-        const paceStr = `${mins}:${String(secs).padStart(2, '0')}`
-        const lifeLimit = 600
-        const lifePercent = Math.min((s.totalDistance / lifeLimit) * 100, 100)
-        
-        let color = 'success'
-        let status = '良好'
-        if (s.totalDistance >= 500) {
-          color = 'error'
-          status = '交換推奨'
-        } else if (s.totalDistance >= 400) {
-          color = 'warning'
-          status = '摩耗注意'
-        }
-
-        return {
-          name: s.name,
-          distance: Number(s.totalDistance.toFixed(1)),
-          runs: s.totalRuns,
-          paceStr,
-          avgHR,
-          lifePercent: Math.round(lifePercent),
-          color,
-          status
-        }
-      }).sort((a, b) => b.distance - a.distance)
-
-      return { available: true, shoes }
-    })
-
-    const mainShoe = computed(() => {
-      const stats = shoeAnalytics.value
-      if (!stats.available || stats.shoes.length === 0) {
-        return { name: '', distance: 0, lifePercent: 0, color: 'grey', status: '未登録' }
-      }
-      return stats.shoes[0]
-    })
-
     return {
       activeDiagTab,
       last30DaysDistance,
@@ -1005,173 +878,234 @@ export default {
       targetPaceMaxDistance,
       goalLongRunLimit,
       targetEI,
-      staminaDecouplingAnalysis,
-      shoeAnalytics,
-      mainShoe
+      staminaDecouplingAnalysis
     }
   }
 }
 </script>
 
 <style scoped>
+/* 5カラム均等グリッド */
+.kpi-five-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 1200px) {
+  .kpi-five-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .kpi-five-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .bento-stat-tile {
-  background: linear-gradient(160deg, rgba(22, 25, 38, 0.92) 0%, rgba(14, 16, 26, 0.95) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 14px;
-  padding: 10px 12px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 18px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
-
-.bento-stat-tile::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  opacity: 0.85;
-}
-
-.accent-indigo::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
-.accent-emerald::before { background: linear-gradient(90deg, #10b981, #34d399); }
-.accent-cyan::before { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
-.accent-violet::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
-.accent-purple::before { background: linear-gradient(90deg, #a855f7, #c084fc); }
-.accent-amber::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
 .bento-stat-tile:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  border-color: #CBD5E1;
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
 }
 
 .tile-eyebrow {
-  font-size: 0.6rem;
-  font-weight: 800;
+  font-size: 0.64rem;
+  font-weight: 700;
   letter-spacing: 0.08em;
-  line-height: 1;
-  margin-bottom: 2px;
+  color: #64748B;
+  line-height: 1.1;
+  margin-bottom: 4px;
 }
 
 .tile-label {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.72);
-  line-height: 1.15;
+  color: #334155;
+  line-height: 1.25;
 }
 
 .tile-icon-badge {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #EFF6FF;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.bg-indigo-subtle { background: rgba(99, 102, 241, 0.14); }
-.bg-emerald-subtle { background: rgba(16, 185, 129, 0.14); }
-.bg-cyan-subtle { background: rgba(6, 182, 212, 0.14); }
-.bg-violet-subtle { background: rgba(139, 92, 246, 0.14); }
-.bg-purple-subtle { background: rgba(168, 85, 247, 0.14); }
-.bg-amber-subtle { background: rgba(245, 158, 11, 0.14); }
-
-.text-emerald { color: #34d399; }
-.text-cyan { color: #22d3ee; }
-.text-violet { color: #a78bfa; }
-.text-purple { color: #c084fc; }
-.text-amber { color: #fbbf24; }
-
 .tile-value {
-  font-size: 1.45rem;
+  font-size: 1.75rem;
   font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  color: #0F172A;
+  line-height: 1.05;
 }
 
 .tile-unit {
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  margin-left: 1px;
+  color: #64748B;
+  margin-left: 2px;
 }
 
 .tile-subvalue {
-  font-size: 0.68rem;
-  font-weight: 700;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
   white-space: nowrap;
 }
 
+.badge-pill-blue {
+  background: #EFF6FF;
+  color: #1D4ED8;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.badge-pill-green {
+  background: #ECFDF5;
+  color: #047857;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.badge-pill-amber {
+  background: #FFFBEB;
+  color: #B45309;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.gauge-track {
+  height: 6px;
+  background: #F1F5F9;
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fill-primary {
+  background: #2563EB;
+}
+
+.fill-emerald {
+  background: #059669;
+}
+
 .tile-gauge-meta {
-  font-size: 0.64rem;
-  color: rgba(255, 255, 255, 0.52);
-  line-height: 1;
+  font-size: 0.7rem;
+  color: #64748B;
+  line-height: 1.1;
+}
+
+.meta-strong {
+  color: #0F172A;
+  font-weight: 700;
 }
 
 /* AI Diagnosis Panel */
 .bento-diagnosis-panel {
-  background: linear-gradient(165deg, rgba(20, 23, 36, 0.92) 0%, rgba(13, 15, 24, 0.96) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
   border-radius: 16px;
-  padding: 12px 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
 }
 
-.cockpit-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
+.panel-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: -0.01em;
+}
+
+.status-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 99px;
+}
+
+.status-badge-green {
+  background: #ECFDF5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+}
+
+.status-badge-amber {
+  background: #FFFBEB;
+  color: #B45309;
+  border: 1px solid #FDE68A;
+}
+
+.status-badge-slate {
+  background: #F1F5F9;
+  color: #475569;
+  border: 1px solid #E2E8F0;
 }
 
 .phase-banner {
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.22);
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
 }
 
-.cockpit-tabs {
-  background: rgba(255, 255, 255, 0.04);
-  padding: 3px;
-  border-radius: 9px;
+.phase-banner-text {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #1E293B;
 }
 
-.cockpit-tab-btn {
+.diag-tabs {
+  background: #F1F5F9;
+  padding: 4px;
+  border-radius: 10px;
+}
+
+.diag-tab-btn {
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 5px 6px;
-  border-radius: 6px;
+  color: #64748B;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.cockpit-tab-btn.active {
-  background: rgba(99, 102, 241, 0.24);
-  color: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.45);
+.diag-tab-btn.active {
+  background: #FFFFFF;
+  color: #0F172A;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
 
 .diagnosis-scroll-area {
-  max-height: 220px;
+  max-height: 235px;
   overflow-y: auto;
-}
-
-.diagnosis-scroll-area::-webkit-scrollbar {
-  width: 4px;
-}
-.diagnosis-scroll-area::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
 }
 
 .diagnosis-compact-list {
@@ -1180,31 +1114,42 @@ export default {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .diag-item {
-  font-size: 0.74rem;
-  line-height: 1.42;
-  color: rgba(255, 255, 255, 0.88);
-  padding: 7px 9px;
-  border-radius: 8px;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: #334155;
+  padding: 10px 12px;
+  border-radius: 10px;
   display: flex;
   align-items: flex-start;
 }
 
-.diag-item-warning {
-  background: rgba(245, 158, 11, 0.07);
-  border: 1px solid rgba(245, 158, 11, 0.16);
+.diag-item-issue {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
 }
 
-.diag-item-success {
-  background: rgba(16, 185, 129, 0.07);
-  border: 1px solid rgba(16, 185, 129, 0.16);
+.diag-item-good {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
 }
 
-.diag-item-info {
-  background: rgba(139, 92, 246, 0.08);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+.empty-note {
+  font-size: 0.78rem;
+  color: #64748B;
+}
+
+.stamina-meta {
+  font-size: 0.76rem;
+  color: #475569;
+}
+
+.stamina-big-num {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0F172A;
 }
 </style>

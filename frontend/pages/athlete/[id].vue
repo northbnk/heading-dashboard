@@ -1,44 +1,42 @@
 <template>
   <div class="cockpit-root min-h-screen">
-    <v-container fluid class="cockpit-container px-3 px-md-5 py-2">
-      <!-- 1. トップ・コックピット・コマンドバー -->
-      <header class="cockpit-topbar px-3 py-2 mb-2.5 d-flex flex-column flex-md-row align-start align-md-center justify-space-between gap-2">
+    <v-container fluid class="cockpit-container px-4 px-md-6 py-3">
+      <!-- 1. トップ・ヘッダーバー -->
+      <header class="cockpit-topbar px-5 py-3 mb-3 d-flex flex-column flex-md-row align-start align-md-center justify-space-between gap-3">
         <!-- 左側：ブランドロゴ ＆ ランナー・フェーズ表示 -->
-        <div class="d-flex align-center flex-wrap gap-2">
-          <NuxtLink to="/" class="d-flex align-center text-decoration-none mr-1">
-            <div class="brand-badge mr-2">
+        <div class="d-flex align-center flex-wrap gap-3">
+          <NuxtLink to="/" class="d-flex align-center text-decoration-none">
+            <div class="brand-badge mr-2.5">
               <v-icon color="white" icon="mdi-sine-wave" size="18"></v-icon>
             </div>
-            <div>
-              <div class="d-flex align-center">
-                <span class="font-outfit font-weight-black text-white tracking-wider" style="font-size: 1.05rem; letter-spacing: 0.06em;">
-                  HEADING 330
-                </span>
-                <span class="cockpit-tag ml-2">COCKPIT</span>
-              </div>
+            <div class="d-flex align-center">
+              <span class="brand-title">
+                HEADING 330
+              </span>
+              <span class="brand-sub ml-2">Training Hub</span>
             </div>
           </NuxtLink>
 
-          <div v-if="athleteInfo" class="runner-pill d-flex align-center px-2.5 py-1">
-            <span class="status-dot mr-1.5" :class="stravaStatus.linked ? 'dot-online' : 'dot-demo'"></span>
-            <span class="text-caption font-weight-bold text-white" style="font-size: 0.73rem;">
+          <div v-if="athleteInfo" class="runner-pill d-flex align-center px-3 py-1">
+            <span class="status-dot mr-2" :class="stravaStatus.linked ? 'dot-online' : 'dot-demo'"></span>
+            <span class="runner-name">
               {{ athleteInfo.firstname }} {{ athleteInfo.lastname }}
             </span>
           </div>
 
-          <div v-if="raceDiagnosis?.heading" class="phase-pill d-none d-sm-flex align-center px-2.5 py-1">
-            <v-icon color="secondary" icon="mdi-flag-checkered" size="13" class="mr-1"></v-icon>
-            <span class="text-caption font-weight-bold text-cyan" style="font-size: 0.7rem;">
+          <div v-if="raceDiagnosis?.heading" class="phase-pill d-none d-sm-flex align-center px-3 py-1">
+            <v-icon color="#2563EB" icon="mdi-flag-checkered" size="14" class="mr-1.5"></v-icon>
+            <span class="phase-text">
               {{ raceDiagnosis.heading }}
             </span>
           </div>
         </div>
 
         <!-- 右側：目標切替 ＆ Strava同期 ＆ アクション -->
-        <div class="d-flex align-center flex-wrap gap-1.5 w-100 w-md-auto justify-end">
+        <div class="d-flex align-center flex-wrap gap-2 w-100 w-md-auto justify-end">
           <!-- 目標設定セグメントコントロール -->
           <div class="goal-segment d-flex align-center mr-1">
-            <span class="text-caption text-grey px-2 d-none d-sm-inline" style="font-size: 0.66rem; font-weight: 700;">TARGET</span>
+            <span class="goal-label px-2.5 d-none d-sm-inline">目標</span>
             <button
               v-for="g in [{ val: 'sub4', label: 'サブ4' }, { val: 'sub3.5', label: 'サブ3.5' }, { val: 'sub3', label: 'サブ3' }]"
               :key="g.val"
@@ -54,13 +52,12 @@
           <!-- 共有リンク -->
           <v-btn
             v-if="isOwner"
-            color="grey-lighten-2"
-            size="x-small"
-            variant="tonal"
+            color="#334155"
+            size="small"
+            variant="outlined"
             rounded="lg"
-            class="font-weight-bold px-2.5"
-            style="height: 28px;"
-            prepend-icon="mdi-share-variant"
+            class="font-weight-bold px-3 action-btn-outline"
+            prepend-icon="mdi-share-variant-outline"
             @click="copySharingUrl"
           >
             共有
@@ -70,12 +67,10 @@
           <template v-if="isOwner">
             <v-btn
               v-if="stravaStatus.linked"
-              color="orange-darken-3"
-              size="x-small"
+              size="small"
               variant="flat"
               rounded="lg"
-              class="font-weight-bold text-white px-3"
-              style="height: 28px; background: linear-gradient(135deg, #f97316, #ea580c) !important;"
+              class="font-weight-bold text-white px-3.5 strava-btn"
               prepend-icon="mdi-sync"
               :loading="syncing"
               @click="handleSyncWorkouts"
@@ -84,12 +79,10 @@
             </v-btn>
             <v-btn
               v-else-if="stravaStatus.configSetup"
-              color="orange-darken-3"
-              size="x-small"
+              size="small"
               variant="flat"
               rounded="lg"
-              class="font-weight-bold text-white px-3"
-              style="height: 28px;"
+              class="font-weight-bold text-white px-3.5 strava-btn"
               prepend-icon="mdi-swap-horizontal"
               href="/api/auth/strava/connect"
             >
@@ -101,11 +94,10 @@
           <v-btn
             v-if="!isLoggedIn"
             color="primary"
-            size="x-small"
+            size="small"
             variant="flat"
             rounded="lg"
-            class="font-weight-bold text-black px-2.5"
-            style="height: 28px;"
+            class="font-weight-bold text-white px-3.5"
             prepend-icon="mdi-login"
             to="/"
           >
@@ -113,13 +105,12 @@
           </v-btn>
           <v-btn
             v-else
-            color="grey-lighten-1"
-            size="x-small"
+            color="#64748B"
+            size="small"
             variant="text"
             rounded="lg"
             icon="mdi-logout"
             title="ログアウト"
-            style="width: 28px; height: 28px;"
             @click="handleLogout"
           ></v-btn>
         </div>
@@ -127,14 +118,14 @@
 
       <!-- ローディング状態 -->
       <div v-if="loading" class="d-flex flex-column align-center justify-center py-16">
-        <v-progress-circular indeterminate color="primary" size="48" class="mb-3"></v-progress-circular>
-        <div class="text-caption text-grey">コックピット・テレメトリを初期化中...</div>
+        <v-progress-circular indeterminate color="primary" size="44" class="mb-3"></v-progress-circular>
+        <div class="text-caption" style="color: #64748B;">データを読み込み中...</div>
       </div>
 
       <!-- 2. メイン Bento Grid コックピット -->
       <template v-else>
-        <!-- Row 1: 6項目コア・テレメトリ・リボン -->
-        <div class="mb-2.5">
+        <!-- Row 1: 5項目コア・指標リボン -->
+        <div class="mb-3">
           <workout-stats
             :workouts="workouts"
             :target-goal="targetGoal"
@@ -146,92 +137,89 @@
         <!-- Row 2: 3カラム非対称 Bento Grid -->
         <v-row dense class="bento-main-grid">
           <!-- 左カラム (lg="3"): ターゲット大会 ＆ AI総合診断 -->
-          <v-col cols="12" lg="3" class="d-flex flex-column gap-2.5">
+          <v-col cols="12" lg="3" class="d-flex flex-column gap-3">
             <!-- Tile A1: 大会カウントダウン & スケジュール -->
             <div class="bento-panel">
-              <div class="d-flex justify-space-between align-center mb-2">
-                <div class="d-flex align-center">
-                  <div class="cockpit-dot bg-amber mr-2"></div>
-                  <span class="text-subtitle-2 font-weight-black text-white tracking-wide">
-                    ターゲット大会
-                  </span>
-                </div>
+              <div class="d-flex justify-space-between align-center mb-3">
+                <span class="panel-title">
+                  ターゲット大会
+                </span>
                 <v-btn
                   v-if="isOwner"
-                  color="secondary"
+                  color="primary"
                   prepend-icon="mdi-plus"
                   density="compact"
                   variant="tonal"
-                  size="x-small"
-                  rounded="md"
-                  class="font-weight-bold px-2"
+                  size="small"
+                  rounded="lg"
+                  class="font-weight-bold px-2.5"
                   @click="openRaceForm"
                 >
-                  登録
+                  大会登録
                 </v-btn>
               </div>
 
               <div v-if="upcomingRacesList.length > 0">
                 <!-- メインカウントダウン -->
-                <div class="next-race-hero pa-2.5 rounded-lg mb-2 d-flex align-center justify-space-between">
-                  <div class="overflow-hidden pr-2">
-                    <div class="d-flex align-center mb-0.5">
-                      <v-icon color="warning" icon="mdi-trophy" size="12" class="mr-1"></v-icon>
-                      <span class="text-amber font-weight-black" style="font-size: 0.62rem; letter-spacing: 0.08em;">NEXT TARGET</span>
+                <div class="next-race-hero pa-4 rounded-xl mb-3 d-flex align-center justify-space-between">
+                  <div class="overflow-hidden pr-3">
+                    <div class="race-eyebrow mb-1">
+                      NEXT TARGET RACE
                     </div>
-                    <div class="text-subtitle-2 font-weight-black text-white text-truncate" style="line-height: 1.2;">
+                    <div class="race-main-name text-truncate">
                       {{ upcomingRace.name }}
                     </div>
-                    <div class="text-caption text-grey-lighten-1 mt-0.5" style="font-size: 0.68rem;">
-                      {{ upcomingRace.date.replace(/-/g, '/') }} ｜ <span class="text-cyan font-weight-bold">{{ upcomingRace.targetTime }}</span>
+                    <div class="race-main-meta font-num mt-1">
+                      {{ upcomingRace.date.replace(/-/g, '/') }}
+                      <span class="mx-1">•</span>
+                      <span class="race-goal-tag">{{ upcomingRace.targetTime }}</span>
                     </div>
                   </div>
-                  <div class="countdown-box text-right flex-shrink-0 pl-2">
-                    <div class="text-caption text-grey" style="font-size: 0.58rem; line-height: 1;">あと</div>
-                    <div class="font-outfit font-weight-black text-secondary" style="font-size: 1.65rem; line-height: 1.05;">
-                      {{ upcomingRaceDays }}
+                  <div class="countdown-box text-right flex-shrink-0 pl-3">
+                    <div class="countdown-label">残り</div>
+                    <div class="countdown-number font-num">
+                      {{ upcomingRaceDays }}<span class="countdown-unit">日</span>
                     </div>
-                    <div class="text-caption text-grey" style="font-size: 0.6rem; line-height: 1;">DAYS</div>
                   </div>
                 </div>
 
-                <!-- 大会リスト (複数登録時または編集操作用) -->
+                <!-- 大会リスト -->
                 <div class="race-compact-scroll">
                   <div
                     v-for="race in upcomingRacesList"
                     :key="race.id"
-                    class="race-mini-row d-flex align-center justify-space-between px-2 py-1 rounded"
+                    class="race-mini-row d-flex align-center justify-space-between px-3 py-2 rounded-lg"
                   >
                     <div class="d-flex align-center overflow-hidden">
                       <v-icon
-                        :color="race.id === upcomingRace.id ? 'warning' : 'grey-darken-1'"
-                        :icon="race.id === upcomingRace.id ? 'mdi-star' : 'mdi-calendar-blank'"
-                        size="12"
-                        class="mr-1.5 flex-shrink-0"
+                        :color="race.id === upcomingRace.id ? '#2563EB' : '#94A3B8'"
+                        :icon="race.id === upcomingRace.id ? 'mdi-flag-variant' : 'mdi-calendar-blank-outline'"
+                        size="15"
+                        class="mr-2 flex-shrink-0"
                       ></v-icon>
-                      <span class="text-caption text-white text-truncate font-weight-medium" style="font-size: 0.72rem;">
+                      <span class="race-row-name text-truncate">
                         {{ race.name }}
                       </span>
                     </div>
-                    <div class="d-flex align-center flex-shrink-0 ml-1">
-                      <span class="text-caption text-grey mr-1" style="font-size: 0.65rem;">{{ calculateDaysUntil(race.date) }}日</span>
+                    <div class="d-flex align-center flex-shrink-0 ml-2">
+                      <span class="race-row-days font-num mr-1.5">あと{{ calculateDaysUntil(race.date) }}日</span>
                       <template v-if="isOwner">
                         <v-btn
                           icon="mdi-pencil-outline"
                           variant="text"
-                          color="grey-lighten-1"
+                          color="#64748B"
                           density="compact"
                           size="x-small"
-                          style="width: 18px; height: 18px;"
+                          style="width: 22px; height: 22px;"
                           @click="openEditRaceForm(race)"
                         ></v-btn>
                         <v-btn
                           icon="mdi-close"
                           variant="text"
-                          color="error"
+                          color="#DC2626"
                           density="compact"
                           size="x-small"
-                          style="width: 18px; height: 18px;"
+                          style="width: 22px; height: 22px;"
                           @click="handleDeleteRace(race.id)"
                         ></v-btn>
                       </template>
@@ -240,13 +228,13 @@
                 </div>
               </div>
 
-              <div v-else class="text-center py-4 text-grey text-caption">
-                <v-icon icon="mdi-calendar-plus" size="20" class="mb-1 d-block mx-auto text-grey-darken-1"></v-icon>
-                予定大会なし（右上の登録から追加）
+              <div v-else class="text-center py-6 empty-state-text">
+                <v-icon icon="mdi-calendar-plus-outline" size="24" class="mb-1.5 d-block mx-auto" color="#94A3B8"></v-icon>
+                予定されている大会はありません
               </div>
             </div>
 
-            <!-- Tile A2: AI マラソン診断 ＆ 心肺持久力コックピット -->
+            <!-- Tile A2: AI マラソン診断 ＆ 心肺持久力 -->
             <div class="flex-grow-1 d-flex flex-column">
               <workout-stats
                 :workouts="workouts"
@@ -258,26 +246,25 @@
             </div>
           </v-col>
 
-          <!-- 中央カラム (lg="5"): 週間7Daysプラン ＆ 統合パフォーマンスチャート -->
-          <v-col cols="12" lg="5" class="d-flex flex-column gap-2.5">
+          <!-- 中央カラム (lg="5"): 週間7Daysプラン ＆ パフォーマンス推移チャート -->
+          <v-col cols="12" lg="5" class="d-flex flex-column gap-3">
             <!-- Tile B1: 今後1週間の練習プラン -->
             <div class="bento-panel">
-              <div class="d-flex align-center justify-space-between flex-wrap gap-1 mb-2">
+              <div class="d-flex align-center justify-space-between flex-wrap gap-2 mb-3">
                 <div class="d-flex align-center">
-                  <div class="cockpit-dot bg-emerald mr-2"></div>
-                  <span class="text-subtitle-2 font-weight-black text-white tracking-wide">
-                    週間トレーニングプラン
+                  <span class="panel-title">
+                    週間トレーニング計画
                   </span>
-                  <span class="text-caption text-grey ml-1.5" style="font-size: 0.68rem;">
+                  <span class="panel-subdate font-num ml-2">
                     ({{ weeklySchedule[0]?.dateStr ? weeklySchedule[0].dateStr.substring(5).replace('-', '/') : '' }}〜{{ weeklySchedule[6]?.dateStr ? weeklySchedule[6].dateStr.substring(5).replace('-', '/') : '' }})
                   </span>
                 </div>
 
-                <div class="d-flex align-center gap-1.5">
-                  <div class="weekly-progress-pill px-2 py-0.5 rounded d-flex align-center gap-1" style="font-size: 0.68rem;">
-                    <span class="text-grey">実績</span>
-                    <strong class="text-emerald font-outfit">{{ weeklyTotalActual }}</strong>
-                    <span class="text-grey">/ {{ weeklyTotalTarget }}km</span>
+                <div class="d-flex align-center gap-2">
+                  <div class="weekly-progress-pill px-2.5 py-1 rounded-lg d-flex align-center gap-1 font-num">
+                    <span class="pill-muted">実績</span>
+                    <strong class="pill-strong">{{ weeklyTotalActual }}</strong>
+                    <span class="pill-muted">/ {{ weeklyTotalTarget }} km</span>
                   </div>
                   <v-btn
                     v-if="isOwner"
@@ -285,17 +272,17 @@
                     prepend-icon="mdi-auto-fix"
                     density="compact"
                     variant="tonal"
-                    size="x-small"
-                    rounded="md"
-                    class="font-weight-bold px-2"
+                    size="small"
+                    rounded="lg"
+                    class="font-weight-bold px-2.5"
                     @click="openAutoPlanDialog"
                   >
-                    自動編成
+                    一括作成
                   </v-btn>
                 </div>
               </div>
 
-              <!-- 7日間コンパクト・ストリップ -->
+              <!-- 7日間ストリップ -->
               <div class="bento-week-strip">
                 <div
                   v-for="day in weeklySchedule"
@@ -312,194 +299,76 @@
                   <!-- 曜日ヘッダー -->
                   <div class="d-flex justify-space-between align-center">
                     <span
-                      class="font-weight-black"
-                      :class="day.day === '日' ? 'text-rose' : day.day === '土' ? 'text-cyan' : 'text-white'"
-                      style="font-size: 0.7rem;"
+                      class="day-label"
+                      :class="day.day === '日' ? 'day-sun' : day.day === '土' ? 'day-sat' : ''"
                     >
                       {{ day.day }}
                     </span>
-                    <span class="text-grey" style="font-size: 0.58rem;">
-                      {{ day.dateStr.substring(8) }}
+                    <span class="day-date-num font-num">
+                      {{ parseInt(day.dateStr.substring(8), 10) }}
                     </span>
                   </div>
 
                   <!-- メニュー内容 -->
-                  <div class="my-1.5">
+                  <div class="my-2">
                     <div
-                      class="font-weight-bold line-clamp-2"
-                      :class="day.targetDistance === 0 ? 'text-grey-darken-1' : 'text-white'"
-                      style="font-size: 0.66rem; line-height: 1.2;"
+                      class="day-menu-text line-clamp-2"
+                      :class="day.targetDistance === 0 ? 'menu-rest' : ''"
                     >
                       {{ day.menuText }}
                     </div>
                   </div>
 
                   <!-- ステータスフッター -->
-                  <div class="d-flex align-center justify-space-between" style="font-size: 0.6rem;">
-                    <span v-if="day.isCleared" class="text-emerald font-weight-bold d-flex align-center">
-                      <v-icon icon="mdi-check-circle" size="10" class="mr-0.5"></v-icon>
+                  <div class="d-flex align-center justify-space-between font-num" style="font-size: 0.66rem;">
+                    <span v-if="day.isCleared" class="day-status-cleared d-flex align-center">
+                      <v-icon icon="mdi-check-circle" size="12" class="mr-0.5" color="#059669"></v-icon>
                       {{ day.actualDistance.toFixed(0) }}k
                     </span>
-                    <span v-else-if="day.hasRun" class="text-cyan font-weight-bold">
+                    <span v-else-if="day.hasRun" class="day-status-run">
                       {{ day.actualDistance.toFixed(1) }}k
                     </span>
-                    <span v-else-if="day.targetDistance > 0" class="text-grey-darken-1">
-                      予定 {{ day.targetDistance }}k
+                    <span v-else-if="day.targetDistance > 0" class="day-status-target">
+                      {{ day.targetDistance }}km
                     </span>
-                    <span v-else class="text-grey-darken-2">
-                      REST
+                    <span v-else class="day-status-rest">
+                      OFF
                     </span>
 
-                    <v-icon
+                    <span
                       v-if="hasCustomOverride(day.dateStr)"
-                      color="secondary"
-                      icon="mdi-circle-medium"
-                      size="10"
+                      class="custom-dot"
                       title="カスタム設定済み"
-                    ></v-icon>
+                    ></span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Tile B2: 統合テレメトリチャート -->
+            <!-- Tile B2: 統合パフォーマンス推移チャート -->
             <div class="flex-grow-1 d-flex flex-column">
               <workout-chart
                 :workouts="workouts"
                 :target-goal="targetGoal"
-                :height="240"
+                :height="250"
                 class="flex-grow-1"
               ></workout-chart>
             </div>
           </v-col>
 
-          <!-- 右カラム (lg="4"): アクティビティ履歴 ＆ シューズガレージ (切替コックピット) -->
+          <!-- 右カラム (lg="4"): アクティビティ履歴 -->
           <v-col cols="12" lg="4" class="d-flex flex-column">
             <div class="bento-panel d-flex flex-column h-100">
-              <!-- パネルヘッダー (タブスイッチャー) -->
-              <div class="d-flex align-center justify-space-between mb-2 flex-wrap gap-1">
-                <div class="right-panel-tabs d-flex gap-1">
-                  <button
-                    type="button"
-                    class="right-tab-btn"
-                    :class="{ active: rightPanelTab === 'history' }"
-                    @click="rightPanelTab = 'history'"
-                  >
-                    <v-icon icon="mdi-history" size="14" class="mr-1"></v-icon>
-                    ラン履歴 ({{ workouts.length }})
-                  </button>
-                  <button
-                    type="button"
-                    class="right-tab-btn"
-                    :class="{ active: rightPanelTab === 'shoes' }"
-                    @click="rightPanelTab = 'shoes'"
-                  >
-                    <v-icon icon="mdi-shoe-sneaker" size="14" class="mr-1"></v-icon>
-                    シューズガレージ ({{ allShoes.length }})
-                  </button>
-                </div>
-
-                <v-btn
-                  v-if="isOwner && rightPanelTab === 'shoes'"
-                  color="warning"
-                  prepend-icon="mdi-plus"
-                  density="compact"
-                  variant="tonal"
-                  size="x-small"
-                  rounded="md"
-                  class="font-weight-bold px-2"
-                  @click="openShoeForm"
-                >
-                  追加
-                </v-btn>
+              <div class="d-flex align-center justify-space-between mb-2">
+                <span class="panel-title">
+                  アクティビティ履歴
+                </span>
+                <span class="panel-subdate">
+                  クリックでルート＆ラップ詳細
+                </span>
               </div>
 
-              <!-- View 1: ラン履歴リスト -->
-              <div v-if="rightPanelTab === 'history'" class="d-flex flex-column flex-grow-1 justify-space-between">
-                <workout-table :workouts="workouts" class="flex-grow-1"></workout-table>
-
-                <!-- 下部ミニ・シューズガレージ・プレビューバー -->
-                <div
-                  v-if="allShoes.length > 0"
-                  class="shoe-quick-strip mt-2 px-2.5 py-1.5 rounded-lg d-flex align-center justify-space-between"
-                  @click="rightPanelTab = 'shoes'"
-                >
-                  <div class="d-flex align-center overflow-hidden pr-2">
-                    <ShoeIcon :name="allShoes[0].name" :category="allShoes[0].category" :size="32" class="mr-2 flex-shrink-0"></ShoeIcon>
-                    <div class="overflow-hidden">
-                      <div class="text-caption font-weight-bold text-white text-truncate" style="font-size: 0.7rem; line-height: 1.15;">
-                        {{ allShoes[0].name }}
-                      </div>
-                      <div class="text-caption text-grey" style="font-size: 0.62rem;">
-                        累計 {{ allShoes[0].distance.toFixed(0) }}km ({{ allShoes[0].runs }}回) ｜ 他 {{ Math.max(0, allShoes.length - 1) }}足
-                      </div>
-                    </div>
-                  </div>
-                  <div class="d-flex align-center flex-shrink-0 text-amber font-weight-bold" style="font-size: 0.66rem;">
-                    <span>ガレージ</span>
-                    <v-icon icon="mdi-chevron-right" size="14"></v-icon>
-                  </div>
-                </div>
-              </div>
-
-              <!-- View 2: シューズガレージ (コレクション＆寿命管理) -->
-              <div v-else class="d-flex flex-column flex-grow-1">
-                <div v-if="allShoes.length === 0" class="text-grey text-caption py-12 text-center">
-                  <v-icon icon="mdi-shoe-sneaker" size="32" class="mb-2 text-grey-darken-2 d-block mx-auto"></v-icon>
-                  シューズがまだ登録されていません。
-                </div>
-                <div v-else class="shoes-cockpit-grid flex-grow-1">
-                  <div
-                    v-for="shoe in allShoes"
-                    :key="shoe.name"
-                    class="shoe-cockpit-card pa-2.5 rounded-lg d-flex flex-column justify-space-between"
-                  >
-                    <div class="d-flex justify-space-between align-center">
-                      <v-chip
-                        size="x-small"
-                        :color="shoe.color"
-                        variant="flat"
-                        class="font-weight-bold text-black px-1.5"
-                        style="height: 15px; font-size: 0.58rem;"
-                      >
-                        {{ shoe.status }}
-                      </v-chip>
-                      <v-btn
-                        v-if="isOwner && shoe.isCustom"
-                        icon="mdi-delete-outline"
-                        variant="text"
-                        color="error"
-                        density="compact"
-                        size="x-small"
-                        style="width: 16px; height: 16px;"
-                        @click.stop="handleDeleteShoe(shoe.name)"
-                      ></v-btn>
-                    </div>
-
-                    <div class="d-flex flex-column align-center text-center my-1">
-                      <ShoeIcon :name="shoe.name" :category="shoe.category" :size="64" class="mb-1"></ShoeIcon>
-                      <div class="text-caption font-weight-bold text-white line-clamp-2" style="font-size: 0.7rem; line-height: 1.2;">
-                        {{ shoe.name }}
-                      </div>
-                    </div>
-
-                    <div>
-                      <div class="d-flex justify-space-between align-baseline mb-1">
-                        <span class="font-outfit font-weight-black text-white" style="font-size: 0.9rem;">
-                          {{ shoe.distance.toFixed(0) }}<span class="text-grey ml-0.5" style="font-size: 0.6rem;">km</span>
-                        </span>
-                        <span class="text-grey" style="font-size: 0.6rem;">{{ shoe.runs }}回出走</span>
-                      </div>
-                      <v-progress-linear
-                        :model-value="shoe.lifePercent"
-                        :color="shoe.color"
-                        height="4"
-                        rounded
-                      ></v-progress-linear>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <workout-table :workouts="workouts" class="flex-grow-1"></workout-table>
             </div>
           </v-col>
         </v-row>
@@ -536,20 +405,13 @@
         @save="handleSaveAutoPlan"
       ></auto-plan-dialog>
 
-      <!-- シューズ登録ダイアログ -->
-      <shoe-form
-        :active="shoeFormActive"
-        @close="closeShoeForm"
-        @save="handleSaveShoe"
-      ></shoe-form>
-
       <!-- スナックバーによる通知フィードバック -->
       <v-snackbar
         v-model="snackbar.show"
         :color="snackbar.color"
         timeout="3000"
         rounded="pill"
-        elevation="6"
+        elevation="4"
       >
         <div class="d-flex align-center font-weight-medium">
           <v-icon :icon="snackbar.icon" class="mr-2"></v-icon>
@@ -562,15 +424,9 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import ShoeIcon from '~/components/ShoeIcon.vue'
-import ShoeForm from '~/components/ShoeForm.vue'
 
 export default {
   name: 'AthleteDashboardView',
-  components: {
-    ShoeIcon,
-    ShoeForm
-  },
   setup() {
     const route = useRoute()
     const athleteId = route.params.id
@@ -587,13 +443,10 @@ export default {
     const loading = ref(true)
     const syncing = ref(false)
     const targetGoal = ref('sub3.5')
-    const rightPanelTab = ref('history')
     let autoSyncInterval = null
 
     // フォーム関連状態
-    const formActive = ref(false)
     const raceFormActive = ref(false)
-    const selectedWorkout = ref(null)
     const selectedRace = ref(null)
 
     // 練習プラン個別編集用状態
@@ -681,12 +534,26 @@ export default {
       }
     }
 
+    // 今日の日付（時刻00:00:00）を取得
+    const getTodayStart = () => {
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
+      return now
+    }
+
+    const parseLocalDate = (dateStr) => {
+      if (!dateStr) return new Date(0)
+      const parts = dateStr.split(/[\s\-:]/)
+      return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10))
+    }
+
+    // 実際の現在日付を基準に今後の大会リストを抽出
     const upcomingRacesList = computed(() => {
       if (races.value.length === 0) return []
-      const baseTime = new Date('2026-07-05').getTime()
+      const todayTime = getTodayStart().getTime()
       return races.value
-        .filter(race => new Date(race.date).getTime() >= baseTime)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .filter(race => parseLocalDate(race.date).getTime() >= todayTime)
+        .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
     })
 
     const upcomingRace = computed(() => {
@@ -694,18 +561,18 @@ export default {
       return upcomingRacesList.value[0]
     })
 
-    const upcomingRaceDays = computed(() => {
-      if (!upcomingRace.value) return 0
-      return calculateDaysUntil(upcomingRace.value.date)
-    })
-
     const calculateDaysUntil = (dateStr) => {
-      const today = new Date('2026-07-05')
-      const targetDate = new Date(dateStr)
+      const today = getTodayStart()
+      const targetDate = parseLocalDate(dateStr)
       const diffTime = targetDate.getTime() - today.getTime()
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
       return diffDays < 0 ? 0 : diffDays
     }
+
+    const upcomingRaceDays = computed(() => {
+      if (!upcomingRace.value) return 0
+      return calculateDaysUntil(upcomingRace.value.date)
+    })
 
     const monthlyGoalDistance = computed(() => {
       if (targetGoal.value === 'sub4') return 150
@@ -715,18 +582,29 @@ export default {
 
     const last30DaysDistance = computed(() => {
       if (workouts.value.length === 0) return 0
-      const thirtyDaysAgo = new Date('2026-07-05')
+      const dates = workouts.value.map(w => parseLocalDate(w.workoutDate)).filter(d => d.getTime() > 0)
+      const now = getTodayStart()
+      const maxDate = dates.length > 0 ? new Date(Math.max(...dates)) : now
+      const refDate = (now.getTime() - maxDate.getTime()) / (1000 * 60 * 60 * 24) > 45 ? maxDate : now
+
+      const thirtyDaysAgo = new Date(refDate.getTime())
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       
       return workouts.value
         .filter(w => {
           if (!w.workoutDate) return false
-          const parts = w.workoutDate.split(/[\s\-:]/)
-          const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10))
-          return d >= thirtyDaysAgo
+          const d = parseLocalDate(w.workoutDate)
+          return d >= thirtyDaysAgo && d <= refDate
         })
         .reduce((sum, w) => sum + Number(w.distance || 0), 0)
     })
+
+    const formatDateISO = (d) => {
+      const yyyy = d.getFullYear()
+      const mm = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      return `${yyyy}-${mm}-${dd}`
+    }
 
     const weeklySchedule = computed(() => {
       const diag = raceDiagnosis.value
@@ -825,12 +703,12 @@ export default {
 
       const weekDates = []
       const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土']
-      const today = new Date('2026-07-05')
+      const today = getTodayStart()
       
       for (let i = 0; i < 7; i++) {
-        const currentDate = new Date(today)
+        const currentDate = new Date(today.getTime())
         currentDate.setDate(today.getDate() + i)
-        const dateStr = currentDate.toISOString().split('T')[0]
+        const dateStr = formatDateISO(currentDate)
         const dayName = daysOfWeek[currentDate.getDay()]
         weekDates.push({ dateStr, dayName })
       }
@@ -891,80 +769,11 @@ export default {
       return Math.round(sum * 10) / 10
     })
 
-    const allShoes = computed(() => {
-      const shoesMap = new Map()
-
-      workouts.value.forEach(w => {
-        if (w.gearName) {
-          const name = w.gearName
-          if (!shoesMap.has(name)) {
-            shoesMap.set(name, {
-              name,
-              totalDistance: 0,
-              totalRuns: 0,
-              category: '',
-              isCustom: false
-            })
-          }
-          const s = shoesMap.get(name)
-          s.totalDistance += Number(w.distance || 0)
-          s.totalRuns += 1
-        }
-      })
-
-      customShoes.value.forEach(cs => {
-        if (!shoesMap.has(cs.name)) {
-          shoesMap.set(cs.name, {
-            name: cs.name,
-            totalDistance: Number(cs.distance || 0),
-            totalRuns: Number(cs.runs || 0),
-            category: cs.category,
-            isCustom: true
-          })
-        } else {
-          const s = shoesMap.get(cs.name)
-          s.totalDistance += Number(cs.distance || 0)
-          s.totalRuns += Number(cs.runs || 0)
-          s.category = cs.category
-          s.isCustom = true
-        }
-      })
-
-      return Array.from(shoesMap.values()).map(s => {
-        const lifeLimit = 600
-        const lifePercent = Math.min((s.totalDistance / lifeLimit) * 100, 100)
-        
-        let color = 'success'
-        let status = '良好'
-        if (s.totalDistance >= 500) {
-          color = 'error'
-          status = '交換推奨'
-        } else if (s.totalDistance >= 400) {
-          color = 'warning'
-          status = '摩耗注意'
-        }
-
-        return {
-          name: s.name,
-          distance: s.totalDistance,
-          runs: s.totalRuns,
-          category: s.category,
-          isCustom: s.isCustom,
-          lifePercent: Math.round(lifePercent),
-          color,
-          status
-        }
-      }).sort((a, b) => b.distance - a.distance)
-    })
-
     const raceDiagnosis = computed(() => {
       const race = upcomingRace.value
-      const BASE_DATE = new Date('2026-07-05')
       if (!race) return null
       
-      const raceTime = new Date(race.date).getTime()
-      const diffTime = raceTime - BASE_DATE.getTime()
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      const diffDays = calculateDaysUntil(race.date)
       
       if (diffDays >= 91) {
         return {
@@ -981,7 +790,7 @@ export default {
         
         return {
           mode: 'PERIODIZATION',
-          heading: `${race.name} あと${weeksRemaining}週 ｜ ${phaseName}`,
+          heading: `${race.name} あと${diffDays}日 ｜ ${phaseName}`,
           phaseName,
           weeksRemaining
         }
@@ -1154,52 +963,7 @@ export default {
       }
     }
 
-    const shoeFormActive = ref(false)
-    const customShoes = ref([])
-
-    const openShoeForm = () => {
-      if (!isOwner.value) return
-      shoeFormActive.value = true
-    }
-
-    const closeShoeForm = () => {
-      shoeFormActive.value = false
-    }
-
-    const loadCustomShoes = () => {
-      if (import.meta.client) {
-        const stored = localStorage.getItem(`custom_shoes_${athleteId}`)
-        customShoes.value = stored ? JSON.parse(stored) : []
-      }
-    }
-
-    const handleSaveShoe = (shoeData) => {
-      if (!isOwner.value) return
-      if (customShoes.value.some(s => s.name === shoeData.name)) {
-        showNotification('同じ名前のシューズが既に登録されています。', 'error', 'mdi-alert-circle')
-        return
-      }
-      customShoes.value.push(shoeData)
-      if (import.meta.client) {
-        localStorage.setItem(`custom_shoes_${athleteId}`, JSON.stringify(customShoes.value))
-      }
-      showNotification('シューズを登録しました！', 'success', 'mdi-shoe-sneaker')
-      closeShoeForm()
-    }
-
-    const handleDeleteShoe = (name) => {
-      if (!isOwner.value) return
-      if (confirm(`「${name}」の登録を解除しますか？`)) {
-        customShoes.value = customShoes.value.filter(s => s.name !== name)
-        if (import.meta.client) {
-          localStorage.setItem(`custom_shoes_${athleteId}`, JSON.stringify(customShoes.value))
-        }
-        showNotification('シューズの登録を解除しました。')
-      }
-    }
-
     onMounted(async () => {
-      loadCustomShoes()
       await loadAthleteData()
       await checkOwnership()
 
@@ -1227,13 +991,10 @@ export default {
       raceDiagnosis,
       weeklySchedule,
       loading,
-      formActive,
       raceFormActive,
-      selectedWorkout,
       snackbar,
       syncing,
       targetGoal,
-      rightPanelTab,
       isLoggedIn,
       isOwner,
       athleteInfo,
@@ -1261,14 +1022,7 @@ export default {
       handleSaveRace,
       handleDeleteRace,
       weeklyTotalTarget,
-      weeklyTotalActual,
-      allShoes,
-      shoeFormActive,
-      customShoes,
-      openShoeForm,
-      closeShoeForm,
-      handleSaveShoe,
-      handleDeleteShoe
+      weeklyTotalActual
     }
   }
 }
@@ -1276,52 +1030,56 @@ export default {
 
 <style scoped>
 .cockpit-root {
-  background:
-    radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 85% 15%, rgba(6, 182, 212, 0.1) 0%, transparent 40%),
-    #090b12;
-  color: #fff;
+  background-color: #F4F6F9;
+  color: #0F172A;
 }
 
 .cockpit-container {
-  max-width: 1680px;
+  max-width: 1640px;
   margin: 0 auto;
 }
 
-/* Top Command Bar */
+/* Top Header Bar */
 .cockpit-topbar {
-  background: rgba(16, 19, 30, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
 }
 
 .brand-badge {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #0F172A;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 14px rgba(99, 102, 241, 0.4);
 }
 
-.cockpit-tag {
-  font-size: 0.58rem;
+.brand-title {
+  font-size: 1.05rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: rgba(99, 102, 241, 0.18);
-  color: #a5b4fc;
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #0F172A;
+  letter-spacing: -0.02em;
+}
+
+.brand-sub {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
 }
 
 .runner-pill {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
   border-radius: 99px;
+}
+
+.runner-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0F172A;
 }
 
 .status-dot {
@@ -1331,115 +1089,208 @@ export default {
 }
 
 .dot-online {
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  background: #059669;
 }
 
 .dot-demo {
-  background: #f59e0b;
-  box-shadow: 0 0 8px #f59e0b;
+  background: #2563EB;
 }
 
 .phase-pill {
-  background: rgba(6, 182, 212, 0.08);
-  border: 1px solid rgba(6, 182, 212, 0.22);
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
   border-radius: 99px;
 }
 
+.phase-text {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #1D4ED8;
+}
+
 .goal-segment {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 9px;
-  padding: 2px;
+  background: #F1F5F9;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.goal-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748B;
 }
 
 .goal-seg-btn {
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.7rem;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 6px;
+  color: #64748B;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .goal-seg-btn.active {
-  background: linear-gradient(135deg, #6366f1, #4f46e5);
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+  background: #FFFFFF;
+  color: #0F172A;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
-/* Bento Panels */
+.action-btn-outline {
+  border-color: #CBD5E1 !important;
+}
+
+.strava-btn {
+  background: #FC4C02 !important;
+}
+
+/* Bento Panels (たっぷりの内部余白) */
 .bento-panel {
-  background: linear-gradient(165deg, rgba(20, 23, 36, 0.92) 0%, rgba(13, 15, 24, 0.96) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
   border-radius: 16px;
-  padding: 12px 14px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
 }
 
-.cockpit-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  box-shadow: 0 0 8px currentColor;
+.panel-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0F172A;
+  letter-spacing: -0.01em;
 }
 
-.bg-amber { background-color: #f59e0b; color: #f59e0b; }
-.bg-emerald { background-color: #10b981; color: #10b981; }
-.text-amber { color: #fbbf24; }
-.text-emerald { color: #34d399; }
-.text-cyan { color: #22d3ee; }
-.text-rose { color: #fb7185; }
+.panel-subdate {
+  font-size: 0.74rem;
+  color: #64748B;
+  font-weight: 500;
+}
 
 /* Next Race Hero */
 .next-race-hero {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.14) 0%, rgba(6, 182, 212, 0.08) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.28);
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+
+.race-eyebrow {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #2563EB;
+}
+
+.race-main-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.25;
+}
+
+.race-main-meta {
+  font-size: 0.76rem;
+  color: #475569;
+  font-weight: 500;
+}
+
+.race-goal-tag {
+  color: #0F172A;
+  font-weight: 700;
 }
 
 .countdown-box {
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid #E2E8F0;
+}
+
+.countdown-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #64748B;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.countdown-number {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: #2563EB;
+  line-height: 1;
+}
+
+.countdown-unit {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+  margin-left: 2px;
 }
 
 .race-compact-scroll {
-  max-height: 76px;
+  max-height: 88px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 6px;
 }
 
 .race-mini-row {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+
+.race-row-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1E293B;
+}
+
+.race-row-days {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.empty-state-text {
+  font-size: 0.8rem;
+  color: #64748B;
 }
 
 /* Weekly 7-Day Strip */
 .weekly-progress-pill {
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.22);
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  font-size: 0.74rem;
+}
+
+.pill-muted {
+  color: #64748B;
+}
+
+.pill-strong {
+  color: #0F172A;
+  font-weight: 800;
 }
 
 .bento-week-strip {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 5px;
+  gap: 8px;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 650px) {
   .bento-week-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 .bento-day-cell {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  padding: 7px 6px;
-  min-height: 82px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 12px 10px;
+  min-height: 98px;
   transition: all 0.15s ease;
 }
 
@@ -1448,86 +1299,85 @@ export default {
 }
 
 .bento-day-cell.day-editable:hover {
-  border-color: rgba(99, 102, 241, 0.45);
-  background: rgba(99, 102, 241, 0.08);
+  border-color: #93C5FD;
+  background: #EFF6FF;
   transform: translateY(-1px);
 }
 
 .bento-day-cell.day-cleared {
-  background: rgba(16, 185, 129, 0.08);
-  border-color: rgba(16, 185, 129, 0.35);
+  background: #F0FDF4;
+  border-color: #BBF7D0;
 }
 
 .bento-day-cell.day-quality {
-  border-color: rgba(6, 182, 212, 0.3);
-  background: rgba(6, 182, 212, 0.05);
+  background: #EFF6FF;
+  border-color: #BFDBFE;
 }
 
 .bento-day-cell.day-rest {
-  opacity: 0.62;
+  background: #FAFAFA;
+  opacity: 0.75;
 }
 
-/* Right Panel Switcher & Shoe Garage */
-.right-panel-tabs {
-  background: rgba(255, 255, 255, 0.04);
-  padding: 3px;
-  border-radius: 9px;
+.day-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #0F172A;
 }
 
-.right-tab-btn {
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+.day-sun {
+  color: #DC2626;
+}
+
+.day-sat {
+  color: #2563EB;
+}
+
+.day-date-num {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748B;
+}
+
+.day-menu-text {
   font-size: 0.72rem;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: inline-flex;
-  align-items: center;
+  font-weight: 700;
+  color: #1E293B;
+  line-height: 1.35;
 }
 
-.right-tab-btn.active {
-  background: rgba(99, 102, 241, 0.25);
-  color: #fff;
-  box-shadow: inset 0 0 0 1px rgba(99, 102, 241, 0.45);
+.menu-rest {
+  color: #94A3B8;
+  font-weight: 500;
 }
 
-.shoe-quick-strip {
-  background: rgba(245, 158, 11, 0.07);
-  border: 1px solid rgba(245, 158, 11, 0.22);
-  cursor: pointer;
-  transition: all 0.15s ease;
+.day-status-cleared {
+  color: #059669;
+  font-weight: 700;
 }
 
-.shoe-quick-strip:hover {
-  background: rgba(245, 158, 11, 0.14);
-  border-color: rgba(245, 158, 11, 0.4);
+.day-status-run {
+  color: #2563EB;
+  font-weight: 700;
 }
 
-.shoes-cockpit-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
-  gap: 8px;
-  max-height: 410px;
-  overflow-y: auto;
-  padding-right: 2px;
+.day-status-target {
+  color: #64748B;
+  font-weight: 600;
 }
 
-.shoe-cockpit-card {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  transition: all 0.2s ease;
+.day-status-rest {
+  color: #94A3B8;
+  font-weight: 600;
 }
 
-.shoe-cockpit-card:hover {
-  border-color: rgba(245, 158, 11, 0.35);
-  transform: translateY(-2px);
+.custom-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2563EB;
 }
 
-.gap-1 { gap: 4px; }
-.gap-1\.5 { gap: 6px; }
 .gap-2 { gap: 8px; }
-.gap-2\.5 { gap: 10px; }
+.gap-3 { gap: 12px; }
 </style>

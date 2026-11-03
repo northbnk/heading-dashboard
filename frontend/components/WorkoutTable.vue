@@ -1,36 +1,34 @@
 <template>
   <div class="bento-table-wrap d-flex flex-column h-100">
     <!-- ページネーション＆件数バー -->
-    <div class="d-flex align-center justify-space-between mb-1.5 px-1">
-      <div class="text-caption text-grey" style="font-size: 0.7rem;">
-        全 <strong class="text-white">{{ workouts.length }}</strong> 件のラン記録
-        <span v-if="workouts.length > 0" class="ml-1">({{ currentPage }} / {{ maxPage }} ページ)</span>
+    <div class="d-flex align-center justify-space-between mb-3">
+      <div class="table-count-label">
+        全 <strong class="font-num">{{ workouts.length }}</strong> 件
+        <span v-if="workouts.length > 0" class="ml-1 font-num">({{ currentPage }} / {{ maxPage }})</span>
       </div>
       <div class="d-flex align-center gap-1">
-        <v-btn
-          icon="mdi-chevron-left"
-          variant="tonal"
-          density="compact"
-          color="grey-lighten-1"
-          size="x-small"
+        <button
+          type="button"
+          class="page-nav-btn"
           :disabled="currentPage === 1"
           @click="prevPage"
-        ></v-btn>
-        <v-btn
-          icon="mdi-chevron-right"
-          variant="tonal"
-          density="compact"
-          color="grey-lighten-1"
-          size="x-small"
+        >
+          <v-icon icon="mdi-chevron-left" size="16"></v-icon>
+        </button>
+        <button
+          type="button"
+          class="page-nav-btn"
           :disabled="currentPage >= maxPage"
           @click="nextPage"
-        ></v-btn>
+        >
+          <v-icon icon="mdi-chevron-right" size="16"></v-icon>
+        </button>
       </div>
     </div>
 
     <!-- コンパクト・アクティビティリスト -->
-    <div v-if="displayedWorkouts.length === 0" class="text-center py-10 text-grey text-caption">
-      <v-icon icon="mdi-run" size="28" class="mb-2 d-block mx-auto text-grey-darken-2"></v-icon>
+    <div v-if="displayedWorkouts.length === 0" class="text-center py-12 empty-text">
+      <v-icon icon="mdi-run" size="28" class="mb-2 d-block mx-auto" color="#94A3B8"></v-icon>
       ワークアウト記録がありません。Stravaと同期してください。
     </div>
 
@@ -38,24 +36,25 @@
       <div
         v-for="item in displayedWorkouts"
         :key="item.id || item.workoutDate"
-        class="cockpit-log-row d-flex align-center justify-space-between px-2.5 py-1.5"
+        class="cockpit-log-row d-flex align-center justify-space-between"
         @click="showMapDetail(item)"
       >
-        <!-- 左：日付・タイトル・シューズ -->
-        <div class="d-flex align-center overflow-hidden pr-2" style="min-width: 0; flex: 1;">
-          <div class="log-date-badge text-center mr-2.5 flex-shrink-0">
+        <!-- 左：日付・タイトル・サブ情報 -->
+        <div class="d-flex align-center overflow-hidden pr-3" style="min-width: 0; flex: 1;">
+          <div class="log-date-badge text-center mr-3 flex-shrink-0">
             <div class="log-month">{{ formatMonth(item.workoutDate) }}</div>
-            <div class="log-day font-outfit">{{ formatDay(item.workoutDate) }}</div>
+            <div class="log-day font-num">{{ formatDay(item.workoutDate) }}</div>
           </div>
           <div class="overflow-hidden" style="min-width: 0;">
-            <div class="text-caption font-weight-bold text-white text-truncate" style="font-size: 0.76rem; line-height: 1.2;">
+            <div class="log-title text-truncate">
               {{ item.activityName || 'ランニング' }}
             </div>
-            <div class="d-flex align-center text-grey text-truncate" style="font-size: 0.65rem; gap: 6px;">
+            <div class="d-flex align-center log-submeta text-truncate font-num">
               <span>{{ formatDuration(item.durationSeconds) }}</span>
-              <span v-if="item.averageHeartrate" class="text-rose">♥ {{ Math.round(item.averageHeartrate) }}</span>
-              <span v-if="item.cadence">{{ item.cadence }}spm</span>
-              <span v-if="item.gearName" class="text-amber text-truncate">👟 {{ item.gearName }}</span>
+              <span v-if="item.averageHeartrate" class="meta-dot">•</span>
+              <span v-if="item.averageHeartrate">{{ Math.round(item.averageHeartrate) }} bpm</span>
+              <span v-if="item.cadence" class="meta-dot">•</span>
+              <span v-if="item.cadence">{{ item.cadence }} spm</span>
             </div>
           </div>
         </div>
@@ -63,86 +62,54 @@
         <!-- 右：距離・ペース・詳細アイコン -->
         <div class="d-flex align-center flex-shrink-0 gap-2">
           <div class="text-right">
-            <div class="font-outfit font-weight-black text-white" style="font-size: 0.92rem; line-height: 1.1;">
-              {{ Number(item.distance).toFixed(1) }}<span class="text-caption text-grey ml-0.5" style="font-size: 0.62rem;">km</span>
+            <div class="log-distance font-num">
+              {{ Number(item.distance).toFixed(1) }}<span class="log-unit">km</span>
             </div>
             <div
-              class="font-outfit font-weight-bold"
-              :class="item.averagePaceSeconds <= 295 ? 'text-emerald' : 'text-cyan'"
-              style="font-size: 0.68rem;"
+              class="log-pace font-num"
+              :class="item.averagePaceSeconds <= 295 ? 'pace-fast' : 'pace-normal'"
             >
-              {{ formatPaceShort(item.averagePaceSeconds) }}/k
+              {{ formatPaceShort(item.averagePaceSeconds) }} /km
             </div>
           </div>
           <v-icon
-            color="primary"
+            color="#94A3B8"
             icon="mdi-chevron-right"
-            size="16"
-            class="opacity-70"
+            size="18"
           ></v-icon>
         </div>
       </div>
     </div>
 
-    <!-- ルート詳細＆スプリット・添付写真表示モーダルダイアログ -->
-    <v-dialog v-model="mapDialog.active" max-width="600">
-      <v-card class="map-dialog-card px-5 py-4" border style="background: #141724; border-radius: 20px; color: #fff;">
-        <div class="d-flex justify-space-between align-center mb-3">
+    <!-- ルート詳細＆スプリット表示モーダルダイアログ (白ベース) -->
+    <v-dialog v-model="mapDialog.active" max-width="580">
+      <v-card class="map-dialog-card pa-6" elevation="8">
+        <div class="d-flex justify-space-between align-start mb-4">
           <div>
-            <div class="text-h6 font-weight-bold text-white d-flex align-center">
-              <v-icon color="primary" icon="mdi-map-legend" class="mr-2"></v-icon>
-              {{ mapDialog.workout.activityName || 'ランニングルート' }}
+            <div class="dialog-title d-flex align-center">
+              <v-icon color="#2563EB" icon="mdi-map-marker-path" class="mr-2" size="22"></v-icon>
+              {{ mapDialog.workout.activityName || 'ランニング詳細' }}
             </div>
-            <div class="text-caption text-grey">
+            <div class="dialog-subtitle font-num mt-0.5">
               {{ formatWorkoutDate(mapDialog.workout.workoutDate) }} 実施ログ
             </div>
           </div>
-          <v-btn icon="mdi-close" variant="text" color="grey-lighten-1" size="small" @click="mapDialog.active = false"></v-btn>
+          <v-btn icon="mdi-close" variant="text" color="#64748B" size="small" @click="mapDialog.active = false"></v-btn>
         </div>
 
-        <div class="d-flex flex-wrap gap-2 mb-3" v-if="mapDialog.workout.gearName || mapDialog.workout.deviceName">
-          <v-chip v-if="mapDialog.workout.gearName" color="warning" size="x-small" prepend-icon="mdi-shoe-run" class="font-weight-bold">
-            シューズ: {{ mapDialog.workout.gearName }}
-          </v-chip>
-          <v-chip v-if="mapDialog.workout.deviceName" color="info" size="x-small" prepend-icon="mdi-watch" class="font-weight-bold">
-            デバイス: {{ mapDialog.workout.deviceName }}
-          </v-chip>
-        </div>
-
-        <div v-if="mapDialog.workout.description" class="description-box mb-4 px-3 py-2 rounded-lg text-body-2 text-grey-lighten-1" style="background: rgba(255,255,255,0.03); border-left: 3px solid #6366F1;">
+        <div v-if="mapDialog.workout.description" class="description-box mb-4 px-3.5 py-2.5 rounded-lg">
           {{ mapDialog.workout.description }}
         </div>
 
-        <div v-if="mapDialog.workout.gearName" class="mb-4">
-          <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
-            <v-icon color="warning" icon="mdi-shoe-run" class="mr-1" size="18"></v-icon>
-            使用シューズ
-          </div>
-          <v-card variant="outlined" class="pa-3 rounded-lg border-grey-darken-3 d-flex align-center justify-center text-center" style="background: rgba(25, 28, 41, 0.4); border: 1px solid rgba(255, 255, 255, 0.08) !important;">
-            <div class="d-flex align-center gap-4">
-              <ShoeIcon :name="mapDialog.workout.gearName" :size="68"></ShoeIcon>
-              <div class="text-left">
-                <div class="text-subtitle-2 font-weight-bold text-white">
-                  {{ mapDialog.workout.gearName }}
-                </div>
-                <div class="text-caption text-grey">
-                  このアクティビティで使用されたランニングシューズ
-                </div>
-              </div>
-            </div>
-          </v-card>
-        </div>
-
-        <div v-if="mapDialog.workout.mapUrl" class="map-image-container rounded-lg overflow-hidden border border-grey-darken-3 mb-4">
+        <div v-if="mapDialog.workout.mapUrl" class="map-image-container rounded-xl overflow-hidden mb-4">
           <v-img
             v-if="!mapDialog.workout.mapUrl.startsWith('polyline:')"
             :src="mapDialog.workout.mapUrl"
             aspect-ratio="1.91"
             cover
-            class="bg-grey-darken-4"
           >
             <template #placeholder>
-              <div class="d-flex align-center justify-center fill-height" style="min-height: 220px;">
+              <div class="d-flex align-center justify-center fill-height" style="min-height: 200px;">
                 <v-progress-circular indeterminate color="primary"></v-progress-circular>
               </div>
             </template>
@@ -150,15 +117,15 @@
           
           <div
             v-else
-            class="d-flex align-center justify-center bg-grey-darken-4 px-4 py-2"
-            style="min-height: 220px; background: rgba(30, 41, 59, 0.4) !important;"
+            class="d-flex align-center justify-center px-4 py-3"
+            style="min-height: 200px; background: #F8FAFC;"
           >
-            <svg viewBox="0 0 500 250" style="width: 100%; height: auto; max-height: 220px;">
+            <svg viewBox="0 0 500 250" style="width: 100%; height: auto; max-height: 200px;">
               <polyline
                 :points="getSvgPoints(mapDialog.workout.mapUrl.replace('polyline:', ''))"
                 fill="none"
-                stroke="#6366F1"
-                stroke-width="3"
+                stroke="#2563EB"
+                stroke-width="3.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
@@ -167,100 +134,97 @@
         </div>
 
         <div class="mb-4">
-          <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
-            <v-icon color="secondary" icon="mdi-sine-wave" class="mr-1" size="18"></v-icon>
-            詳細パフォーマンス指標
+          <div class="section-heading mb-2">
+            パフォーマンス指標
           </div>
           
-          <v-card variant="outlined" class="pa-3 border-grey-darken-3 rounded-lg" style="background: rgba(255,255,255,0.015); border-color: rgba(255,255,255,0.08) !important;">
+          <div class="metrics-grid-box pa-3.5 rounded-xl">
             <v-row dense class="text-center">
-              <v-col cols="4" class="py-1">
-                <div class="text-caption text-grey">距離</div>
-                <div class="text-subtitle-2 font-weight-bold text-white">{{ Number(mapDialog.workout.distance || 0).toFixed(2) }} km</div>
+              <v-col cols="4" class="py-1.5">
+                <div class="metric-label">距離</div>
+                <div class="metric-val font-num">{{ Number(mapDialog.workout.distance || 0).toFixed(2) }} km</div>
               </v-col>
-              <v-col cols="4" class="py-1" style="border-left: 1px solid rgba(255,255,255,0.08)">
-                <div class="text-caption text-grey">平均ペース</div>
-                <div class="text-subtitle-2 font-weight-bold text-white">{{ formatPace(mapDialog.workout.averagePaceSeconds) }}</div>
+              <v-col cols="4" class="py-1.5 metric-divider">
+                <div class="metric-label">平均ペース</div>
+                <div class="metric-val font-num">{{ formatPace(mapDialog.workout.averagePaceSeconds) }}</div>
               </v-col>
-              <v-col cols="4" class="py-1" style="border-left: 1px solid rgba(255,255,255,0.08)">
-                <div class="text-caption text-grey">平均 / 最大心拍</div>
-                <div class="text-subtitle-2 font-weight-bold text-white">
+              <v-col cols="4" class="py-1.5 metric-divider">
+                <div class="metric-label">平均 / 最大心拍</div>
+                <div class="metric-val font-num">
                   {{ mapDialog.workout.averageHeartrate ? Math.round(mapDialog.workout.averageHeartrate) : '--' }} / {{ mapDialog.workout.maxHeartrate || '--' }} bpm
                 </div>
               </v-col>
 
-              <v-col cols="12" class="my-1"><v-divider style="opacity: 0.08"></v-divider></v-col>
+              <v-col cols="12" class="my-1"><v-divider color="#E2E8F0"></v-divider></v-col>
 
-              <v-col cols="4" class="py-1">
-                <div class="text-caption text-grey">ピッチ</div>
-                <div class="text-subtitle-2 font-weight-bold text-white">
+              <v-col cols="4" class="py-1.5">
+                <div class="metric-label">ピッチ</div>
+                <div class="metric-val font-num">
                   {{ mapDialog.workout.cadence ? mapDialog.workout.cadence + ' spm' : '--' }}
                 </div>
               </v-col>
-              <v-col cols="4" class="py-1" style="border-left: 1px solid rgba(255,255,255,0.08)">
-                <div class="text-caption text-grey">ストライド</div>
-                <div class="text-subtitle-2 font-weight-bold text-white">
+              <v-col cols="4" class="py-1.5 metric-divider">
+                <div class="metric-label">ストライド</div>
+                <div class="metric-val font-num">
                   {{ mapDialog.workout.averageStride ? mapDialog.workout.averageStride + ' m' : '--' }}
                 </div>
               </v-col>
-              <v-col cols="4" class="py-1" style="border-left: 1px solid rgba(255,255,255,0.08)">
-                <div class="text-caption text-grey">獲得標高</div>
-                <div class="text-subtitle-2 font-weight-bold text-white">
+              <v-col cols="4" class="py-1.5 metric-divider">
+                <div class="metric-label">獲得標高</div>
+                <div class="metric-val font-num">
                   {{ mapDialog.workout.elevationGain ? mapDialog.workout.elevationGain + ' m' : '--' }}
                 </div>
               </v-col>
             </v-row>
-          </v-card>
+          </div>
         </div>
 
         <div v-if="getWorkoutAnalysis(mapDialog.workout)" class="mb-4">
-          <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
-            <v-icon color="success" icon="mdi-lightbulb-on-outline" class="mr-1" size="18"></v-icon>
-            スポーツ科学分析
+          <div class="section-heading mb-2">
+            トレーニング分析
           </div>
           
-          <v-card class="pa-3 rounded-lg border" style="background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.15) !important;">
+          <div class="analysis-box pa-3.5 rounded-xl">
             <div class="d-flex align-center mb-2">
-              <span class="text-caption text-grey mr-2">種別:</span>
-              <v-chip color="success" size="x-small" variant="flat" class="font-weight-bold text-black">
+              <span class="metric-label mr-2">種別:</span>
+              <span class="type-pill">
                 {{ getWorkoutAnalysis(mapDialog.workout).typeLabel }}
-              </v-chip>
+              </span>
             </div>
             
-            <ul class="pl-4" style="list-style-type: disc; color: rgba(255, 255, 255, 0.85); font-size: 12.5px; line-height: 1.55;">
+            <ul class="analysis-list pl-4">
               <li v-for="(bullet, idx) in getWorkoutAnalysis(mapDialog.workout).bullets" :key="idx" class="mb-1.5">
                 {{ bullet }}
               </li>
             </ul>
-          </v-card>
+          </div>
         </div>
 
         <div v-if="mapDialog.workout.splits && mapDialog.workout.splits.length > 0">
-          <div class="text-subtitle-2 font-weight-bold text-white mb-2 d-flex align-center">
-            <v-icon color="primary" icon="mdi-timer-outline" class="mr-1" size="18"></v-icon>
+          <div class="section-heading mb-2">
             1km毎スプリットラップ
           </div>
-          <div class="splits-table-wrapper rounded-lg overflow-hidden border border-grey-darken-3">
-            <v-table density="compact" class="splits-table text-grey-lighten-2" style="background: rgba(255,255,255,0.02)">
+          <div class="splits-table-wrapper rounded-xl overflow-hidden">
+            <v-table density="compact" class="splits-table">
               <thead>
-                <tr style="background: rgba(255,255,255,0.04)">
-                  <th class="font-weight-bold py-1 text-white">km</th>
-                  <th class="font-weight-bold py-1 text-white">ラップ</th>
-                  <th class="font-weight-bold py-1 text-white">心拍</th>
-                  <th class="font-weight-bold py-1 text-white">標高差</th>
+                <tr>
+                  <th class="font-weight-bold py-2">km</th>
+                  <th class="font-weight-bold py-2">ラップ</th>
+                  <th class="font-weight-bold py-2">心拍</th>
+                  <th class="font-weight-bold py-2">標高差</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="(split, idx) in mapDialog.workout.splits" :key="idx">
-                  <td class="py-1 font-weight-bold">{{ split.split || (idx + 1) }}</td>
-                  <td class="py-1 text-white font-weight-medium">
+                  <td class="py-1.5 font-weight-bold font-num">{{ split.split || (idx + 1) }}</td>
+                  <td class="py-1.5 font-weight-bold font-num">
                     {{ formatSplitTime(split.elapsedTime || split.movingTime) }}
                   </td>
-                  <td class="py-1">
+                  <td class="py-1.5 font-num">
                     {{ split.averageHeartrate ? Math.round(split.averageHeartrate) + ' bpm' : '--' }}
                   </td>
-                  <td class="py-1">
-                    <span :class="split.elevationDifference >= 0 ? 'text-error' : 'text-success'">
+                  <td class="py-1.5 font-num">
+                    <span :class="split.elevationDifference >= 0 ? 'elev-up' : 'elev-down'">
                       {{ split.elevationDifference >= 0 ? '+' : '' }}{{ Math.round(split.elevationDifference || 0) }}m
                     </span>
                   </td>
@@ -276,13 +240,9 @@
 
 <script>
 import { ref, computed, watch } from 'vue'
-import ShoeIcon from './ShoeIcon.vue'
 
 export default {
   name: 'WorkoutTable',
-  components: {
-    ShoeIcon
-  },
   props: {
     workouts: {
       type: Array,
@@ -535,32 +495,72 @@ export default {
 </script>
 
 <style scoped>
+.table-count-label {
+  font-size: 0.76rem;
+  color: #64748B;
+}
+
+.table-count-label strong {
+  color: #0F172A;
+  font-weight: 700;
+}
+
+.page-nav-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid #E2E8F0;
+  background: #FFFFFF;
+  color: #334155;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.page-nav-btn:hover:not(:disabled) {
+  background: #F8FAFC;
+  border-color: #CBD5E1;
+}
+
+.page-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.empty-text {
+  font-size: 0.8rem;
+  color: #64748B;
+}
+
 .cockpit-log-list {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
 }
 
 .cockpit-log-row {
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 14px;
   cursor: pointer;
   transition: all 0.16s ease;
 }
 
 .cockpit-log-row:hover {
-  background: rgba(99, 102, 241, 0.1);
-  border-color: rgba(99, 102, 241, 0.35);
-  transform: translateX(2px);
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  transform: translateY(-1px);
 }
 
 .log-date-badge {
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.25);
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -568,25 +568,169 @@ export default {
 }
 
 .log-month {
-  font-size: 0.52rem;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.56rem;
+  font-weight: 600;
+  color: #64748B;
   line-height: 1;
 }
 
 .log-day {
-  font-size: 0.82rem;
+  font-size: 0.88rem;
   font-weight: 800;
-  color: #fff;
-  line-height: 1.1;
+  color: #0F172A;
+  line-height: 1.15;
 }
 
-.text-emerald { color: #34d399; }
-.text-cyan { color: #22d3ee; }
-.text-rose { color: #fb7185; }
-.text-amber { color: #fbbf24; }
+.log-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0F172A;
+  line-height: 1.3;
+  margin-bottom: 2px;
+}
+
+.log-submeta {
+  font-size: 0.7rem;
+  color: #64748B;
+  gap: 5px;
+}
+
+.meta-dot {
+  color: #CBD5E1;
+}
+
+.log-distance {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.15;
+}
+
+.log-unit {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #64748B;
+  margin-left: 2px;
+}
+
+.log-pace {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.pace-fast {
+  color: #059669;
+}
+
+.pace-normal {
+  color: #2563EB;
+}
+
+/* Modal Styles */
+.map-dialog-card {
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 20px !important;
+  color: #0F172A !important;
+}
+
+.dialog-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0F172A;
+}
+
+.dialog-subtitle {
+  font-size: 0.76rem;
+  color: #64748B;
+}
+
+.description-box {
+  background: #F8FAFC;
+  border-left: 3px solid #2563EB;
+  color: #334155;
+  font-size: 0.82rem;
+}
+
+.map-image-container {
+  border: 1px solid #E2E8F0;
+}
+
+.section-heading {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.metrics-grid-box {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+
+.metric-divider {
+  border-left: 1px solid #E2E8F0;
+}
+
+.metric-label {
+  font-size: 0.7rem;
+  color: #64748B;
+}
+
+.metric-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.analysis-box {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+}
+
+.type-pill {
+  background: #059669;
+  color: #FFFFFF;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.analysis-list {
+  color: #1E293B;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
 
 .splits-table-wrapper {
-  max-height: 320px;
+  max-height: 280px;
   overflow-y: auto;
+  border: 1px solid #E2E8F0;
+}
+
+.splits-table {
+  background: #FFFFFF !important;
+  color: #334155 !important;
+}
+
+.splits-table th {
+  background: #F8FAFC !important;
+  color: #475569 !important;
+  font-size: 0.72rem;
+}
+
+.splits-table td {
+  font-size: 0.78rem;
+  color: #0F172A;
+}
+
+.elev-up {
+  color: #DC2626;
+  font-weight: 600;
+}
+
+.elev-down {
+  color: #059669;
+  font-weight: 600;
 }
 </style>
