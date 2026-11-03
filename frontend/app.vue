@@ -7,12 +7,12 @@
 </template>
 
 <style>
-/* Inter × IBM Plex Sans JP によるシャープで都会的なUIタイポグラフィ */
+/* Inter × IBM Plex Sans JP ＋ 眩しさを抑えたマット・ライトテーマ */
 html, body, #__nuxt, .v-application {
   font-family: 'Inter', 'IBM Plex Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif !important;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
-  background-color: #F4F6F9 !important;
-  color: #0F172A !important;
+  background-color: #E5E9F0 !important;
+  color: #1E293B !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.012em;
@@ -25,19 +25,19 @@ html, body, #__nuxt, .v-application {
   letter-spacing: -0.03em;
 }
 
-/* スクロールバー (ライトテーマ仕様) */
+/* スクロールバー (マット・ライトテーマ仕様) */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #E5E9F0;
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
+  background: #B8C2CC;
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #8795A1;
 }
 </style>

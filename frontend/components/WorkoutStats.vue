@@ -9,7 +9,7 @@
           <div class="tile-label">直近30日走行距離</div>
         </div>
         <div class="tile-icon-badge">
-          <v-icon color="#2563EB" icon="mdi-calendar-range" size="18"></v-icon>
+          <v-icon color="#3653B3" icon="mdi-calendar-range" size="18"></v-icon>
         </div>
       </div>
 
@@ -45,7 +45,7 @@
           <div class="tile-label">推定VDOT・フル予測</div>
         </div>
         <div class="tile-icon-badge">
-          <v-icon color="#2563EB" icon="mdi-chart-line-variant" size="18"></v-icon>
+          <v-icon color="#3653B3" icon="mdi-chart-line-variant" size="18"></v-icon>
         </div>
       </div>
 
@@ -80,7 +80,7 @@
           <div class="tile-label">{{ goalLabel }}ペース最長 {{ goalPaceLimitLabel }}</div>
         </div>
         <div class="tile-icon-badge">
-          <v-icon color="#2563EB" icon="mdi-run-fast" size="18"></v-icon>
+          <v-icon color="#3653B3" icon="mdi-run-fast" size="18"></v-icon>
         </div>
       </div>
 
@@ -116,7 +116,7 @@
           <div class="tile-label">心拍効率 (EI)</div>
         </div>
         <div class="tile-icon-badge">
-          <v-icon color="#2563EB" icon="mdi-heart-flash" size="18"></v-icon>
+          <v-icon color="#3653B3" icon="mdi-heart-flash" size="18"></v-icon>
         </div>
       </div>
 
@@ -152,7 +152,7 @@
           <div class="tile-label">心肺ドリフト維持率</div>
         </div>
         <div class="tile-icon-badge">
-          <v-icon color="#2563EB" icon="mdi-heart-pulse" size="18"></v-icon>
+          <v-icon color="#3653B3" icon="mdi-heart-pulse" size="18"></v-icon>
         </div>
       </div>
 
@@ -204,7 +204,7 @@
 
     <!-- 期分けフェーズバナー -->
     <div v-if="raceDiagnosis?.heading" class="phase-banner px-3 py-2 mb-3 rounded-lg d-flex align-center">
-      <v-icon color="#2563EB" icon="mdi-compass-outline" size="16" class="mr-2 flex-shrink-0"></v-icon>
+      <v-icon color="#3653B3" icon="mdi-compass-outline" size="16" class="mr-2 flex-shrink-0"></v-icon>
       <span class="phase-banner-text text-truncate">
         {{ raceDiagnosis.heading }}
       </span>
@@ -248,11 +248,11 @@
             :key="'i-' + idx"
             class="diag-item diag-item-issue"
           >
-            <v-icon color="#2563EB" icon="mdi-arrow-right-circle-outline" size="16" class="mr-2 mt-0.5 flex-shrink-0"></v-icon>
+            <v-icon color="#3653B3" icon="mdi-arrow-right-circle-outline" size="16" class="mr-2 mt-0.5 flex-shrink-0"></v-icon>
             <span>{{ item }}</span>
           </li>
           <li v-if="marathonDiagnosis.issues.length === 0" class="diag-item diag-item-good">
-            <v-icon color="#059669" icon="mdi-check-circle-outline" size="16" class="mr-2 flex-shrink-0"></v-icon>
+            <v-icon color="#1E7E5C" icon="mdi-check-circle-outline" size="16" class="mr-2 flex-shrink-0"></v-icon>
             <span>目標基準のトレーニング項目をすべてクリアしています！</span>
           </li>
         </ul>
@@ -266,7 +266,7 @@
             :key="'s-' + idx"
             class="diag-item diag-item-good"
           >
-            <v-icon color="#059669" icon="mdi-check-circle-outline" size="16" class="mr-2 mt-0.5 flex-shrink-0"></v-icon>
+            <v-icon color="#1E7E5C" icon="mdi-check-circle-outline" size="16" class="mr-2 mt-0.5 flex-shrink-0"></v-icon>
             <span>{{ item }}</span>
           </li>
           <li v-if="marathonDiagnosis.strengths.length === 0" class="empty-note py-6 text-center">
@@ -905,28 +905,28 @@ export default {
 }
 
 .bento-stat-tile {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #F2F4F8;
+  border: 1px solid #D5DBE3;
   border-radius: 16px;
   padding: 18px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .bento-stat-tile:hover {
   transform: translateY(-2px);
-  border-color: #CBD5E1;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
+  border-color: #B8C4D4;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
 }
 
 .tile-eyebrow {
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #64748B;
+  color: #526071;
   line-height: 1.1;
   margin-bottom: 4px;
 }
@@ -942,7 +942,7 @@ export default {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #EFF6FF;
+  background: #E4EAF5;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -952,43 +952,43 @@ export default {
 .tile-value {
   font-size: 1.75rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
   line-height: 1.05;
 }
 
 .tile-unit {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
   margin-left: 2px;
 }
 
 .tile-subvalue {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
   white-space: nowrap;
 }
 
 .badge-pill-blue {
-  background: #EFF6FF;
-  color: #1D4ED8;
+  background: #E4EAF5;
+  color: #2B4494;
   padding: 3px 8px;
   border-radius: 6px;
   font-weight: 700;
 }
 
 .badge-pill-green {
-  background: #ECFDF5;
-  color: #047857;
+  background: #E2EFE9;
+  color: #166548;
   padding: 3px 8px;
   border-radius: 6px;
   font-weight: 700;
 }
 
 .badge-pill-amber {
-  background: #FFFBEB;
-  color: #B45309;
+  background: #F5ECE0;
+  color: #9A5B13;
   padding: 3px 8px;
   border-radius: 6px;
   font-weight: 700;
@@ -996,7 +996,7 @@ export default {
 
 .gauge-track {
   height: 6px;
-  background: #F1F5F9;
+  background: #DCE2EC;
   border-radius: 99px;
   overflow: hidden;
 }
@@ -1008,37 +1008,37 @@ export default {
 }
 
 .fill-primary {
-  background: #2563EB;
+  background: #3653B3;
 }
 
 .fill-emerald {
-  background: #059669;
+  background: #1E7E5C;
 }
 
 .tile-gauge-meta {
   font-size: 0.7rem;
-  color: #64748B;
+  color: #526071;
   line-height: 1.1;
 }
 
 .meta-strong {
-  color: #0F172A;
+  color: #1E293B;
   font-weight: 700;
 }
 
 /* AI Diagnosis Panel */
 .bento-diagnosis-panel {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #F2F4F8;
+  border: 1px solid #D5DBE3;
   border-radius: 16px;
   padding: 20px 22px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .panel-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #1E293B;
   letter-spacing: -0.01em;
 }
 
@@ -1050,26 +1050,26 @@ export default {
 }
 
 .status-badge-green {
-  background: #ECFDF5;
-  color: #047857;
-  border: 1px solid #A7F3D0;
+  background: #E2EFE9;
+  color: #166548;
+  border: 1px solid #B4D6C6;
 }
 
 .status-badge-amber {
-  background: #FFFBEB;
-  color: #B45309;
-  border: 1px solid #FDE68A;
+  background: #F5ECE0;
+  color: #9A5B13;
+  border: 1px solid #E5CEB0;
 }
 
 .status-badge-slate {
-  background: #F1F5F9;
+  background: #E2E7EE;
   color: #475569;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #D1D8E2;
 }
 
 .phase-banner {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
 }
 
 .phase-banner-text {
@@ -1079,7 +1079,7 @@ export default {
 }
 
 .diag-tabs {
-  background: #F1F5F9;
+  background: #E2E7EE;
   padding: 4px;
   border-radius: 10px;
 }
@@ -1087,7 +1087,7 @@ export default {
 .diag-tab-btn {
   border: none;
   background: transparent;
-  color: #64748B;
+  color: #526071;
   font-size: 0.72rem;
   font-weight: 600;
   padding: 6px 8px;
@@ -1097,8 +1097,8 @@ export default {
 }
 
 .diag-tab-btn.active {
-  background: #FFFFFF;
-  color: #0F172A;
+  background: #F8FAFC;
+  color: #1E293B;
   font-weight: 700;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
 }
@@ -1128,18 +1128,18 @@ export default {
 }
 
 .diag-item-issue {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
 }
 
 .diag-item-good {
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
+  background: #E2EFE9;
+  border: 1px solid #B4D6C6;
 }
 
 .empty-note {
   font-size: 0.78rem;
-  color: #64748B;
+  color: #526071;
 }
 
 .stamina-meta {
@@ -1150,6 +1150,6 @@ export default {
 .stamina-big-num {
   font-size: 1.75rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
 }
 </style>

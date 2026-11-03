@@ -4,14 +4,14 @@
       <div class="d-flex justify-space-between align-start mb-4">
         <div>
           <div class="dialog-title d-flex align-center">
-            <v-icon color="#2563EB" icon="mdi-calendar-edit" class="mr-2" size="22"></v-icon>
+            <v-icon color="#3653B3" icon="mdi-calendar-edit" class="mr-2" size="22"></v-icon>
             練習プランの編集
           </div>
           <div class="dialog-subtitle font-num mt-0.5">
             {{ dateStr.replace(/-/g, '/') }} ({{ dayName }}) のメニュー
           </div>
         </div>
-        <v-btn icon="mdi-close" variant="text" color="#64748B" size="small" @click="close"></v-btn>
+        <v-btn icon="mdi-close" variant="text" color="#526071" size="small" @click="close"></v-btn>
       </div>
 
       <v-form ref="form" v-model="isFormValid">
@@ -208,20 +208,20 @@ const save = async () => {
 
 <style scoped>
 .plan-dialog-card {
-  background: #FFFFFF !important;
-  border: 1px solid #E2E8F0 !important;
+  background: #F2F4F8 !important;
+  border: 1px solid #D5DBE3 !important;
   border-radius: 20px !important;
-  color: #0F172A !important;
+  color: #1E293B !important;
 }
 
 .dialog-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .dialog-subtitle {
   font-size: 0.76rem;
-  color: #64748B;
+  color: #526071;
 }
 </style>

@@ -4,14 +4,14 @@
       <div class="d-flex justify-space-between align-start mb-3">
         <div>
           <div class="dialog-title d-flex align-center">
-            <v-icon color="#2563EB" icon="mdi-auto-fix" class="mr-2" size="22"></v-icon>
+            <v-icon color="#3653B3" icon="mdi-auto-fix" class="mr-2" size="22"></v-icon>
             練習プランの一括作成
           </div>
           <div class="dialog-subtitle font-num mt-0.5">
             翌日からの7日間（{{ generatedPlan[0]?.dateStr.replace(/-/g, '/') }} 〜 {{ generatedPlan[6]?.dateStr.replace(/-/g, '/') }}）の予定メニューを一括作成
           </div>
         </div>
-        <v-btn icon="mdi-close" variant="text" color="#64748B" size="small" @click="close"></v-btn>
+        <v-btn icon="mdi-close" variant="text" color="#526071" size="small" @click="close"></v-btn>
       </div>
 
       <v-tabs v-model="activeTab" color="primary" class="mb-3" align-tabs="start">
@@ -331,31 +331,31 @@ const applyPlan = async () => {
 
 <style scoped>
 .auto-plan-dialog-card {
-  background: #FFFFFF !important;
-  border: 1px solid #E2E8F0 !important;
+  background: #F2F4F8 !important;
+  border: 1px solid #D5DBE3 !important;
   border-radius: 20px !important;
-  color: #0F172A !important;
+  color: #1E293B !important;
 }
 
 .dialog-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .dialog-subtitle {
   font-size: 0.76rem;
-  color: #64748B;
+  color: #526071;
 }
 
 .recommendation-badge {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
 }
 
 .total-badge {
-  background: #EFF6FF;
-  color: #1D4ED8;
+  background: #E4EAF5;
+  color: #2B4494;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 3px 10px;
@@ -368,14 +368,14 @@ const applyPlan = async () => {
 }
 
 .plan-preview-row {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
   border-radius: 10px;
 }
 
 .quality-row {
-  border-left: 3px solid #2563EB !important;
-  background: #EFF6FF !important;
+  border-left: 3px solid #3653B3 !important;
+  background: #E3EAF6 !important;
 }
 
 .rest-row {
@@ -383,9 +383,9 @@ const applyPlan = async () => {
 }
 
 .dist-pill {
-  background: #FFFFFF;
-  border: 1px solid #CBD5E1;
-  color: #0F172A;
+  background: #F2F4F8;
+  border: 1px solid #C4CDD9;
+  color: #1E293B;
   font-size: 0.7rem;
   font-weight: 700;
   padding: 2px 7px;
@@ -393,7 +393,7 @@ const applyPlan = async () => {
 }
 
 .quality-pill {
-  background: #2563EB;
+  background: #3653B3;
   color: #FFFFFF;
   font-size: 0.65rem;
   font-weight: 700;
@@ -403,7 +403,7 @@ const applyPlan = async () => {
 
 .rest-label {
   font-size: 0.7rem;
-  color: #94A3B8;
+  color: #7C8B9E;
   font-weight: 600;
 }
 </style>

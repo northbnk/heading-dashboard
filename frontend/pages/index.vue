@@ -30,7 +30,7 @@
       <v-container class="py-12 max-width-container">
         <div class="text-center">
           <div class="eyebrow-pill d-inline-flex align-center px-3.5 py-1 mb-6">
-            <v-icon color="#2563EB" icon="mdi-check-decagram" size="15" class="mr-1.5"></v-icon>
+            <v-icon color="#3653B3" icon="mdi-check-decagram" size="15" class="mr-1.5"></v-icon>
             <span>Strava 連動ランニング分析プラットフォーム</span>
           </div>
 
@@ -70,7 +70,7 @@
             <v-col cols="12" md="4">
               <div class="feature-card pa-6 text-left h-100">
                 <div class="feature-icon mb-4">
-                  <v-icon color="#2563EB" icon="mdi-heart-pulse" size="24"></v-icon>
+                  <v-icon color="#3653B3" icon="mdi-heart-pulse" size="24"></v-icon>
                 </div>
                 <div class="feature-title mb-2">有酸素スタミナ判定</div>
                 <div class="feature-desc">
@@ -81,7 +81,7 @@
             <v-col cols="12" md="4">
               <div class="feature-card pa-6 text-left h-100">
                 <div class="feature-icon mb-4">
-                  <v-icon color="#2563EB" icon="mdi-chart-line-variant" size="24"></v-icon>
+                  <v-icon color="#3653B3" icon="mdi-chart-line-variant" size="24"></v-icon>
                 </div>
                 <div class="feature-title mb-2">リアルタイム推定VDOT</div>
                 <div class="feature-desc">
@@ -92,7 +92,7 @@
             <v-col cols="12" md="4">
               <div class="feature-card pa-6 text-left h-100">
                 <div class="feature-icon mb-4">
-                  <v-icon color="#2563EB" icon="mdi-calendar-check-outline" size="24"></v-icon>
+                  <v-icon color="#3653B3" icon="mdi-calendar-check-outline" size="24"></v-icon>
                 </div>
                 <div class="feature-title mb-2">期分け連動の週間プラン</div>
                 <div class="feature-desc">
@@ -145,20 +145,20 @@ export default {
 
 <style scoped>
 .landing-root {
-  background: #F4F6F9;
-  color: #0F172A;
+  background: #E5E9F0;
+  color: #1E293B;
 }
 
 .landing-header {
-  background: #FFFFFF;
-  border-bottom: 1px solid #E2E8F0;
+  background: #F2F4F8;
+  border-bottom: 1px solid #D5DBE3;
 }
 
 .brand-badge {
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: #0F172A;
+  background: #1E293B;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -167,14 +167,14 @@ export default {
 .brand-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
   letter-spacing: -0.02em;
 }
 
 .brand-sub {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
 }
 
 .max-width-container {
@@ -182,12 +182,12 @@ export default {
 }
 
 .eyebrow-pill {
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  background: #E4EAF5;
+  border: 1px solid #C5D1E8;
   border-radius: 99px;
   font-size: 0.76rem;
   font-weight: 700;
-  color: #1D4ED8;
+  color: #2B4494;
 }
 
 .hero-heading {
@@ -195,11 +195,11 @@ export default {
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.03em;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .hero-accent {
-  color: #2563EB;
+  color: #3653B3;
 }
 
 .hero-lead {
@@ -210,27 +210,27 @@ export default {
 }
 
 .strava-cta {
-  background: #FC4C02 !important;
+  background: #D9480F !important;
 }
 
 .demo-cta {
-  border-color: #CBD5E1 !important;
-  color: #0F172A !important;
-  background: #FFFFFF !important;
+  border-color: #C4CDD9 !important;
+  color: #1E293B !important;
+  background: #F2F4F8 !important;
 }
 
 .feature-card {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #F2F4F8;
+  border: 1px solid #D5DBE3;
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .feature-icon {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #EFF6FF;
+  background: #E4EAF5;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -239,7 +239,7 @@ export default {
 .feature-title {
   font-size: 1.05rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .feature-desc {

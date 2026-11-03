@@ -373,14 +373,14 @@ export default {
         chart: {
           toolbar: { show: false },
           background: 'transparent',
-          foreColor: '#64748B',
+          foreColor: '#526071',
           zoom: { enabled: false },
           fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif"
         },
         theme: { mode: 'light' },
         colors: xs.value
-          ? ['#2563EB', '#0F172A']
-          : ['#2563EB', '#059669', '#64748B', '#D97706', '#0F172A'],
+          ? ['#3653B3', '#1E293B']
+          : ['#3653B3', '#1E7E5C', '#64748B', '#B86E14', '#1E293B'],
         stroke: {
           width: xs.value ? [0, 2.5] : [0, 2.5, 2, 2, 2.5],
           curve: 'smooth',
@@ -398,7 +398,7 @@ export default {
         xaxis: {
           categories: categories.value,
           labels: {
-            style: { colors: '#64748B', fontSize: '10px', fontWeight: 500 }
+            style: { colors: '#526071', fontSize: '10px', fontWeight: 500 }
           },
           axisBorder: { show: false },
           axisTicks: { show: false }
@@ -411,14 +411,14 @@ export default {
                 {
                   y: paceAnnot.y,
                   yAxisIndex: 1,
-                  borderColor: '#059669',
+                  borderColor: '#1E7E5C',
                   borderWidth: 1.5,
                   strokeDashArray: 4,
                   label: {
-                    borderColor: '#059669',
+                    borderColor: '#1E7E5C',
                     style: {
                       color: '#FFFFFF',
-                      background: '#059669',
+                      background: '#1E7E5C',
                       fontWeight: 700,
                       fontSize: '10px'
                     },
@@ -434,7 +434,7 @@ export default {
           y: { formatter: tooltipFormatter }
         },
         grid: {
-          borderColor: '#F1F5F9',
+          borderColor: '#E2E7EE',
           padding: { left: 6, right: 6, top: 4, bottom: 0 }
         },
         legend: {
@@ -461,32 +461,33 @@ export default {
 
 <style scoped>
 .bento-chart-panel {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #F2F4F8;
+  border: 1px solid #D5DBE3;
   border-radius: 16px;
   padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .panel-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #1E293B;
   letter-spacing: -0.01em;
 }
 
 .chart-submeta {
   font-size: 0.72rem;
-  color: #64748B;
+  color: #526071;
   font-weight: 500;
 }
 
 .text-slate-muted {
-  color: #64748B;
+  color: #526071;
 }
 
 .period-pill-group {
-  background: #F1F5F9;
+  background: #E2E7EE;
+  border: 1px solid #D1D8E2;
   border-radius: 9px;
   padding: 3px;
   gap: 2px;
@@ -495,7 +496,7 @@ export default {
 .period-pill-btn {
   border: none;
   background: transparent;
-  color: #64748B;
+  color: #526071;
   font-size: 0.72rem;
   font-weight: 600;
   padding: 5px 12px;
@@ -505,8 +506,8 @@ export default {
 }
 
 .period-pill-btn.active {
-  background: #FFFFFF;
-  color: #0F172A;
+  background: #F8FAFC;
+  color: #1E293B;
   font-weight: 700;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }

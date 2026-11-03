@@ -87,7 +87,7 @@
         <div class="d-flex justify-space-between align-start mb-4">
           <div>
             <div class="dialog-title d-flex align-center">
-              <v-icon color="#2563EB" icon="mdi-map-marker-path" class="mr-2" size="22"></v-icon>
+              <v-icon color="#3653B3" icon="mdi-map-marker-path" class="mr-2" size="22"></v-icon>
               {{ mapDialog.workout.activityName || 'ランニング詳細' }}
             </div>
             <div class="dialog-subtitle font-num mt-0.5">
@@ -118,13 +118,13 @@
           <div
             v-else
             class="d-flex align-center justify-center px-4 py-3"
-            style="min-height: 200px; background: #F8FAFC;"
+            style="min-height: 200px; background: #E8ECF2;"
           >
             <svg viewBox="0 0 500 250" style="width: 100%; height: auto; max-height: 200px;">
               <polyline
                 :points="getSvgPoints(mapDialog.workout.mapUrl.replace('polyline:', ''))"
                 fill="none"
-                stroke="#2563EB"
+                stroke="#3653B3"
                 stroke-width="3.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -497,11 +497,11 @@ export default {
 <style scoped>
 .table-count-label {
   font-size: 0.76rem;
-  color: #64748B;
+  color: #526071;
 }
 
 .table-count-label strong {
-  color: #0F172A;
+  color: #1E293B;
   font-weight: 700;
 }
 
@@ -509,8 +509,8 @@ export default {
   width: 28px;
   height: 28px;
   border-radius: 7px;
-  border: 1px solid #E2E8F0;
-  background: #FFFFFF;
+  border: 1px solid #D5DBE3;
+  background: #E8ECF2;
   color: #334155;
   display: inline-flex;
   align-items: center;
@@ -520,8 +520,8 @@ export default {
 }
 
 .page-nav-btn:hover:not(:disabled) {
-  background: #F8FAFC;
-  border-color: #CBD5E1;
+  background: #DFE6F2;
+  border-color: #B8C4D4;
 }
 
 .page-nav-btn:disabled {
@@ -531,7 +531,7 @@ export default {
 
 .empty-text {
   font-size: 0.8rem;
-  color: #64748B;
+  color: #526071;
 }
 
 .cockpit-log-list {
@@ -541,8 +541,8 @@ export default {
 }
 
 .cockpit-log-row {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
   border-radius: 12px;
   padding: 10px 14px;
   cursor: pointer;
@@ -550,8 +550,8 @@ export default {
 }
 
 .cockpit-log-row:hover {
-  background: #EFF6FF;
-  border-color: #BFDBFE;
+  background: #DFE6F2;
+  border-color: #A8BADE;
   transform: translateY(-1px);
 }
 
@@ -559,8 +559,8 @@ export default {
   width: 38px;
   height: 38px;
   border-radius: 10px;
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #F2F4F8;
+  border: 1px solid #D5DBE3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -570,46 +570,46 @@ export default {
 .log-month {
   font-size: 0.56rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
   line-height: 1;
 }
 
 .log-day {
   font-size: 0.88rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
   line-height: 1.15;
 }
 
 .log-title {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #1E293B;
   line-height: 1.3;
   margin-bottom: 2px;
 }
 
 .log-submeta {
   font-size: 0.7rem;
-  color: #64748B;
+  color: #526071;
   gap: 5px;
 }
 
 .meta-dot {
-  color: #CBD5E1;
+  color: #B8C4D4;
 }
 
 .log-distance {
   font-size: 0.98rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
   line-height: 1.15;
 }
 
 .log-unit {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
   margin-left: 2px;
 }
 
@@ -619,41 +619,41 @@ export default {
 }
 
 .pace-fast {
-  color: #059669;
+  color: #1E7E5C;
 }
 
 .pace-normal {
-  color: #2563EB;
+  color: #3653B3;
 }
 
 /* Modal Styles */
 .map-dialog-card {
-  background: #FFFFFF !important;
-  border: 1px solid #E2E8F0 !important;
+  background: #F2F4F8 !important;
+  border: 1px solid #D5DBE3 !important;
   border-radius: 20px !important;
-  color: #0F172A !important;
+  color: #1E293B !important;
 }
 
 .dialog-title {
   font-size: 1.1rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .dialog-subtitle {
   font-size: 0.76rem;
-  color: #64748B;
+  color: #526071;
 }
 
 .description-box {
-  background: #F8FAFC;
-  border-left: 3px solid #2563EB;
+  background: #E8ECF2;
+  border-left: 3px solid #3653B3;
   color: #334155;
   font-size: 0.82rem;
 }
 
 .map-image-container {
-  border: 1px solid #E2E8F0;
+  border: 1px solid #D5DBE3;
 }
 
 .section-heading {
@@ -663,32 +663,32 @@ export default {
 }
 
 .metrics-grid-box {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
 }
 
 .metric-divider {
-  border-left: 1px solid #E2E8F0;
+  border-left: 1px solid #D5DBE3;
 }
 
 .metric-label {
   font-size: 0.7rem;
-  color: #64748B;
+  color: #526071;
 }
 
 .metric-val {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .analysis-box {
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
+  background: #E2EFE9;
+  border: 1px solid #B4D6C6;
 }
 
 .type-pill {
-  background: #059669;
+  background: #1E7E5C;
   color: #FFFFFF;
   font-size: 0.7rem;
   font-weight: 700;
@@ -705,32 +705,32 @@ export default {
 .splits-table-wrapper {
   max-height: 280px;
   overflow-y: auto;
-  border: 1px solid #E2E8F0;
+  border: 1px solid #D5DBE3;
 }
 
 .splits-table {
-  background: #FFFFFF !important;
+  background: #F2F4F8 !important;
   color: #334155 !important;
 }
 
 .splits-table th {
-  background: #F8FAFC !important;
+  background: #E8ECF2 !important;
   color: #475569 !important;
   font-size: 0.72rem;
 }
 
 .splits-table td {
   font-size: 0.78rem;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .elev-up {
-  color: #DC2626;
+  color: #B83232;
   font-weight: 600;
 }
 
 .elev-down {
-  color: #059669;
+  color: #1E7E5C;
   font-weight: 600;
 }
 </style>

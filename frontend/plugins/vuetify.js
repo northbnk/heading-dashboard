@@ -5,21 +5,21 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 
-const runningLightTheme = {
+const runningSoftLightTheme = {
   dark: false,
   colors: {
-    background: '#F4F6F9',
-    surface: '#FFFFFF',
-    'surface-variant': '#F1F5F9',
-    primary: '#2563EB',
-    'primary-darken-1': '#1D4ED8',
-    secondary: '#0F172A',
+    background: '#E5E9F0',
+    surface: '#F2F4F8',
+    'surface-variant': '#E8ECF2',
+    primary: '#3653B3',
+    'primary-darken-1': '#2B4293',
+    secondary: '#334155',
     'secondary-darken-1': '#1E293B',
-    accent: '#2563EB',
-    error: '#DC2626',
-    info: '#2563EB',
-    success: '#059669',
-    warning: '#D97706',
+    accent: '#3653B3',
+    error: '#C93B3B',
+    info: '#3653B3',
+    success: '#1E7E5C',
+    warning: '#B86E14',
   },
 }
 
@@ -36,9 +36,9 @@ export default defineNuxtPlugin((nuxtApp) => {
       },
     },
     theme: {
-      defaultTheme: 'runningLightTheme',
+      defaultTheme: 'runningSoftLightTheme',
       themes: {
-        runningLightTheme,
+        runningSoftLightTheme,
       },
     },
   })

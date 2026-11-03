@@ -25,7 +25,7 @@
           </div>
 
           <div v-if="raceDiagnosis?.heading" class="phase-pill d-none d-sm-flex align-center px-3 py-1">
-            <v-icon color="#2563EB" icon="mdi-flag-checkered" size="14" class="mr-1.5"></v-icon>
+            <v-icon color="#3653B3" icon="mdi-flag-checkered" size="14" class="mr-1.5"></v-icon>
             <span class="phase-text">
               {{ raceDiagnosis.heading }}
             </span>
@@ -192,7 +192,7 @@
                   >
                     <div class="d-flex align-center overflow-hidden">
                       <v-icon
-                        :color="race.id === upcomingRace.id ? '#2563EB' : '#94A3B8'"
+                        :color="race.id === upcomingRace.id ? '#3653B3' : '#7C8B9E'"
                         :icon="race.id === upcomingRace.id ? 'mdi-flag-variant' : 'mdi-calendar-blank-outline'"
                         size="15"
                         class="mr-2 flex-shrink-0"
@@ -322,7 +322,7 @@
                   <!-- ステータスフッター -->
                   <div class="d-flex align-center justify-space-between font-num" style="font-size: 0.66rem;">
                     <span v-if="day.isCleared" class="day-status-cleared d-flex align-center">
-                      <v-icon icon="mdi-check-circle" size="12" class="mr-0.5" color="#059669"></v-icon>
+                      <v-icon icon="mdi-check-circle" size="12" class="mr-0.5" color="#1E7E5C"></v-icon>
                       {{ day.actualDistance.toFixed(0) }}k
                     </span>
                     <span v-else-if="day.hasRun" class="day-status-run">
@@ -1030,8 +1030,8 @@ export default {
 
 <style scoped>
 .cockpit-root {
-  background-color: #F4F6F9;
-  color: #0F172A;
+  background-color: #E5E9F0;
+  color: #1E293B;
 }
 
 .cockpit-container {
@@ -1039,19 +1039,19 @@ export default {
   margin: 0 auto;
 }
 
-/* Top Header Bar */
+/* Top Header Bar (落ち着いたオフホワイト・スレート) */
 .cockpit-topbar {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #F2F4F8;
+  border: 1px solid #D5DBE3;
   border-radius: 16px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .brand-badge {
   width: 32px;
   height: 32px;
   border-radius: 9px;
-  background: #0F172A;
+  background: #1E293B;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1060,26 +1060,26 @@ export default {
 .brand-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
   letter-spacing: -0.02em;
 }
 
 .brand-sub {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
 }
 
 .runner-pill {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
   border-radius: 99px;
 }
 
 .runner-name {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .status-dot {
@@ -1089,28 +1089,28 @@ export default {
 }
 
 .dot-online {
-  background: #059669;
+  background: #1E7E5C;
 }
 
 .dot-demo {
-  background: #2563EB;
+  background: #3653B3;
 }
 
 .phase-pill {
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
+  background: #E4EAF5;
+  border: 1px solid #C5D1E8;
   border-radius: 99px;
 }
 
 .phase-text {
   font-size: 0.74rem;
   font-weight: 700;
-  color: #1D4ED8;
+  color: #2B4494;
 }
 
 .goal-segment {
-  background: #F1F5F9;
-  border: 1px solid #E2E8F0;
+  background: #E2E7EE;
+  border: 1px solid #D1D8E2;
   border-radius: 10px;
   padding: 3px;
 }
@@ -1118,13 +1118,13 @@ export default {
 .goal-label {
   font-size: 0.7rem;
   font-weight: 700;
-  color: #64748B;
+  color: #526071;
 }
 
 .goal-seg-btn {
   border: none;
   background: transparent;
-  color: #64748B;
+  color: #526071;
   font-size: 0.74rem;
   font-weight: 600;
   padding: 5px 12px;
@@ -1134,59 +1134,59 @@ export default {
 }
 
 .goal-seg-btn.active {
-  background: #FFFFFF;
-  color: #0F172A;
+  background: #F8FAFC;
+  color: #1E293B;
   font-weight: 700;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .action-btn-outline {
-  border-color: #CBD5E1 !important;
+  border-color: #C4CDD9 !important;
 }
 
 .strava-btn {
-  background: #FC4C02 !important;
+  background: #D9480F !important;
 }
 
-/* Bento Panels (たっぷりの内部余白) */
+/* Bento Panels (眩しさを抑えたソフトマット表面 + たっぷりの内部余白) */
 .bento-panel {
-  background: #FFFFFF;
-  border: 1px solid #E2E8F0;
+  background: #F2F4F8;
+  border: 1px solid #D5DBE3;
   border-radius: 16px;
   padding: 20px 24px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03), 0 4px 12px rgba(15, 23, 42, 0.02);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .panel-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #1E293B;
   letter-spacing: -0.01em;
 }
 
 .panel-subdate {
   font-size: 0.74rem;
-  color: #64748B;
+  color: #526071;
   font-weight: 500;
 }
 
 /* Next Race Hero */
 .next-race-hero {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
 }
 
 .race-eyebrow {
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #2563EB;
+  color: #3653B3;
 }
 
 .race-main-name {
   font-size: 1rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
   line-height: 1.25;
 }
 
@@ -1197,18 +1197,18 @@ export default {
 }
 
 .race-goal-tag {
-  color: #0F172A;
+  color: #1E293B;
   font-weight: 700;
 }
 
 .countdown-box {
-  border-left: 1px solid #E2E8F0;
+  border-left: 1px solid #D1D8E2;
 }
 
 .countdown-label {
   font-size: 0.65rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
   line-height: 1;
   margin-bottom: 2px;
 }
@@ -1216,7 +1216,7 @@ export default {
 .countdown-number {
   font-size: 1.9rem;
   font-weight: 800;
-  color: #2563EB;
+  color: #3653B3;
   line-height: 1;
 }
 
@@ -1236,8 +1236,8 @@ export default {
 }
 
 .race-mini-row {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
 }
 
 .race-row-name {
@@ -1249,27 +1249,27 @@ export default {
 .race-row-days {
   font-size: 0.72rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
 }
 
 .empty-state-text {
   font-size: 0.8rem;
-  color: #64748B;
+  color: #526071;
 }
 
 /* Weekly 7-Day Strip */
 .weekly-progress-pill {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
   font-size: 0.74rem;
 }
 
 .pill-muted {
-  color: #64748B;
+  color: #526071;
 }
 
 .pill-strong {
-  color: #0F172A;
+  color: #1E293B;
   font-weight: 800;
 }
 
@@ -1286,8 +1286,8 @@ export default {
 }
 
 .bento-day-cell {
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: #E8ECF2;
+  border: 1px solid #D5DBE3;
   border-radius: 12px;
   padding: 12px 10px;
   min-height: 98px;
@@ -1299,44 +1299,44 @@ export default {
 }
 
 .bento-day-cell.day-editable:hover {
-  border-color: #93C5FD;
-  background: #EFF6FF;
+  border-color: #9BB0D6;
+  background: #DFE6F2;
   transform: translateY(-1px);
 }
 
 .bento-day-cell.day-cleared {
-  background: #F0FDF4;
-  border-color: #BBF7D0;
+  background: #E2EFE9;
+  border-color: #B4D6C6;
 }
 
 .bento-day-cell.day-quality {
-  background: #EFF6FF;
-  border-color: #BFDBFE;
+  background: #E3EAF6;
+  border-color: #BCCCE8;
 }
 
 .bento-day-cell.day-rest {
-  background: #FAFAFA;
+  background: #ECEFF4;
   opacity: 0.75;
 }
 
 .day-label {
   font-size: 0.76rem;
   font-weight: 700;
-  color: #0F172A;
+  color: #1E293B;
 }
 
 .day-sun {
-  color: #DC2626;
+  color: #B83232;
 }
 
 .day-sat {
-  color: #2563EB;
+  color: #3653B3;
 }
 
 .day-date-num {
   font-size: 0.68rem;
   font-weight: 600;
-  color: #64748B;
+  color: #526071;
 }
 
 .day-menu-text {
@@ -1347,27 +1347,27 @@ export default {
 }
 
 .menu-rest {
-  color: #94A3B8;
+  color: #7C8B9E;
   font-weight: 500;
 }
 
 .day-status-cleared {
-  color: #059669;
+  color: #1E7E5C;
   font-weight: 700;
 }
 
 .day-status-run {
-  color: #2563EB;
+  color: #3653B3;
   font-weight: 700;
 }
 
 .day-status-target {
-  color: #64748B;
+  color: #526071;
   font-weight: 600;
 }
 
 .day-status-rest {
-  color: #94A3B8;
+  color: #7C8B9E;
   font-weight: 600;
 }
 
@@ -1375,7 +1375,7 @@ export default {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #2563EB;
+  background: #3653B3;
 }
 
 .gap-2 { gap: 8px; }

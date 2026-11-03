@@ -3,10 +3,10 @@
     <v-card class="race-dialog-card pa-6" elevation="8">
       <div class="d-flex justify-space-between align-center mb-4">
         <div class="dialog-title d-flex align-center">
-          <v-icon color="#2563EB" icon="mdi-trophy-outline" class="mr-2" size="22"></v-icon>
+          <v-icon color="#3653B3" icon="mdi-trophy-outline" class="mr-2" size="22"></v-icon>
           {{ raceData ? '大会エントリーの編集' : '大会エントリーの登録' }}
         </div>
-        <v-btn icon="mdi-close" variant="text" color="#64748B" size="small" @click="close"></v-btn>
+        <v-btn icon="mdi-close" variant="text" color="#526071" size="small" @click="close"></v-btn>
       </div>
 
       <v-form ref="form" v-model="isFormValid">
@@ -160,15 +160,15 @@ const save = async () => {
 
 <style scoped>
 .race-dialog-card {
-  background: #FFFFFF !important;
-  border: 1px solid #E2E8F0 !important;
+  background: #F2F4F8 !important;
+  border: 1px solid #D5DBE3 !important;
   border-radius: 20px !important;
-  color: #0F172A !important;
+  color: #1E293B !important;
 }
 
 .dialog-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: #0F172A;
+  color: #1E293B;
 }
 </style>
