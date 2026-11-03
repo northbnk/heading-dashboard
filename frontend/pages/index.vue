@@ -43,7 +43,7 @@
             独自のアカウント作成は不要。お使いの Strava アカウントと接続するだけで、推定VDOT・フルマラソン予測タイム・有酸素デカップリング（心肺ドリフト）・週間メニュー計画を1画面に可視化します。
           </p>
 
-          <div class="d-flex flex-column flex-sm-row justify-center align-center gap-3 mb-14">
+          <div class="d-flex justify-center align-center mb-14">
             <v-btn
               size="large"
               variant="flat"
@@ -53,16 +53,6 @@
               href="/api/auth/strava/connect"
             >
               Stravaでログイン・連携
-            </v-btn>
-            <v-btn
-              size="large"
-              variant="outlined"
-              rounded="xl"
-              class="font-weight-bold px-7 py-3 demo-cta"
-              prepend-icon="mdi-chart-box-outline"
-              to="/athlete/21815751"
-            >
-              デモ（藤野さんのデータ）を見る
             </v-btn>
           </div>
 
@@ -211,12 +201,6 @@ export default {
 
 .strava-cta {
   background: #D9480F !important;
-}
-
-.demo-cta {
-  border-color: #C4CDD9 !important;
-  color: #1E293B !important;
-  background: #F2F4F8 !important;
 }
 
 .feature-card {
