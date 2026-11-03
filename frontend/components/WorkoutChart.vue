@@ -2,18 +2,18 @@
   <div class="bento-chart-panel d-flex flex-column h-100">
     <!-- ヘッダーと期間選択 -->
     <div class="d-flex justify-space-between align-center mb-3 flex-wrap gap-2">
-      <div class="d-flex align-center">
+      <div class="d-flex align-center flex-wrap">
         <span class="panel-title">
-          パフォーマンス推移
+          PMC（パフォーマンス・マネジメント・チャート）
         </span>
         <span v-if="latestDateLabel" class="chart-submeta ml-2 font-num">
-          (基準日 {{ latestDateLabel }})
+          (基準日 {{ latestDateLabel }} ｜ CTL青線・ATLピンク線・TSB棒グラフ)
         </span>
       </div>
       <!-- 期間選択トグル -->
       <div class="period-pill-group d-flex">
         <button
-          v-for="p in [{ val: '7days', label: '7日間' }, { val: 'month', label: '30日間' }, { val: 'year', label: '12ヶ月' }]"
+          v-for="p in [{ val: '14days', label: '14日間' }, { val: '42days', label: '42日間(6週)' }, { val: '90days', label: '90日間' }]"
           :key="p.val"
           type="button"
           class="period-pill-btn"
@@ -25,7 +25,7 @@
       </div>
     </div>
 
-    <!-- 統合グラフ表示領域 -->
+    <!-- PMC 統合グラフ表示領域 -->
     <div class="chart-container flex-grow-1 d-flex flex-column justify-center">
       <ClientOnly>
         <apexchart
@@ -38,7 +38,7 @@
         <template #fallback>
           <div class="d-flex flex-column align-center justify-center py-10 text-slate-muted">
             <v-progress-circular indeterminate color="primary" size="28" class="mb-2"></v-progress-circular>
-            <div class="text-caption">グラフを描画中...</div>
+            <div class="text-caption">PMCチャートを描画中...</div>
           </div>
         </template>
       </ClientOnly>
@@ -51,34 +51,12 @@
 </template>
 
 <script>
-import { useDisplay } from 'vuetify'
-
-const safeParseDate = (dateStr) => {
-  if (!dateStr) return new Date(0)
-  const parts = dateStr.split(/[\s\-:]/)
-  if (parts.length < 3) return new Date(0)
-  
-  const year = parseInt(parts[0], 10)
-  const month = parseInt(parts[1], 10) - 1
-  const day = parseInt(parts[2], 10)
-  
-  const hour = parts[3] ? parseInt(parts[3], 10) : 0
-  const minute = parts[4] ? parseInt(parts[4], 10) : 0
-  const second = parts[5] ? parseInt(parts[5], 10) : 0
-  
-  return new Date(year, month, day, hour, minute, second)
-}
-
-const calculateWorkoutVDOT = (distanceKm, durationSeconds) => {
-  if (!distanceKm || !durationSeconds || distanceKm <= 0 || durationSeconds <= 0) return 0
-  const t = durationSeconds / 60
-  const d = distanceKm
-  const velocity = d * 1000 / t
-  const o2cost = 0.182258 * velocity + 0.000104 * velocity * velocity - 4.6
-  const drop = 0.2989558 * Math.exp(-0.1932605 * t) + 0.1894393 * Math.exp(-0.012778 * t) + 0.8
-  const vdot = o2cost / drop
-  return Number(vdot.toFixed(1))
-}
+import { ref, computed, watch } from 'vue'
+import { getAthleteHrConfig } from '~/config/athleteSettings'
+import {
+  parseWorkoutLocalDate,
+  buildDailyPmcSeries
+} from '~/utils/sportsScience'
 
 export default {
   name: 'WorkoutChart',
@@ -90,33 +68,36 @@ export default {
     },
     targetGoal: {
       type: String,
-      default: 'sub3'
+      default: 'sub3.5'
     },
     height: {
       type: [Number, String],
-      default: 250
+      default: 255
     }
   },
   setup(props) {
-    const { xs } = useDisplay()
-    const selectedPeriod = ref('7days')
+    const selectedPeriod = ref('42days')
     const chartKey = ref(0)
+
+    let runtimePublic = null
+    try {
+      const rc = useRuntimeConfig()
+      runtimePublic = rc?.public || null
+    } catch (_e) {
+      runtimePublic = null
+    }
+    const hrConfig = computed(() => getAthleteHrConfig(runtimePublic))
 
     watch([selectedPeriod, () => props.workouts, () => props.targetGoal], () => {
       chartKey.value++
     })
 
-    const formatDateString = (d) => {
-      const yyyy = d.getFullYear()
-      const mm = String(d.getMonth() + 1).padStart(2, '0')
-      const dd = String(d.getDate()).padStart(2, '0')
-      return `${yyyy}-${mm}-${dd}`
-    }
-
     const anchorDate = computed(() => {
       const now = new Date()
       if (!props.workouts || props.workouts.length === 0) return now
-      const dates = props.workouts.map(w => safeParseDate(w.workoutDate)).filter(d => d.getTime() > 0)
+      const dates = props.workouts
+        .map(w => parseWorkoutLocalDate(w.workoutDate))
+        .filter(d => d.getTime() > 0)
       if (dates.length === 0) return now
       const maxDate = new Date(Math.max(...dates))
       const diffDays = (now.getTime() - maxDate.getTime()) / (1000 * 60 * 60 * 24)
@@ -128,246 +109,61 @@ export default {
       return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`
     })
 
-    const calendarIntervals = computed(() => {
-      const base = anchorDate.value
-      const intervals = []
-
-      if (selectedPeriod.value === '7days') {
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(base.getTime())
-          d.setDate(base.getDate() - i)
-          intervals.push(formatDateString(d))
-        }
-      } else if (selectedPeriod.value === 'month') {
-        for (let i = 29; i >= 0; i--) {
-          const d = new Date(base.getTime())
-          d.setDate(base.getDate() - i)
-          intervals.push(formatDateString(d))
-        }
-      } else if (selectedPeriod.value === 'year') {
-        for (let i = 11; i >= 0; i--) {
-          const d = new Date(base.getFullYear(), base.getMonth() - i, 1)
-          const yyyy = d.getFullYear()
-          const mm = String(d.getMonth() + 1).padStart(2, '0')
-          intervals.push(`${yyyy}-${mm}`)
-        }
-      }
-      return intervals
+    // 最低120日分以上の日次TRIMPからCTL(42d EMA)・ATL(7d EMA)・TSB(前日CTL-前日ATL)を算出
+    const fullPmcSeries = computed(() => {
+      const res = buildDailyPmcSeries(props.workouts, anchorDate.value, hrConfig.value, 130)
+      return res.series || []
     })
 
-    const mappedIntervalWorkouts = computed(() => {
-      const data = props.workouts
-      const intervals = calendarIntervals.value
-      
-      let lastValidPace = null
-      let lastValidStride = null
-      let lastValidCadence = null
-      let lastValidVDOT = null
+    const windowDaysCount = computed(() => {
+      if (selectedPeriod.value === '14days') return 14
+      if (selectedPeriod.value === '90days') return 90
+      return 42
+    })
 
-      const sortedByDate = [...data].sort((a, b) => safeParseDate(a.workoutDate) - safeParseDate(b.workoutDate))
-      const firstValidPaceWorkout = sortedByDate.find(w => (w.averagePaceSeconds || 0) > 0)
-      if (firstValidPaceWorkout) lastValidPace = firstValidPaceWorkout.averagePaceSeconds
-      const firstValidStrideWorkout = sortedByDate.find(w => (w.averageStride || 0) > 0)
-      if (firstValidStrideWorkout) lastValidStride = firstValidStrideWorkout.averageStride
-      const firstValidCadenceWorkout = sortedByDate.find(w => (w.cadence || 0) > 0)
-      if (firstValidCadenceWorkout) lastValidCadence = firstValidCadenceWorkout.cadence
-      const firstValidVDOTWorkout = sortedByDate.find(w => (Number(w.distance) || 0) > 0 && (Number(w.durationSeconds) || 0) > 0)
-      if (firstValidVDOTWorkout) {
-        lastValidVDOT = calculateWorkoutVDOT(Number(firstValidVDOTWorkout.distance), Number(firstValidVDOTWorkout.durationSeconds))
-      }
-
-      return intervals.map(interval => {
-        const dayWorkouts = data.filter(w => w.workoutDate && w.workoutDate.startsWith(interval))
-
-        if (dayWorkouts.length > 0) {
-          const totalDistance = dayWorkouts.reduce((sum, w) => sum + Number(w.distance || 0), 0)
-          
-          const validPaces = dayWorkouts.filter(w => (w.averagePaceSeconds || 0) > 0)
-          if (validPaces.length > 0) {
-            lastValidPace = validPaces.reduce((sum, w) => sum + Number(w.averagePaceSeconds), 0) / validPaces.length
-          }
-
-          const validStrides = dayWorkouts.filter(w => (w.averageStride || 0) > 0)
-          if (validStrides.length > 0) {
-            lastValidStride = validStrides.reduce((sum, w) => sum + Number(w.averageStride), 0) / validStrides.length
-          }
-
-          const validCadences = dayWorkouts.filter(w => (w.cadence || 0) > 0)
-          if (validCadences.length > 0) {
-            lastValidCadence = validCadences.reduce((sum, w) => sum + Number(w.cadence), 0) / validCadences.length
-          }
-
-          const validVDOTWorkouts = dayWorkouts.filter(w => (Number(w.distance) || 0) > 0 && (Number(w.durationSeconds) || 0) > 0)
-          if (validVDOTWorkouts.length > 0) {
-            const vdots = validVDOTWorkouts.map(w => calculateWorkoutVDOT(Number(w.distance), Number(w.durationSeconds)))
-            lastValidVDOT = Math.max(...vdots, 0)
-          }
-
-          return {
-            label: interval,
-            distance: totalDistance,
-            averagePaceSeconds: lastValidPace,
-            averageStride: lastValidStride,
-            cadence: lastValidCadence,
-            vdot: lastValidVDOT
-          }
-        } else {
-          return {
-            label: interval,
-            distance: 0,
-            averagePaceSeconds: lastValidPace,
-            averageStride: lastValidStride,
-            cadence: lastValidCadence,
-            vdot: lastValidVDOT
-          }
-        }
-      })
+    const visiblePmcSlice = computed(() => {
+      const all = fullPmcSeries.value
+      const count = windowDaysCount.value
+      if (all.length <= count) return all
+      return all.slice(-count)
     })
 
     const categories = computed(() => {
-      return calendarIntervals.value.map(interval => {
-        if (selectedPeriod.value === 'year') {
-          return interval
-        }
-        const parts = interval.split('-')
+      return visiblePmcSlice.value.map(item => {
+        if (!item.dateStr) return ''
+        const parts = item.dateStr.split('-')
         if (parts.length >= 3) {
-          const m = parseInt(parts[1], 10)
-          const d = parseInt(parts[2], 10)
-          return `${m}/${d}`
+          return `${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`
         }
-        return interval
+        return item.dateStr
       })
     })
 
+    // PMC 3系列: TSB (ヒストグラム棒グラフ), CTL (青い折れ線), ATL (ピンクの折れ線)
     const series = computed(() => {
-      const data = mappedIntervalWorkouts.value
-      
-      const distanceSeries = {
-        name: '距離 (km)',
-        type: 'column',
-        data: data.map(w => Number(w.distance || 0))
-      }
-      
-      const vdotSeries = {
-        name: 'VDOT',
-        type: 'line',
-        data: data.map(w => w.vdot ? Number(Number(w.vdot).toFixed(1)) : null)
-      }
-
-      if (xs.value) {
-        return [distanceSeries, vdotSeries]
-      }
-
+      const slice = visiblePmcSlice.value
       return [
-        distanceSeries,
         {
-          name: 'ペース (分/km)',
-          type: 'line',
-          data: data.map(w => {
-            const seconds = w.averagePaceSeconds
-            if (!seconds) return null
-            return Number((seconds / 60).toFixed(2))
-          })
+          name: 'TSB (コンディション)',
+          type: 'column',
+          data: slice.map(d => Number(d.TSB.toFixed(1)))
         },
         {
-          name: 'ストライド (m)',
+          name: 'CTL (現在の体力)',
           type: 'line',
-          data: data.map(w => w.averageStride ? Number(Number(w.averageStride).toFixed(2)) : null)
+          data: slice.map(d => Number(d.CTL.toFixed(1)))
         },
         {
-          name: 'ピッチ (spm)',
+          name: 'ATL (直近の疲労)',
           type: 'line',
-          data: data.map(w => w.cadence ? Number(Math.round(w.cadence)) : null)
-        },
-        vdotSeries
+          data: slice.map(d => Number(d.ATL.toFixed(1)))
+        }
       ]
     })
 
-    const targetPaceAnnotation = computed(() => {
-      if (props.targetGoal === 'sub4') {
-        return { y: 5.67, label: 'Sub4 (5:40/k)' }
-      } else if (props.targetGoal === 'sub3.5') {
-        return { y: 4.92, label: 'Sub3.5 (4:55/k)' }
-      }
-      return { y: 4.25, label: 'Sub3 (4:15/k)' }
-    })
-
     const chartOptions = computed(() => {
-      const paceAnnot = targetPaceAnnotation.value
-      
-      const yaxisConfig = xs.value
-        ? [
-            {
-              seriesName: '距離 (km)',
-              show: true,
-              labels: {
-                style: { colors: '#64748B', fontSize: '10px', fontWeight: 600 },
-                formatter: val => val !== undefined && val !== null ? `${val.toFixed(0)}k` : ''
-              }
-            },
-            {
-              seriesName: 'VDOT',
-              show: true,
-              opposite: true,
-              labels: {
-                style: { colors: '#0F172A', fontSize: '10px', fontWeight: 600 },
-                formatter: val => val !== undefined && val !== null ? `${val.toFixed(1)}` : ''
-              }
-            }
-          ]
-        : [
-            {
-              seriesName: '距離 (km)',
-              show: true,
-              labels: {
-                style: { colors: '#64748B', fontSize: '10px', fontWeight: 600 },
-                formatter: val => val !== undefined && val !== null ? `${val.toFixed(0)}k` : ''
-              }
-            },
-            {
-              seriesName: 'ペース (分/km)',
-              show: false,
-              labels: { show: false }
-            },
-            {
-              seriesName: 'ストライド (m)',
-              show: true,
-              opposite: true,
-              labels: {
-                style: { colors: '#64748B', fontSize: '10px', fontWeight: 600 },
-                formatter: val => val !== undefined && val !== null ? `${val.toFixed(2)}m` : ''
-              }
-            },
-            {
-              seriesName: 'ピッチ (spm)',
-              show: false,
-              labels: { show: false }
-            },
-            {
-              seriesName: 'VDOT',
-              show: false,
-              labels: { show: false }
-            }
-          ]
-
-      const tooltipFormatter = (value, { seriesIndex }) => {
-        if (value === undefined || value === null) return '--'
-        if (xs.value) {
-          if (seriesIndex === 0) return `${value.toFixed(2)} km`
-          return value > 0 ? `${value.toFixed(1)}` : '--'
-        } else {
-          if (seriesIndex === 0) return `${value.toFixed(2)} km`
-          if (seriesIndex === 1) {
-            const totalSeconds = Math.round(value * 60)
-            const m = Math.floor(totalSeconds / 60)
-            const s = totalSeconds % 60
-            return `${m}:${String(s).padStart(2, '0')} /km`
-          }
-          if (seriesIndex === 2) return value > 0 ? `${value.toFixed(2)} m` : '--'
-          if (seriesIndex === 3) return value > 0 ? `${Math.round(value)} spm` : '--'
-          return value > 0 ? `${value.toFixed(1)}` : '--'
-        }
-      }
+      const slice = visiblePmcSlice.value
+      const step = selectedPeriod.value === '90days' ? 7 : selectedPeriod.value === '42days' ? 4 : 1
 
       return {
         chart: {
@@ -375,66 +171,121 @@ export default {
           background: 'transparent',
           foreColor: '#526071',
           zoom: { enabled: false },
-          fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif"
+          fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif",
+          animations: { enabled: true, speed: 350 }
         },
         theme: { mode: 'light' },
-        colors: xs.value
-          ? ['#3653B3', '#1E293B']
-          : ['#3653B3', '#1E7E5C', '#64748B', '#B86E14', '#1E293B'],
+        // Series 0: TSB (棒グラフ), Series 1: CTL (青折れ線), Series 2: ATL (ピンク折れ線)
+        colors: ['#60A5FA', '#2563EB', '#EC4899'],
         stroke: {
-          width: xs.value ? [0, 2.5] : [0, 2.5, 2, 2, 2.5],
-          curve: 'smooth',
-          connectNulls: true
+          width: [0, 3, 2.5],
+          curve: 'smooth'
         },
         plotOptions: {
           bar: {
-            columnWidth: '42%',
-            borderRadius: 5
+            columnWidth: selectedPeriod.value === '90days' ? '70%' : '56%',
+            borderRadius: 3,
+            colors: {
+              ranges: [
+                {
+                  from: 0,
+                  to: 1000,
+                  color: '#3B82F6' // TSB プラス: 青
+                },
+                {
+                  from: -1000,
+                  to: -0.01,
+                  color: '#F97316' // TSB マイナス: オレンジ/赤系
+                }
+              ]
+            }
           }
         },
         fill: {
-          opacity: xs.value ? [0.22, 1] : [0.22, 1, 1, 1, 1]
+          opacity: [0.42, 1, 1]
         },
         xaxis: {
           categories: categories.value,
+          tickAmount: Math.ceil(slice.length / step),
           labels: {
+            rotate: 0,
             style: { colors: '#526071', fontSize: '10px', fontWeight: 500 }
           },
           axisBorder: { show: false },
           axisTicks: { show: false }
         },
-        yaxis: yaxisConfig,
+        yaxis: [
+          {
+            seriesName: 'TSB (コンディション)',
+            opposite: true,
+            title: {
+              text: 'TSB (Form)',
+              style: { color: '#526071', fontSize: '10px', fontWeight: 600 }
+            },
+            labels: {
+              style: { colors: '#526071', fontSize: '10px', fontWeight: 600 },
+              formatter: val => (val !== undefined && val !== null ? `${val > 0 ? '+' : ''}${val.toFixed(0)}` : '')
+            }
+          },
+          {
+            seriesName: 'CTL (現在の体力)',
+            show: true,
+            min: 0,
+            title: {
+              text: 'CTL / ATL',
+              style: { color: '#2563EB', fontSize: '10px', fontWeight: 600 }
+            },
+            labels: {
+              style: { colors: '#2563EB', fontSize: '10px', fontWeight: 600 },
+              formatter: val => (val !== undefined && val !== null ? val.toFixed(0) : '')
+            }
+          },
+          {
+            seriesName: 'ATL (直近の疲労)',
+            show: false,
+            min: 0
+          }
+        ],
         annotations: {
-          yaxis: xs.value
-            ? []
-            : [
-                {
-                  y: paceAnnot.y,
-                  yAxisIndex: 1,
-                  borderColor: '#1E7E5C',
-                  borderWidth: 1.5,
-                  strokeDashArray: 4,
-                  label: {
-                    borderColor: '#1E7E5C',
-                    style: {
-                      color: '#FFFFFF',
-                      background: '#1E7E5C',
-                      fontWeight: 700,
-                      fontSize: '10px'
-                    },
-                    text: paceAnnot.label
-                  }
-                }
-              ]
+          yaxis: [
+            {
+              y: 0,
+              yAxisIndex: 0,
+              borderColor: '#64748B',
+              borderWidth: 1,
+              strokeDashArray: 4,
+              label: {
+                borderColor: '#64748B',
+                style: {
+                  color: '#FFFFFF',
+                  background: '#64748B',
+                  fontWeight: 600,
+                  fontSize: '9px'
+                },
+                text: 'TSB 0 (均衡ライン)'
+              }
+            }
+          ]
         },
         tooltip: {
           shared: true,
           intersect: false,
           theme: 'light',
-          y: { formatter: tooltipFormatter }
+          y: {
+            formatter: (value, { seriesIndex, dataPointIndex }) => {
+              if (value === undefined || value === null) return '--'
+              const dayObj = slice[dataPointIndex]
+              if (seriesIndex === 0) {
+                const sign = value >= 0 ? '+' : ''
+                const trimpNote = dayObj ? ` (当日TRIMP: ${dayObj.trimp.toFixed(1)})` : ''
+                return `${sign}${value.toFixed(1)}${trimpNote}`
+              }
+              return `${value.toFixed(1)}`
+            }
+          }
         },
         grid: {
-          borderColor: '#E2E7EE',
+          borderColor: '#DCE2EC',
           padding: { left: 6, right: 6, top: 4, bottom: 0 }
         },
         legend: {
@@ -443,7 +294,7 @@ export default {
           fontSize: '11px',
           fontWeight: 600,
           itemMargin: { horizontal: 10, vertical: 4 },
-          labels: { colors: '#475569' }
+          labels: { colors: '#334155' }
         }
       }
     })
@@ -476,7 +327,7 @@ export default {
 }
 
 .chart-submeta {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: #526071;
   font-weight: 500;
 }

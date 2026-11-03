@@ -53,8 +53,8 @@
               <span>{{ formatDuration(item.durationSeconds) }}</span>
               <span v-if="item.averageHeartrate" class="meta-dot">•</span>
               <span v-if="item.averageHeartrate">{{ Math.round(item.averageHeartrate) }} bpm</span>
-              <span v-if="item.cadence" class="meta-dot">•</span>
-              <span v-if="item.cadence">{{ item.cadence }} spm</span>
+              <span v-if="getWorkoutTrimpScore(item) > 0" class="meta-dot">•</span>
+              <span v-if="getWorkoutTrimpScore(item) > 0" class="trimp-inline-tag">TRIMP {{ getWorkoutTrimpScore(item).toFixed(0) }}</span>
             </div>
           </div>
         </div>
@@ -179,24 +179,36 @@
           </div>
         </div>
 
-        <div v-if="getWorkoutAnalysis(mapDialog.workout)" class="mb-4">
+        <div v-if="getWorkoutScienceDetails(mapDialog.workout)" class="mb-4">
           <div class="section-heading mb-2">
-            トレーニング分析
+            スポーツ科学解析 (Banister TRIMP / 時間分割ドリフト / Riegel換算)
           </div>
           
-          <div class="analysis-box pa-3.5 rounded-xl">
-            <div class="d-flex align-center mb-2">
-              <span class="metric-label mr-2">種別:</span>
-              <span class="type-pill">
-                {{ getWorkoutAnalysis(mapDialog.workout).typeLabel }}
+          <div class="analysis-box pa-3.5 rounded-xl font-num">
+            <div class="d-flex align-center justify-space-between py-1 border-b-dashed">
+              <span class="metric-label">Banister TRIMP (男性係数)</span>
+              <span class="metric-val" style="font-size: 0.8rem;">
+                {{ getWorkoutScienceDetails(mapDialog.workout).trimp > 0
+                  ? `${getWorkoutScienceDetails(mapDialog.workout).trimp.toFixed(1)} (HRR ${(getWorkoutScienceDetails(mapDialog.workout).hrrRatio * 100).toFixed(1)}%)`
+                  : '心拍データなし' }}
               </span>
             </div>
-            
-            <ul class="analysis-list pl-4">
-              <li v-for="(bullet, idx) in getWorkoutAnalysis(mapDialog.workout).bullets" :key="idx" class="mb-1.5">
-                {{ bullet }}
-              </li>
-            </ul>
+            <div class="d-flex align-center justify-space-between py-1 border-b-dashed">
+              <span class="metric-label">心肺ドリフト (時間 0-50% / 51-100%)</span>
+              <span class="metric-val" style="font-size: 0.8rem;">
+                <template v-if="getWorkoutScienceDetails(mapDialog.workout).decouplingDetails">
+                  {{ getWorkoutScienceDetails(mapDialog.workout).decouplingDetails.decoupling.toFixed(2) }}%
+                  (EF {{ getWorkoutScienceDetails(mapDialog.workout).decouplingDetails.firstHalf.ef.toFixed(2) }} → {{ getWorkoutScienceDetails(mapDialog.workout).decouplingDetails.secondHalf.ef.toFixed(2) }})
+                </template>
+                <template v-else>--</template>
+              </span>
+            </div>
+            <div class="d-flex align-center justify-space-between py-1">
+              <span class="metric-label">Riegel フルマラソン換算 (T1×(D2/D1)^1.06)</span>
+              <span class="metric-val" style="font-size: 0.8rem; color: #3653B3;">
+                {{ getWorkoutScienceDetails(mapDialog.workout).riegelFullFormatted }}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -240,6 +252,14 @@
 
 <script>
 import { ref, computed, watch } from 'vue'
+import { getAthleteHrConfig } from '~/config/athleteSettings'
+import {
+  calculateRiegelTime,
+  formatSecondsToHMS,
+  workoutSplitsToTrackingData,
+  calculateAerobicDecouplingDetails,
+  calculateWorkoutTrimp
+} from '~/utils/sportsScience'
 
 export default {
   name: 'WorkoutTable',
@@ -253,6 +273,15 @@ export default {
   setup(props) {
     const currentPage = ref(1)
     const pageSize = 7
+
+    let runtimePublic = null
+    try {
+      const rc = useRuntimeConfig()
+      runtimePublic = rc?.public || null
+    } catch (_e) {
+      runtimePublic = null
+    }
+    const hrConfig = computed(() => getAthleteHrConfig(runtimePublic))
 
     const mapDialog = ref({
       active: false,
@@ -405,71 +434,27 @@ export default {
       }).join(' ')
     }
 
-    const getWorkoutAnalysis = (w) => {
-      if (!w) return null
-      const analyses = []
-      let typeLabel = 'ジョグ・その他'
-      const dist = Number(w.distance || 0)
-      const paceSec = w.averagePaceSeconds || 0
-      
-      if (dist >= 20.0) {
-        typeLabel = 'ロング走（有酸素持久力強化）'
-      } else if (dist >= 10.0 && paceSec > 0 && paceSec <= 295) {
-        typeLabel = 'ペース走・ビルドアップ（乳酸閾値向上）'
-      } else if (dist < 8.0 && paceSec >= 360) {
-        typeLabel = '回復ジョグ（アクティブリカバリー）'
-      } else if (dist >= 8.0) {
-        typeLabel = '有酸素ジョグ（基礎スタミナ構築）'
+    const getWorkoutTrimpScore = (w) => {
+      if (!w) return 0
+      return calculateWorkoutTrimp(w, hrConfig.value).trimp
+    }
+
+    const getWorkoutScienceDetails = (w) => {
+      if (!w || !w.distance) return null
+      const { trimp, hrrRatio } = calculateWorkoutTrimp(w, hrConfig.value)
+      const tracking = workoutSplitsToTrackingData(w)
+      const decouplingDetails = tracking ? calculateAerobicDecouplingDetails(tracking) : null
+
+      const distM = Number(w.distance || 0) * 1000
+      const timeS = Number(w.movingTimeSeconds || w.durationSeconds || 0)
+      const riegelFullSec = distM >= 10000 ? calculateRiegelTime(distM, timeS, 42195) : null
+
+      return {
+        trimp,
+        hrrRatio,
+        decouplingDetails,
+        riegelFullFormatted: riegelFullSec ? formatSecondsToHMS(riegelFullSec) : '10km以上のランで算出'
       }
-
-      if (w.averageHeartrate > 0 && paceSec > 0) {
-        const speedMmin = 1000 / (paceSec / 60)
-        const ef = speedMmin / w.averageHeartrate
-        if (ef >= 1.25) {
-          analyses.push('【心肺効率: 優良】心拍に対する走行速度が非常に高く、極めて低燃費で走れています。')
-        } else if (ef >= 1.10) {
-          analyses.push('【心肺効率: 標準】標準的な心肺効率が維持されています。')
-        } else {
-          analyses.push('【心肺効率: 負荷高め】設定ペースに対して心拍がやや高めです。次回は回復ジョグを推奨します。')
-        }
-      }
-
-      if (w.cadence > 0) {
-        if (w.cadence >= 180) {
-          analyses.push(`【高ピッチ走法 (平均 ${w.cadence} spm)】着地衝撃が低く抑えられた理想的なステップです。`)
-        } else if (w.cadence < 170) {
-          analyses.push(`【ストライド傾向 (平均 ${w.cadence} spm)】ピッチを175付近に引き上げると後半の脚持ちが良くなります。`)
-        } else {
-          analyses.push(`【適正ピッチ (平均 ${w.cadence} spm)】ピッチとストライドのバランスが良好です。`)
-        }
-      }
-
-      if (w.splits && w.splits.length >= 6 && w.splits.every(s => s.averageHeartrate > 0)) {
-        const splits = w.splits
-        const n = splits.length
-        const mid = Math.floor(n / 2)
-        const firstHalf = splits.slice(0, mid)
-        const secondHalf = splits.slice(mid)
-
-        const firstTimeSec = firstHalf.reduce((sum, s) => sum + (s.movingTime || s.elapsedTime), 0)
-        const firstAvgHR = firstHalf.reduce((sum, s) => sum + s.averageHeartrate, 0) / mid
-        const firstEF = ((mid * 1000) / (firstTimeSec / 60)) / firstAvgHR
-
-        const secondTimeSec = secondHalf.reduce((sum, s) => sum + (s.movingTime || s.elapsedTime), 0)
-        const secondAvgHR = secondHalf.reduce((sum, s) => sum + s.averageHeartrate, 0) / (n - mid)
-        const secondEF = (((n - mid) * 1000) / (secondTimeSec / 60)) / secondAvgHR
-
-        const decoupling = ((firstEF - secondEF) / firstEF) * 100
-        if (decoupling < 5.0) {
-          analyses.push(`【スタミナ維持度: 優秀】後半の心拍ドリフトが ${decoupling.toFixed(1)}% と極めて低く安定しています。`)
-        } else if (decoupling <= 10.0) {
-          analyses.push(`【スタミナ維持度: 標準】後半のドリフト率は ${decoupling.toFixed(1)}% です。`)
-        } else {
-          analyses.push(`【スタミナ低下: 課題あり】後半のドリフト率が ${decoupling.toFixed(1)}% と高めです。`)
-        }
-      }
-
-      return { typeLabel, bullets: analyses }
     }
 
     return {
@@ -488,7 +473,8 @@ export default {
       formatSplitTime,
       showMapDetail,
       getSvgPoints,
-      getWorkoutAnalysis
+      getWorkoutTrimpScore,
+      getWorkoutScienceDetails
     }
   }
 }
@@ -597,6 +583,15 @@ export default {
 
 .meta-dot {
   color: #B8C4D4;
+}
+
+.trimp-inline-tag {
+  color: #2B4494;
+  font-weight: 700;
+}
+
+.border-b-dashed {
+  border-bottom: 1px dashed #D1D8E2;
 }
 
 .log-distance {

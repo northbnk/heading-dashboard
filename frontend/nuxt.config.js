@@ -10,7 +10,9 @@ export default defineNuxtConfig({
     public: {
       supabaseUrl: process.env.SUPABASE_URL,
       supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
-      stravaClientId: process.env.STRAVA_CLIENT_ID
+      stravaClientId: process.env.STRAVA_CLIENT_ID,
+      restHr: process.env.NUXT_PUBLIC_REST_HR || 52,
+      maxHr: process.env.NUXT_PUBLIC_MAX_HR || 188
     }
   },
   ssr: true,

@@ -40,7 +40,7 @@
           </h1>
 
           <p class="hero-lead mx-auto mb-9">
-            独自のアカウント作成は不要。お使いの Strava アカウントと接続するだけで、推定VDOT・フルマラソン予測タイム・有酸素デカップリング（心肺ドリフト）・週間メニュー計画を1画面に可視化します。
+            独自のアカウント作成は不要。お使いの Strava アカウントと接続するだけで、Banister TRIMP に基づく CTL・ATL・TSB（PMCチャート）、Riegelの法則による完走予測タイム、時間分割（0-50% / 51-100%）の心肺ドリフト率を1画面に可視化します。
           </p>
 
           <div class="d-flex justify-center align-center mb-14">
@@ -60,33 +60,33 @@
             <v-col cols="12" md="4">
               <div class="feature-card pa-6 text-left h-100">
                 <div class="feature-icon mb-4">
+                  <v-icon color="#3653B3" icon="mdi-chart-bell-curve-cumulative" size="24"></v-icon>
+                </div>
+                <div class="feature-title mb-2">PMC (CTL / ATL / TSB) 管理</div>
+                <div class="feature-desc">
+                  Banister TRIMP から 42日EMA（CTL: 体力）・7日EMA（ATL: 疲労）・前日差（TSB: コンディション）を算出し、ピーキングの波を可視化します。
+                </div>
+              </div>
+            </v-col>
+            <v-col cols="12" md="4">
+              <div class="feature-card pa-6 text-left h-100">
+                <div class="feature-icon mb-4">
+                  <v-icon color="#3653B3" icon="mdi-timer-check-outline" size="24"></v-icon>
+                </div>
+                <div class="feature-title mb-2">Riegelの法則 完走予測</div>
+                <div class="feature-desc">
+                  直近42日間の10km以上のベストエフォート走から Riegelの法則（T2 = T1 × (D2/D1)^1.06）に基づきフルマラソン等の予測タイムを算出します。
+                </div>
+              </div>
+            </v-col>
+            <v-col cols="12" md="4">
+              <div class="feature-card pa-6 text-left h-100">
+                <div class="feature-icon mb-4">
                   <v-icon color="#3653B3" icon="mdi-heart-pulse" size="24"></v-icon>
                 </div>
-                <div class="feature-title mb-2">有酸素スタミナ判定</div>
+                <div class="feature-title mb-2">時間分割 心肺ドリフト解析</div>
                 <div class="feature-desc">
-                  15km以上の距離走から後半の心拍ドリフト（デカップリング率）を自動抽出し、30km以降の失速リスクを科学的に診断します。
-                </div>
-              </div>
-            </v-col>
-            <v-col cols="12" md="4">
-              <div class="feature-card pa-6 text-left h-100">
-                <div class="feature-icon mb-4">
-                  <v-icon color="#3653B3" icon="mdi-chart-line-variant" size="24"></v-icon>
-                </div>
-                <div class="feature-title mb-2">リアルタイム推定VDOT</div>
-                <div class="feature-desc">
-                  直近40日間の走力トレンドから推定VDOT値とフルマラソン予測タイムを算出し、目標（サブ3 / サブ3.5 / サブ4）とのギャップを可視化します。
-                </div>
-              </div>
-            </v-col>
-            <v-col cols="12" md="4">
-              <div class="feature-card pa-6 text-left h-100">
-                <div class="feature-icon mb-4">
-                  <v-icon color="#3653B3" icon="mdi-calendar-check-outline" size="24"></v-icon>
-                </div>
-                <div class="feature-title mb-2">期分け連動の週間プラン</div>
-                <div class="feature-desc">
-                  ターゲット大会までの残り日数（鍛錬期・実戦強化期・テーパリング期）に応じた最適な週間トレーニング計画を提案・管理します。
+                  アクティビティを時間ベースで前半（0〜50%）と後半（51〜100%）に分割し、Efficiency Factor (EF) の低下率から有酸素持久力を定量評価します。
                 </div>
               </div>
             </v-col>
