@@ -1,81 +1,124 @@
 <template>
-  <div class="bento-chart-panel d-flex flex-column h-100">
-    <!-- ヘッダー: チャート種類切替 ＆ 期間・集計単位選択 -->
-    <div class="d-flex justify-space-between align-center mb-3 flex-wrap gap-2">
-      <!-- 左側: チャートモード切替 -->
-      <div class="d-flex align-center flex-wrap gap-2">
-        <div class="period-pill-group d-flex">
-          <button
-            v-for="m in [
-              { val: 'pmc', label: 'PMC (CTL/ATL/TSB)' },
-              { val: 'pace_hr', label: 'Pace / HR比トレンド' },
-              { val: 'rhr', label: '安静時心拍 (RHR)' }
-            ]"
-            :key="m.val"
-            type="button"
-            class="period-pill-btn"
-            :class="{ active: chartMode === m.val }"
-            @click="chartMode = m.val"
-          >
-            {{ m.label }}
-          </button>
+  <div class="d-flex flex-column gap-3 h-100">
+    <!-- 1. PMC (CTL / ATL / TSB) チャートパネル -->
+    <div class="bento-chart-panel d-flex flex-column">
+      <div class="d-flex justify-space-between align-center mb-2 flex-wrap gap-2">
+        <div class="d-flex align-center flex-wrap gap-2">
+          <span class="chart-panel-title">PMC (CTL / ATL / TSB)</span>
+          <span class="chart-submeta font-num d-none d-sm-inline">CTL青線・ATLピンク線・TSB棒</span>
         </div>
 
-        <span class="chart-submeta font-num d-none d-sm-inline">
-          <template v-if="chartMode === 'pmc'">CTL青線・ATLピンク線・TSB棒</template>
-          <template v-else-if="chartMode === 'pace_hr'">速度(m/分) ÷ 平均心拍(bpm) 推移</template>
-          <template v-else>日次RHR ＆ 7日間移動平均ライン</template>
-        </span>
+        <div class="period-pill-group d-flex">
+          <button
+            v-for="p in [{ val: '14days', label: '14日' }, { val: '42days', label: '42日(6週)' }, { val: '90days', label: '90日' }]"
+            :key="p.val"
+            type="button"
+            class="period-pill-btn"
+            :class="{ active: selectedPeriod === p.val }"
+            @click="selectedPeriod = p.val"
+          >
+            {{ p.label }}
+          </button>
+        </div>
       </div>
 
-      <!-- 右側: サブ期間・集計粒度トグル -->
-      <div v-if="chartMode === 'pmc'" class="period-pill-group d-flex">
-        <button
-          v-for="p in [{ val: '14days', label: '14日' }, { val: '42days', label: '42日(6週)' }, { val: '90days', label: '90日' }]"
-          :key="p.val"
-          type="button"
-          class="period-pill-btn"
-          :class="{ active: selectedPeriod === p.val }"
-          @click="selectedPeriod = p.val"
-        >
-          {{ p.label }}
-        </button>
-      </div>
-
-      <div v-else-if="chartMode === 'pace_hr'" class="period-pill-group d-flex">
-        <button
-          v-for="g in [{ val: 'weekly', label: '週単位' }, { val: 'monthly', label: '月単位' }, { val: 'daily', label: 'ラン別' }]"
-          :key="g.val"
-          type="button"
-          class="period-pill-btn"
-          :class="{ active: paceHrGranularity === g.val }"
-          @click="paceHrGranularity = g.val"
-        >
-          {{ g.label }}
-        </button>
+      <div class="chart-container d-flex flex-column justify-center">
+        <ClientOnly>
+          <apexchart
+            v-if="hasPmcData"
+            :key="`pmc-${selectedPeriod}-${chartKey}`"
+            :height="pmcHeight"
+            :options="pmcOptions"
+            :series="pmcSeries"
+          ></apexchart>
+          <template #fallback>
+            <div class="d-flex flex-column align-center justify-center py-6 text-slate-muted">
+              <v-progress-circular indeterminate color="primary" size="24" class="mb-1"></v-progress-circular>
+              <div class="text-caption">PMCチャートを描画中...</div>
+            </div>
+          </template>
+        </ClientOnly>
+        <div v-if="!hasPmcData" class="d-flex flex-column align-center justify-center py-6 text-slate-muted">
+          <v-icon icon="mdi-chart-line" size="28" class="mb-1" color="#94A3B8"></v-icon>
+          <div class="text-caption">表示可能なPMCデータがありません。</div>
+        </div>
       </div>
     </div>
 
-    <!-- グラフ描画領域 -->
-    <div class="chart-container flex-grow-1 d-flex flex-column justify-center">
-      <ClientOnly>
-        <apexchart
-          v-if="hasChartData && activeOptions && activeSeries"
-          :key="chartKey"
-          :height="height"
-          :options="activeOptions"
-          :series="activeSeries"
-        ></apexchart>
-        <template #fallback>
-          <div class="d-flex flex-column align-center justify-center py-10 text-slate-muted">
-            <v-progress-circular indeterminate color="primary" size="28" class="mb-2"></v-progress-circular>
-            <div class="text-caption">チャートを描画中...</div>
-          </div>
-        </template>
-      </ClientOnly>
-      <div v-if="!hasChartData" class="d-flex flex-column align-center justify-center py-10 text-slate-muted">
-        <v-icon icon="mdi-chart-line" size="36" class="mb-2" color="#94A3B8"></v-icon>
-        <div class="text-caption">表示可能な時系列データがありません。</div>
+    <!-- 2. Pace / HR比トレンド チャートパネル -->
+    <div class="bento-chart-panel d-flex flex-column">
+      <div class="d-flex justify-space-between align-center mb-2 flex-wrap gap-2">
+        <div class="d-flex align-center flex-wrap gap-2">
+          <span class="chart-panel-title">Pace / HR比トレンド</span>
+          <span class="chart-submeta font-num d-none d-sm-inline">速度(m/分) ÷ 平均心拍(bpm) 推移</span>
+        </div>
+
+        <div class="period-pill-group d-flex">
+          <button
+            v-for="g in [{ val: 'weekly', label: '週単位' }, { val: 'monthly', label: '月単位' }, { val: 'daily', label: 'ラン別' }]"
+            :key="g.val"
+            type="button"
+            class="period-pill-btn"
+            :class="{ active: paceHrGranularity === g.val }"
+            @click="paceHrGranularity = g.val"
+          >
+            {{ g.label }}
+          </button>
+        </div>
+      </div>
+
+      <div class="chart-container d-flex flex-column justify-center">
+        <ClientOnly>
+          <apexchart
+            v-if="hasPaceHrData"
+            :key="`pacehr-${paceHrGranularity}-${chartKey}`"
+            :height="subChartHeight"
+            :options="paceHrOptions"
+            :series="paceHrSeries"
+          ></apexchart>
+          <template #fallback>
+            <div class="d-flex flex-column align-center justify-center py-6 text-slate-muted">
+              <v-progress-circular indeterminate color="primary" size="24" class="mb-1"></v-progress-circular>
+              <div class="text-caption">Pace/HRチャートを描画中...</div>
+            </div>
+          </template>
+        </ClientOnly>
+        <div v-if="!hasPaceHrData" class="d-flex flex-column align-center justify-center py-6 text-slate-muted">
+          <v-icon icon="mdi-chart-line" size="28" class="mb-1" color="#94A3B8"></v-icon>
+          <div class="text-caption">ペース・心拍データ付きの記録がありません。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 安静時心拍数 (RHR) トレンド チャートパネル -->
+    <div class="bento-chart-panel d-flex flex-column">
+      <div class="d-flex justify-space-between align-center mb-2 flex-wrap gap-2">
+        <div class="d-flex align-center flex-wrap gap-2">
+          <span class="chart-panel-title">安静時心拍 (RHR)</span>
+          <span class="chart-submeta font-num d-none d-sm-inline">日次RHR ＆ 7日間移動平均ライン</span>
+        </div>
+      </div>
+
+      <div class="chart-container d-flex flex-column justify-center">
+        <ClientOnly>
+          <apexchart
+            v-if="hasRhrData"
+            :key="`rhr-${chartKey}`"
+            :height="subChartHeight"
+            :options="rhrOptions"
+            :series="rhrSeries"
+          ></apexchart>
+          <template #fallback>
+            <div class="d-flex flex-column align-center justify-center py-6 text-slate-muted">
+              <v-progress-circular indeterminate color="primary" size="24" class="mb-1"></v-progress-circular>
+              <div class="text-caption">RHRチャートを描画中...</div>
+            </div>
+          </template>
+        </ClientOnly>
+        <div v-if="!hasRhrData" class="d-flex flex-column align-center justify-center py-6 text-slate-muted">
+          <v-icon icon="mdi-heart-pulse" size="28" class="mb-1" color="#94A3B8"></v-icon>
+          <div class="text-caption">安静時心拍 (RHR) の記録がありません。</div>
+        </div>
       </div>
     </div>
   </div>
@@ -113,10 +156,11 @@ export default {
     }
   },
   setup(props) {
-    const chartMode = ref('pmc')
     const selectedPeriod = ref('42days')
     const paceHrGranularity = ref('weekly')
     const chartKey = ref(0)
+    const pmcHeight = computed(() => Number(props.height) || 215)
+    const subChartHeight = computed(() => 185)
 
     let runtimePublic = null
     try {
@@ -128,7 +172,7 @@ export default {
     const hrConfig = computed(() => getAthleteHrConfig(runtimePublic))
 
     watch(
-      [chartMode, selectedPeriod, paceHrGranularity, () => props.workouts, () => props.rhrLogs, () => props.targetGoal],
+      [() => props.workouts, () => props.rhrLogs, () => props.targetGoal],
       () => {
         chartKey.value++
       },
@@ -563,32 +607,25 @@ export default {
       }
     })
 
-    const hasChartData = computed(() => {
-      if (chartMode.value === 'rhr') return rhrTrendPoints.value.length > 0
-      if (chartMode.value === 'pace_hr') return activePaceHrPoints.value.length > 0
-      return props.workouts.length > 0
-    })
-
-    const activeSeries = computed(() => {
-      if (chartMode.value === 'pace_hr') return paceHrSeries.value
-      if (chartMode.value === 'rhr') return rhrSeries.value
-      return pmcSeries.value
-    })
-
-    const activeOptions = computed(() => {
-      if (chartMode.value === 'pace_hr') return paceHrOptions.value
-      if (chartMode.value === 'rhr') return rhrOptions.value
-      return pmcOptions.value
-    })
+    const hasPmcData = computed(() => props.workouts.length > 0)
+    const hasPaceHrData = computed(() => activePaceHrPoints.value.length > 0)
+    const hasRhrData = computed(() => rhrTrendPoints.value.length > 0)
 
     return {
-      chartMode,
       selectedPeriod,
       paceHrGranularity,
       chartKey,
-      hasChartData,
-      activeSeries,
-      activeOptions
+      pmcHeight,
+      subChartHeight,
+      hasPmcData,
+      hasPaceHrData,
+      hasRhrData,
+      pmcSeries,
+      pmcOptions,
+      paceHrSeries,
+      paceHrOptions,
+      rhrSeries,
+      rhrOptions
     }
   }
 }
@@ -599,8 +636,15 @@ export default {
   background: #F2F4F8;
   border: 1px solid #D5DBE3;
   border-radius: 16px;
-  padding: 20px 24px;
+  padding: 16px 20px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.chart-panel-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1E293B;
+  letter-spacing: -0.01em;
 }
 
 .chart-submeta {
@@ -627,7 +671,7 @@ export default {
   color: #526071;
   font-size: 0.72rem;
   font-weight: 600;
-  padding: 5px 10px;
+  padding: 4px 9px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -641,6 +685,9 @@ export default {
 }
 
 .chart-container {
-  min-height: 225px;
+  min-height: 175px;
 }
+
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
 </style>

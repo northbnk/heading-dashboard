@@ -480,7 +480,7 @@
             </span>
           </div>
           <div class="subcard-footnote mt-1">
-            ※右側の推移チャートの「Pace/HR比」タブで週次・月次グラフを表示できます
+            ※中央カラムの「Pace/HR比トレンド」チャートで週次・月次・ラン別の推移を常時確認できます
           </div>
         </div>
         <div v-else class="subcard-empty py-2">

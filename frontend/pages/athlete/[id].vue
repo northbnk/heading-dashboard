@@ -344,7 +344,7 @@
                 :workouts="workouts"
                 :rhr-logs="rhrLogs"
                 :target-goal="targetGoal"
-                :height="250"
+                :height="210"
                 class="flex-grow-1"
               ></workout-chart>
             </div>
