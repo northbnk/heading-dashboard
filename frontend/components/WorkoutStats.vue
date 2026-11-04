@@ -243,7 +243,7 @@
       </button>
     </div>
 
-    <!-- タブ0: ランニング能力レーダーチャート ＆ 5段階スコアバランス評価UI -->
+    <!-- タブ0: ランニング能力レーダーチャート ＆ 5段階スコアバランス評価UI (KPI統合版) -->
     <div v-if="activeScienceTab === 'radar'" class="d-flex flex-column gap-2.5 flex-grow-1">
       <!-- ワンフレーズ総合判定バナー -->
       <div
@@ -271,26 +271,26 @@
         </div>
       </div>
 
-      <!-- レーダーチャート ＋ 5軸バランス内訳 -->
+      <!-- レーダーチャート ＋ 5軸バランス＆主要KPI統合リスト -->
       <div class="science-subcard pa-3 rounded-xl flex-grow-1 d-flex flex-column justify-space-between">
         <div class="radar-chart-box mx-auto">
           <ClientOnly>
             <apexchart
               type="radar"
-              height="215"
+              height="210"
               :options="radarChartOptions"
               :series="radarChartSeries"
             ></apexchart>
             <template #fallback>
-              <div class="d-flex align-center justify-center" style="height: 215px;">
+              <div class="d-flex align-center justify-center" style="height: 210px;">
                 <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
               </div>
             </template>
           </ClientOnly>
         </div>
 
-        <!-- 5項目スコア・5段階バランスバー一覧 -->
-        <div class="radar-score-list d-flex flex-column gap-1.5 mt-1 pt-2 border-top-subtle">
+        <!-- 5項目スコア・5段階バランスバー ＋ 補助メトリクス統合一覧 -->
+        <div class="radar-score-list d-flex flex-column gap-2 mt-1 pt-2 border-top-subtle">
           <div
             v-for="axis in abilityRadar.axes"
             :key="axis.key"
@@ -310,7 +310,7 @@
             </div>
 
             <!-- 5段階セグメントバー -->
-            <div class="stage-segment-bar d-flex gap-05">
+            <div class="stage-segment-bar d-flex gap-05 mb-1">
               <div
                 v-for="step in 5"
                 :key="step"
@@ -321,6 +321,32 @@
                   'seg-warn': step <= axis.stage && axis.stage <= 2
                 }"
               ></div>
+            </div>
+
+            <!-- 各軸の統合サブメトリクス (旧上段KPIカードの情報を集約) -->
+            <div class="d-flex justify-space-between align-center axis-sub-detail font-num">
+              <template v-if="axis.key === 'ctl'">
+                <span>30日走行 <strong>{{ last30DaysDistance.toFixed(1) }}km</strong></span>
+                <span>ATL {{ pmcResult.ATL.toFixed(1) }} (A/C比 {{ pmcResult.CTL > 0 ? (pmcResult.ATL / pmcResult.CTL).toFixed(2) : '--' }})</span>
+              </template>
+              <template v-else-if="axis.key === 'tsb'">
+                <span :class="pmcResult.TSB >= 0 ? 'sub-pos' : 'sub-neg'">{{ tsbStateLabel }} (7日TRIMP {{ last7DaysTrimp.toFixed(0) }})</span>
+                <span v-if="latestRhrEntry">RHR {{ latestRhrEntry.rhr_bpm }}bpm {{ latestRhrEntry.fatigueWarning ? '⚠️要疲労注意' : '' }}</span>
+                <span v-else>前日CTL − 前日ATL</span>
+              </template>
+              <template v-else-if="axis.key === 'ef'">
+                <span>{{ decouplingReport.available ? `前半EF ${decouplingReport.firstEF.toFixed(2)} → 後半 ${decouplingReport.secondEF.toFixed(2)}` : '基準 5.0%未満' }}</span>
+                <span>{{ latestEfResult ? `最新EF ${latestEfResult.ef.toFixed(2)}` : '--' }}</span>
+              </template>
+              <template v-else-if="axis.key === 'stability'">
+                <span>{{ paceHrSummary.available ? `最新週Pace/HR ${paceHrSummary.latestWeekRatio.toFixed(2)}` : 'フォーム維持評価' }}</span>
+                <span>{{ latestOverallCadence?.stride ? `ストライド ${latestOverallCadence.stride}m` : 'ピッチ安定度' }}</span>
+              </template>
+              <template v-else-if="axis.key === 'riegel'">
+                <span>T2 = T1 × (D2/D1)^1.06</span>
+                <span v-if="riegelBest">{{ riegelBest.distanceKm.toFixed(1) }}km基準 ({{ riegelBest.workoutDate.substring(5).replace('-', '/') }})</span>
+                <span v-else>42日内10km+走なし</span>
+              </template>
             </div>
           </div>
         </div>
@@ -1597,8 +1623,30 @@ export default {
   background: #EA580C;
 }
 
+.axis-sub-detail {
+  font-size: 0.63rem;
+  color: #526071;
+  line-height: 1.25;
+}
+
+.axis-sub-detail strong {
+  color: #1E293B;
+  font-weight: 700;
+}
+
+.axis-sub-detail .sub-pos {
+  color: #1D4ED8;
+  font-weight: 700;
+}
+
+.axis-sub-detail .sub-neg {
+  color: #C2410C;
+  font-weight: 700;
+}
+
 .gap-05 { gap: 2px; }
 .gap-1 { gap: 4px; }
 .gap-1\.5 { gap: 6px; }
+.gap-2 { gap: 8px; }
 .gap-2\.5 { gap: 10px; }
 </style>

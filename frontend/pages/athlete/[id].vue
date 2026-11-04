@@ -124,19 +124,7 @@
 
       <!-- 2. メイン Bento Grid コックピット -->
       <template v-else>
-        <!-- Row 1: 5項目コア・指標リボン -->
-        <div class="mb-3">
-          <workout-stats
-            :workouts="workouts"
-            :rhr-logs="rhrLogs"
-            :is-owner="isOwner"
-            :target-goal="targetGoal"
-            :upcoming-race="upcomingRace"
-            display-mode="stats-only"
-          ></workout-stats>
-        </div>
-
-        <!-- Row 2: 3カラム非対称 Bento Grid -->
+        <!-- Row 2: 3カラム非対称 Bento Grid (上段5項目リボンは左カラムの統合スポーツ科学パネルへ集約) -->
         <v-row dense class="bento-main-grid">
           <!-- 左カラム (lg="3"): ターゲット大会 ＆ AI総合診断 -->
           <v-col cols="12" lg="3" class="d-flex flex-column gap-3">
