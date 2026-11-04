@@ -429,7 +429,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 
 export default {
   name: 'AthleteDashboardView',
@@ -568,6 +568,24 @@ export default {
       if (upcomingRacesList.value.length === 0) return null
       return upcomingRacesList.value[0]
     })
+
+    const mapTargetTimeToGoal = (targetTime) => {
+      if (targetTime === 'サブ3' || targetTime === 'sub3') return 'sub3'
+      if (targetTime === 'サブ3.5' || targetTime === 'sub3.5') return 'sub3.5'
+      if (targetTime === 'サブ4' || targetTime === 'sub4') return 'sub4'
+      return null
+    }
+
+    watch(
+      () => upcomingRace.value?.targetTime,
+      (newTargetTime) => {
+        const mappedGoal = mapTargetTimeToGoal(newTargetTime)
+        if (mappedGoal) {
+          targetGoal.value = mappedGoal
+        }
+      },
+      { immediate: true }
+    )
 
     const calculateDaysUntil = (dateStr) => {
       const today = getTodayStart()
