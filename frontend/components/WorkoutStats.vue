@@ -206,15 +206,23 @@
       </span>
     </div>
 
-    <!-- 3タブ切替: [1. Riegel & EF/ドリフト] [2. Pace/HR & ピッチ安定度] [3. 安静時心拍(RHR)] -->
+    <!-- 4タブ切替: [0. 総合能力レーダー] [1. Riegel & EF/ドリフト] [2. Pace/HR & ピッチ安定度] [3. 安静時心拍(RHR)] -->
     <div class="science-tabs d-flex gap-1 mb-3">
+      <button
+        type="button"
+        class="science-tab-btn flex-grow-1"
+        :class="{ active: activeScienceTab === 'radar' }"
+        @click="activeScienceTab = 'radar'"
+      >
+        能力レーダー
+      </button>
       <button
         type="button"
         class="science-tab-btn flex-grow-1"
         :class="{ active: activeScienceTab === 'riegel_ef' }"
         @click="activeScienceTab = 'riegel_ef'"
       >
-        Riegel・EF・ドリフト
+        Riegel・EF
       </button>
       <button
         type="button"
@@ -222,7 +230,7 @@
         :class="{ active: activeScienceTab === 'pace_pitch' }"
         @click="activeScienceTab = 'pace_pitch'"
       >
-        Pace/HR比・ピッチ安定
+        Pace/HR・ピッチ
       </button>
       <button
         type="button"
@@ -230,13 +238,97 @@
         :class="{ active: activeScienceTab === 'rhr' }"
         @click="activeScienceTab = 'rhr'"
       >
-        RHRトレンド
+        RHR
         <span v-if="latestRhrEntry?.fatigueWarning" class="warning-dot ml-1"></span>
       </button>
     </div>
 
+    <!-- タブ0: ランニング能力レーダーチャート ＆ 5段階スコアバランス評価UI -->
+    <div v-if="activeScienceTab === 'radar'" class="d-flex flex-column gap-2.5 flex-grow-1">
+      <!-- ワンフレーズ総合判定バナー -->
+      <div
+        class="radar-verdict-banner pa-3 rounded-xl"
+        :class="`verdict-${abilityRadar.readinessTone}`"
+      >
+        <div class="d-flex align-center justify-space-between mb-1">
+          <span class="verdict-eyebrow d-flex align-center">
+            <v-icon
+              :icon="abilityRadar.readinessTone === 'caution' ? 'mdi-alert-circle-outline' : 'mdi-shield-star-outline'"
+              size="14"
+              class="mr-1"
+            ></v-icon>
+            TOTAL PERFORMANCE VERDICT
+          </span>
+          <span class="verdict-grade-pill font-num">
+            総合Rank {{ abilityRadar.overallGrade }} ({{ abilityRadar.overallStage }}/5)
+          </span>
+        </div>
+        <div class="verdict-headline font-num">
+          {{ abilityRadar.oneLineSummary }}
+        </div>
+        <div class="verdict-subtext mt-1">
+          {{ abilityRadar.actionAdvice }}
+        </div>
+      </div>
+
+      <!-- レーダーチャート ＋ 5軸バランス内訳 -->
+      <div class="science-subcard pa-3 rounded-xl flex-grow-1 d-flex flex-column justify-space-between">
+        <div class="radar-chart-box mx-auto">
+          <ClientOnly>
+            <apexchart
+              type="radar"
+              height="215"
+              :options="radarChartOptions"
+              :series="radarChartSeries"
+            ></apexchart>
+            <template #fallback>
+              <div class="d-flex align-center justify-center" style="height: 215px;">
+                <v-progress-circular indeterminate color="primary" size="24"></v-progress-circular>
+              </div>
+            </template>
+          </ClientOnly>
+        </div>
+
+        <!-- 5項目スコア・5段階バランスバー一覧 -->
+        <div class="radar-score-list d-flex flex-column gap-1.5 mt-1 pt-2 border-top-subtle">
+          <div
+            v-for="axis in abilityRadar.axes"
+            :key="axis.key"
+            class="radar-axis-row"
+          >
+            <div class="d-flex align-center justify-space-between mb-0.5">
+              <div class="d-flex align-center gap-1.5">
+                <span class="axis-grade-badge font-num" :class="`grade-${axis.grade.toLowerCase()}`">
+                  {{ axis.grade }}
+                </span>
+                <span class="axis-name">{{ axis.label }}</span>
+              </div>
+              <div class="d-flex align-center gap-1.5 font-num">
+                <span class="axis-raw-meta">{{ axis.rawDisplay }}</span>
+                <span class="axis-score-val">{{ axis.score }}<small>pt</small></span>
+              </div>
+            </div>
+
+            <!-- 5段階セグメントバー -->
+            <div class="stage-segment-bar d-flex gap-05">
+              <div
+                v-for="step in 5"
+                :key="step"
+                class="stage-seg flex-grow-1"
+                :class="{
+                  'seg-active': step <= axis.stage,
+                  'seg-peak': step <= axis.stage && axis.stage >= 4,
+                  'seg-warn': step <= axis.stage && axis.stage <= 2
+                }"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- タブ1: Riegel距離別予測 ＆ EF / 心肺ドリフト内訳 -->
-    <div v-if="activeScienceTab === 'riegel_ef'" class="d-flex flex-column gap-2.5 flex-grow-1">
+    <div v-else-if="activeScienceTab === 'riegel_ef'" class="d-flex flex-column gap-2.5 flex-grow-1">
       <!-- Riegel 距離別予測タイム -->
       <div class="science-subcard pa-3 rounded-xl">
         <div class="d-flex align-center justify-space-between mb-2">
@@ -514,7 +606,8 @@ import {
   calculateWorkoutEF,
   buildPaceHrTrendFromWorkouts,
   calculateRhrTrend,
-  calculatePitchStability
+  calculatePitchStability,
+  calculateAbilityRadarEvaluation
 } from '~/utils/sportsScience'
 
 export default {
@@ -548,7 +641,7 @@ export default {
   },
   emits: ['save-rhr'],
   setup(props, { emit }) {
-    const activeScienceTab = ref('riegel_ef')
+    const activeScienceTab = ref('radar')
     const rhrFormDate = ref(formatDateYMD(new Date()))
     const rhrFormBpm = ref(52)
 
@@ -788,6 +881,111 @@ export default {
       }
     })
 
+    // 9. ランニング能力 5軸レーダーチャート ＆ 総合仕上がり度判定
+    const abilityRadar = computed(() => {
+      return calculateAbilityRadarEvaluation({
+        ctl: pmcResult.value.CTL,
+        targetCtl: targetCtl.value,
+        tsb: pmcResult.value.TSB,
+        decouplingReport: decouplingReport.value,
+        latestEfResult: latestEfResult.value,
+        pitchStabilityReport: pitchStabilityReport.value,
+        latestOverallCadence: latestOverallCadence.value,
+        workouts: props.workouts,
+        riegelBest: riegelBest.value,
+        targetGoal: props.targetGoal,
+        latestRhrEntry: latestRhrEntry.value
+      })
+    })
+
+    const radarChartSeries = computed(() => [
+      {
+        name: '現在スコア',
+        data: abilityRadar.value.axes.map(a => a.score)
+      },
+      {
+        name: '目標基準ライン (80pt)',
+        data: [80, 80, 80, 80, 80]
+      }
+    ])
+
+    const radarChartOptions = computed(() => {
+      const toneColor =
+        abilityRadar.value.readinessTone === 'peak'
+          ? '#0D9488'
+          : abilityRadar.value.readinessTone === 'caution'
+            ? '#EA580C'
+            : '#2563EB'
+
+      return {
+        chart: {
+          type: 'radar',
+          toolbar: { show: false },
+          background: 'transparent',
+          fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif",
+          sparkline: { enabled: false },
+          parentHeightOffset: 0
+        },
+        colors: [toneColor, '#94A3B8'],
+        stroke: {
+          width: [2.5, 1.5],
+          dashArray: [0, 4]
+        },
+        fill: {
+          opacity: [0.26, 0.04]
+        },
+        markers: {
+          size: [4, 0],
+          colors: ['#FFFFFF'],
+          strokeColors: toneColor,
+          strokeWidth: 2,
+          hover: { size: 6 }
+        },
+        xaxis: {
+          categories: abilityRadar.value.axes.map(a => a.shortLabel),
+          labels: {
+            show: true,
+            style: {
+              colors: ['#1E293B', '#1E293B', '#1E293B', '#1E293B', '#1E293B'],
+              fontSize: '10.5px',
+              fontWeight: 700,
+              fontFamily: "'Inter', 'IBM Plex Sans JP', sans-serif"
+            }
+          }
+        },
+        yaxis: {
+          min: 0,
+          max: 100,
+          tickAmount: 4,
+          labels: {
+            show: false
+          }
+        },
+        plotOptions: {
+          radar: {
+            size: 74,
+            polygons: {
+              strokeColors: '#CBD5E1',
+              strokeWidth: 1,
+              connectorColors: '#CBD5E1',
+              fill: {
+                colors: ['#F8FAFC', '#EEF2F7']
+              }
+            }
+          }
+        },
+        legend: {
+          show: false
+        },
+        tooltip: {
+          theme: 'light',
+          y: {
+            formatter: (val) => `${val} / 100 pt`
+          }
+        }
+      }
+    })
+
     return {
       activeScienceTab,
       rhrFormDate,
@@ -810,6 +1008,9 @@ export default {
       submitRhr,
       pitchStabilityReport,
       latestOverallCadence,
+      abilityRadar,
+      radarChartSeries,
+      radarChartOptions,
       formatHMS: formatSecondsToHMS
     }
   }
@@ -1234,6 +1435,166 @@ export default {
   font-size: 0.72rem;
   color: #526071;
   text-align: center;
+}
+
+/* ランニング能力レーダーチャート & 総合判定バナー */
+.radar-verdict-banner {
+  border: 1px solid #C5D1E8;
+  background: linear-gradient(135deg, #E2EBF8 0%, #EEF3FB 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.radar-verdict-banner.verdict-peak {
+  border-color: #99E6D8;
+  background: linear-gradient(135deg, #D9F7F0 0%, #ECFEF9 100%);
+}
+
+.radar-verdict-banner.verdict-ready {
+  border-color: #B4CEF5;
+  background: linear-gradient(135deg, #DFECFF 0%, #EFF6FF 100%);
+}
+
+.radar-verdict-banner.verdict-caution {
+  border-color: #FDBA74;
+  background: linear-gradient(135deg, #FFEDD5 0%, #FFF7ED 100%);
+}
+
+.verdict-eyebrow {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #2B4494;
+}
+
+.verdict-peak .verdict-eyebrow {
+  color: #0F766E;
+}
+
+.verdict-caution .verdict-eyebrow {
+  color: #9A3412;
+}
+
+.verdict-grade-pill {
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(30, 41, 59, 0.08);
+  color: #1E293B;
+}
+
+.verdict-headline {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+}
+
+.verdict-subtext {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.35;
+}
+
+.radar-chart-box {
+  width: 100%;
+  max-width: 280px;
+  margin-top: -6px;
+  margin-bottom: -8px;
+}
+
+.radar-axis-row {
+  padding: 2px 0;
+}
+
+.axis-grade-badge {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.grade-s {
+  background: #0D9488;
+  color: #FFFFFF;
+}
+
+.grade-a {
+  background: #2563EB;
+  color: #FFFFFF;
+}
+
+.grade-b {
+  background: #4F46E5;
+  color: #FFFFFF;
+}
+
+.grade-c {
+  background: #D97706;
+  color: #FFFFFF;
+}
+
+.grade-d {
+  background: #64748B;
+  color: #FFFFFF;
+}
+
+.axis-name {
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.axis-raw-meta {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: #526071;
+}
+
+.axis-score-val {
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #0F172A;
+  min-width: 34px;
+  text-align: right;
+}
+
+.axis-score-val small {
+  font-size: 0.58rem;
+  font-weight: 600;
+  color: #64748B;
+  margin-left: 1px;
+}
+
+.stage-segment-bar {
+  height: 5px;
+}
+
+.stage-seg {
+  height: 100%;
+  border-radius: 99px;
+  background: #D5DBE3;
+  transition: background-color 0.25s ease;
+}
+
+.stage-seg.seg-active {
+  background: #3B82F6;
+}
+
+.stage-seg.seg-peak {
+  background: #0D9488;
+}
+
+.stage-seg.seg-warn {
+  background: #EA580C;
 }
 
 .gap-05 { gap: 2px; }

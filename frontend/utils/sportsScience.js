@@ -996,3 +996,302 @@ export function calculatePitchStability(trackingData) {
     evaluation
   }
 }
+
+/**
+ * ============================================================================
+ * 9. ランニング能力 5軸レーダースコア ＆ ピーク仕上がり度総合判定
+ * ============================================================================
+ * 5つの評価軸 (0〜100点 & 1〜5段階ランク):
+ *   1. 持久力ベース (CTL): 目標CTL (サブ4:45 / サブ3.5:65 / サブ3:85) に対する充足度
+ *   2. コンディション / 鮮度 (TSB): ピーキング・疲労抜き状態 (-30〜+25 の最適ゾーン評価 + RHRスパイク補正)
+ *   3. 心肺・代謝効率 (EF / ドリフト率): 時間分割心肺ドリフト率(%) と 最新EF(m/min/bpm) の複合スコア
+ *   4. ペース安定性・ピッチ: ラップ間ペース安定度(変動係数) および ピッチ(SPM)維持率
+ *   5. 予測走力レベル (Riegel予測): Riegel式フル予測タイムの目標タイムに対する達成度
+ */
+export function calculateAbilityRadarEvaluation({
+  ctl = 0,
+  targetCtl = 65,
+  tsb = 0,
+  decouplingReport = null,
+  latestEfResult = null,
+  pitchStabilityReport = null,
+  latestOverallCadence = null,
+  workouts = [],
+  riegelBest = null,
+  targetGoal = 'sub3.5',
+  latestRhrEntry = null
+} = {}) {
+  const clamp = (val, min = 0, max = 100) => Math.max(min, Math.min(max, Math.round(val)))
+  const toStage = (score) => {
+    if (score >= 85) return 5
+    if (score >= 70) return 4
+    if (score >= 55) return 3
+    if (score >= 40) return 2
+    return 1
+  }
+  const toGrade = (score) => {
+    if (score >= 90) return 'S'
+    if (score >= 80) return 'A'
+    if (score >= 65) return 'B'
+    if (score >= 50) return 'C'
+    return 'D'
+  }
+
+  const goalLabelMap = {
+    sub4: 'サブ4',
+    'sub3.5': 'サブ3.5',
+    sub3: 'サブ3'
+  }
+  const goalLabel = goalLabelMap[targetGoal] || 'サブ3.5'
+  const targetMarathonSec = targetGoal === 'sub4' ? 4 * 3600 : targetGoal === 'sub3.5' ? 3.5 * 3600 : 3 * 3600
+  const targetEf = targetGoal === 'sub4' ? 1.12 : targetGoal === 'sub3.5' ? 1.26 : 1.45
+
+  // -------------------------------------------------------------------------
+  // 軸1: 持久力ベース (CTL)
+  // -------------------------------------------------------------------------
+  const safeTargetCtl = Math.max(1, Number(targetCtl || 65))
+  const ctlRatio = Number(ctl || 0) / safeTargetCtl
+  // 目標CTL到達で 88点、1.15倍以上で100点
+  const ctlScore = clamp(ctlRatio <= 1 ? ctlRatio * 88 : 88 + ((ctlRatio - 1) / 0.15) * 12, 15, 100)
+
+  // -------------------------------------------------------------------------
+  // 軸2: コンディション / 鮮度 (TSB)
+  // -------------------------------------------------------------------------
+  let tsbRawScore = 65
+  const tsbVal = Number(tsb || 0)
+  if (tsbVal >= 5 && tsbVal <= 20) {
+    // 理想的なレースピーキング圏 (+5 〜 +20)
+    tsbRawScore = 92 + (1 - Math.abs(tsbVal - 12) / 8) * 8
+  } else if (tsbVal >= 0 && tsbVal < 5) {
+    // フレッシュ圏 (0 〜 +5)
+    tsbRawScore = 82 + (tsbVal / 5) * 10
+  } else if (tsbVal > 20) {
+    // 休養過多・ディトレーニング気味 (+20超)
+    tsbRawScore = Math.max(70, 92 - (tsbVal - 20) * 1.5)
+  } else if (tsbVal >= -15 && tsbVal < 0) {
+    // 適正トレーニング負荷圏 (-15 〜 0)
+    tsbRawScore = 62 + ((tsbVal + 15) / 15) * 20
+  } else if (tsbVal >= -30 && tsbVal < -15) {
+    // 強化・疲労蓄積圏 (-30 〜 -15)
+    tsbRawScore = 38 + ((tsbVal + 30) / 15) * 24
+  } else {
+    // オーバートレーニング警戒圏 (-30未満)
+    tsbRawScore = Math.max(18, 38 + (tsbVal + 30) * 1.2)
+  }
+  if (latestRhrEntry?.fatigueWarning) {
+    tsbRawScore -= 12
+  }
+  const tsbScore = clamp(tsbRawScore, 15, 100)
+
+  // -------------------------------------------------------------------------
+  // 軸3: 心肺・代謝効率 (EF / ドリフト率)
+  // -------------------------------------------------------------------------
+  let driftScorePart = null
+  if (decouplingReport?.available && typeof decouplingReport.decoupling === 'number') {
+    const d = decouplingReport.decoupling
+    if (d <= 0) driftScorePart = 98
+    else if (d <= 3.0) driftScorePart = 96 - (d / 3.0) * 8 // 0〜3%: 88〜96点
+    else if (d <= 5.0) driftScorePart = 88 - ((d - 3.0) / 2.0) * 13 // 3〜5%: 75〜88点
+    else if (d <= 10.0) driftScorePart = 75 - ((d - 5.0) / 5.0) * 30 // 5〜10%: 45〜75点
+    else driftScorePart = Math.max(20, 45 - (d - 10.0) * 3.5)
+  }
+
+  let efScorePart = null
+  const currentEf = decouplingReport?.available
+    ? decouplingReport.overallEF
+    : latestEfResult?.ef || null
+  if (currentEf && currentEf > 0) {
+    const efRatio = currentEf / targetEf
+    efScorePart = clamp(efRatio * 84, 25, 100)
+  }
+
+  let cardioScore = 55
+  if (driftScorePart !== null && efScorePart !== null) {
+    cardioScore = clamp(driftScorePart * 0.6 + efScorePart * 0.4, 20, 100)
+  } else if (driftScorePart !== null) {
+    cardioScore = clamp(driftScorePart, 20, 100)
+  } else if (efScorePart !== null) {
+    cardioScore = clamp(efScorePart, 20, 100)
+  }
+
+  // -------------------------------------------------------------------------
+  // 軸4: ペース安定性・ピッチ
+  // -------------------------------------------------------------------------
+  let paceCvPct = null
+  if (Array.isArray(workouts) && workouts.length > 0) {
+    const sortedW = [...workouts].sort(
+      (a, b) => parseWorkoutLocalDate(b.workoutDate) - parseWorkoutLocalDate(a.workoutDate)
+    )
+    const candidate =
+      sortedW.find(w => Array.isArray(w.splits) && w.splits.length >= 5 && Number(w.distance || 0) >= 8) ||
+      sortedW.find(w => Array.isArray(w.splits) && w.splits.length >= 3)
+    if (candidate) {
+      const paces = candidate.splits
+        .map(s => {
+          const t = Number(s.movingTime || s.elapsedTime || 0)
+          const dist = Number(s.distance || 1000)
+          return dist >= 400 && t > 0 ? t / (dist / 1000) : null
+        })
+        .filter(p => p !== null && p > 120 && p < 600)
+      if (paces.length >= 3) {
+        const mean = paces.reduce((a, b) => a + b, 0) / paces.length
+        const variance = paces.reduce((acc, p) => acc + Math.pow(p - mean, 2), 0) / paces.length
+        const stdDev = Math.sqrt(variance)
+        paceCvPct = (stdDev / mean) * 100
+      }
+    }
+  }
+
+  let paceStabilitySub = 68
+  if (paceCvPct !== null) {
+    // 変動係数 2%以下で95点、5%で80点、10%で55点
+    paceStabilitySub = clamp(102 - paceCvPct * 4.5, 30, 98)
+  }
+
+  let pitchSub = 68
+  if (pitchStabilityReport?.available && pitchStabilityReport.ratio > 0) {
+    const diffFrom100 = Math.abs(100 - pitchStabilityReport.ratio)
+    pitchSub = clamp(96 - diffFrom100 * 4.5, 30, 98)
+  } else if (latestOverallCadence?.cadence) {
+    const cad = Number(latestOverallCadence.cadence)
+    // 180spm前後を理想基準として評価
+    if (cad >= 180) pitchSub = Math.min(96, 86 + (cad - 180) * 0.8)
+    else if (cad >= 170) pitchSub = 74 + ((cad - 170) / 10) * 12
+    else if (cad >= 160) pitchSub = 58 + ((cad - 160) / 10) * 16
+    else pitchSub = Math.max(35, 58 - (160 - cad) * 1.5)
+  }
+
+  const stabilityScore = clamp(paceStabilitySub * 0.55 + pitchSub * 0.45, 20, 100)
+
+  // -------------------------------------------------------------------------
+  // 軸5: 予測走力レベル (Riegel予測)
+  // -------------------------------------------------------------------------
+  let riegelScore = 45
+  const predFullSec = riegelBest?.predFullSeconds || null
+  if (predFullSec && predFullSec > 0) {
+    // 目標タイムちょうどで 85点、目標より10分速ければ 98点、目標より25分遅ければ 50点
+    const diffMinutes = (predFullSec - targetMarathonSec) / 60
+    if (diffMinutes <= 0) {
+      riegelScore = clamp(85 + Math.min(15, Math.abs(diffMinutes) * 1.3), 85, 100)
+    } else {
+      riegelScore = clamp(85 - diffMinutes * 1.4, 20, 84)
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 総合ピーク仕上がり度 (%) とワンフレーズ診断
+  // -------------------------------------------------------------------------
+  const overallReadiness = clamp(
+    ctlScore * 0.24 +
+    tsbScore * 0.16 +
+    cardioScore * 0.20 +
+    stabilityScore * 0.15 +
+    riegelScore * 0.25,
+    15,
+    100
+  )
+
+  // 現在の実力から判定する到達圏ラベル
+  let reachZoneLabel = `${goalLabel}挑戦圏`
+  if (predFullSec) {
+    if (predFullSec <= 3 * 3600) {
+      reachZoneLabel = 'サブ3達成圏'
+    } else if (predFullSec <= 3 * 3600 + 900 && targetGoal === 'sub3') {
+      reachZoneLabel = 'サブ3射程圏'
+    } else if (predFullSec <= 3.5 * 3600) {
+      reachZoneLabel = targetGoal === 'sub3' ? 'サブ3.5達成・サブ3挑戦圏' : 'サブ3.5達成圏'
+    } else if (predFullSec <= 3.5 * 3600 + 900 && targetGoal === 'sub3.5') {
+      reachZoneLabel = 'サブ3.5射程圏'
+    } else if (predFullSec <= 4 * 3600) {
+      reachZoneLabel = targetGoal === 'sub4' ? 'サブ4達成圏' : `${goalLabel}育成・サブ4達成圏`
+    } else if (predFullSec <= 4 * 3600 + 1200) {
+      reachZoneLabel = 'サブ4射程圏'
+    } else {
+      reachZoneLabel = '完走・ベース構築圏'
+    }
+  } else if (overallReadiness >= 80) {
+    reachZoneLabel = `${goalLabel}達成圏`
+  } else if (overallReadiness >= 65) {
+    reachZoneLabel = `${goalLabel}射程圏`
+  }
+
+  let readinessTone = 'building' // 'peak' | 'ready' | 'building' | 'caution'
+  let actionAdvice = 'ロング走と閾値走を継続し、有酸素ベースをさらに引き上げましょう'
+  if (latestRhrEntry?.fatigueWarning || tsbVal < -25) {
+    readinessTone = 'caution'
+    actionAdvice = '疲労蓄積サインあり。休養またはEジョグでTSB回復を最優先してください'
+  } else if (overallReadiness >= 82 && tsbVal >= -5) {
+    readinessTone = 'peak'
+    actionAdvice = '走力・鮮度ともに高水準。レースペース感覚を維持して本番へ臨めます'
+  } else if (overallReadiness >= 70) {
+    readinessTone = 'ready'
+    actionAdvice = tsbVal < -10
+      ? '走力ベースは十分。テーパリングで疲労を抜けばピークに到達します'
+      : 'バランス良好。レースペースでの巡航維持力を仕上げましょう'
+  }
+
+  const oneLineSummary = `現在の総合判定：${reachZoneLabel}（ピーク仕上がり度：${overallReadiness}%）`
+
+  const axes = [
+    {
+      key: 'ctl',
+      label: '持久力ベース (CTL)',
+      shortLabel: '持久力 (CTL)',
+      score: ctlScore,
+      stage: toStage(ctlScore),
+      grade: toGrade(ctlScore),
+      rawDisplay: `${Number(ctl || 0).toFixed(1)} / 目標${safeTargetCtl} tss`
+    },
+    {
+      key: 'tsb',
+      label: 'コンディション / 鮮度 (TSB)',
+      shortLabel: '鮮度 (TSB)',
+      score: tsbScore,
+      stage: toStage(tsbScore),
+      grade: toGrade(tsbScore),
+      rawDisplay: `TSB ${tsbVal >= 0 ? '+' : ''}${tsbVal.toFixed(1)}`
+    },
+    {
+      key: 'ef',
+      label: '心肺・代謝効率 (EF / ドリフト)',
+      shortLabel: '心肺効率 (EF)',
+      score: cardioScore,
+      stage: toStage(cardioScore),
+      grade: toGrade(cardioScore),
+      rawDisplay: decouplingReport?.available
+        ? `ドリフト ${decouplingReport.decoupling.toFixed(1)}% / EF ${decouplingReport.overallEF.toFixed(2)}`
+        : (currentEf ? `EF ${currentEf.toFixed(2)}` : '計測データ待ち')
+    },
+    {
+      key: 'stability',
+      label: 'ペース安定性・ピッチ',
+      shortLabel: '安定・ピッチ',
+      score: stabilityScore,
+      stage: toStage(stabilityScore),
+      grade: toGrade(stabilityScore),
+      rawDisplay: pitchStabilityReport?.available
+        ? `ピッチ維持 ${pitchStabilityReport.ratio.toFixed(1)}%`
+        : `${latestOverallCadence?.cadence ? `${latestOverallCadence.cadence} spm` : '--'}${paceCvPct !== null ? ` / 変動±${paceCvPct.toFixed(1)}%` : ''}`
+    },
+    {
+      key: 'riegel',
+      label: '予測走力レベル (Riegel予測)',
+      shortLabel: '予測走力',
+      score: riegelScore,
+      stage: toStage(riegelScore),
+      grade: toGrade(riegelScore),
+      rawDisplay: predFullSec ? `フル予測 ${formatSecondsToHMS(predFullSec)}` : '10km+走データ待ち'
+    }
+  ]
+
+  return {
+    overallReadiness,
+    overallStage: toStage(overallReadiness),
+    overallGrade: toGrade(overallReadiness),
+    reachZoneLabel,
+    oneLineSummary,
+    actionAdvice,
+    readinessTone,
+    axes
+  }
+}
